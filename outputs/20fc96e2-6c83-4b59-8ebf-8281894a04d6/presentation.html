@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活着 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: #FFFFFF;
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .navigation button {
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .navigation button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background-color: #007AFF;
+            transform: scale(1.2);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 350px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #1D1D1F;
+            z-index: 1000;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <h1>活着</h1>
+            <h2>余华</h2>
+            <p>一部关于生命、苦难与希望的深刻作品</p>
+        </div>
+        <div class="slide " data-slide="1">
+            <h1>余华</h1>
+            <h2>当代著名作家</h2>
+            <p>中国当代最具影响力的作家之一，作品被翻译成多种语言，享誉国际。以其深刻的社会洞察力和对人性的细腻描写而闻名。</p>
+        </div>
+        <div class="slide " data-slide="2">
+            <h1>苦难</h1>
+            <h2>时代的烙印</h2>
+            <p>内战、大跃进、文革...福贵的一生，是时代洪流下个人命运的缩影。苦难如同巨浪，一次又一次地冲击着他的人生。</p>
+        </div>
+        <div class="slide " data-slide="3">
+            <h1>亲人</h1>
+            <h2>无尽的失去</h2>
+            <p>福贵经历了亲人相继离世的痛苦，每一个名字都刻在他的心底，也刻在读者的心中。</p>
+        </div>
+        <div class="slide " data-slide="4">
+            <h1>活着</h1>
+            <h2>为了什么？</h2>
+            <p>“人是为活着本身而活着的，而不是为了活着之外的任何事物而活着。”</p>
+        </div>
+        <div class="slide " data-slide="5">
+            <h1>坚韧</h1>
+            <h2>生的希望</h2>
+            <p>即使面对无尽的苦难，福贵依然选择活着，体现了对生命的坚韧和对苦难的承受力。 在绝望中，仍能看到希望的光芒。</p>
+        </div>
+        <div class="slide " data-slide="6">
+            <h1>感悟</h1>
+            <h2>生命的真谛</h2>
+            <p>《活着》是一部关于生命、苦难和希望的深刻作品。它提醒我们珍惜当下，感受生命的美好，拥抱生命的坚韧。阅读《活着》，感受生命的真谛。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">7</span>
+    </div>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        欢迎大家来到今天的发布会。我们今天要介绍的不是一款全新的设备，而是一部震撼心灵的文学作品——《活着》。这部由余华先生创作的经典之作，讲述了徐福贵跌宕起伏的一生。它关于生命、苦难，但更重要的是，它关于希望。我们希望通过《活着》，带您重新认识生命的力量，感受那些被我们忽略的感动。这部作品的核心，正如我们今天的主题：直面生命的力量。
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "欢迎大家来到今天的发布会。我们今天要介绍的不是一款全新的设备，而是一部震撼心灵的文学作品——《活着》。这部由余华先生创作的经典之作，讲述了徐福贵跌宕起伏的一生。它关于生命、苦难，但更重要的是，它关于希望。我们希望通过《活着》，带您重新认识生命的力量，感受那些被我们忽略的感动。这部作品的核心，正如我们今天的主题：直面生命的力量。",
+        "余华先生，中国当代最具影响力的作家之一，他的作品被翻译成多种语言，享誉国际。他以其深刻的社会洞察力和对人性的细腻描写而闻名。《活着》正是他最具有代表性的作品之一。他用简洁而有力的文字，描绘了中国社会变迁下普通人的命运。而这句“活着不是为了别的，是为了活着本身”，更是点亮了无数人的人生。",
+        "内战、大跃进、文化大革命...福贵的一生，几乎经历了中国近现代史上的所有重大事件。这些时代洪流，如同巨浪一般，一次又一次地冲击着他的人生，夺走了他的一切。他从地主少爷沦为一无所有的老农，命运的无常，在他身上体现得淋漓尽致。这不仅仅是福贵的故事，更是那个时代无数普通人的缩影。",
+        "父亲，儿子有庆，女儿凤霞，妻子家珍，女婿二喜，外孙苦根...每一个名字，都代表着一段无法磨灭的记忆，也代表着福贵心中无法弥补的伤痛。这不仅仅是一组数据，更是福贵一生中无法承受的悲伤之重。我们希望通过这组数据，让大家更加深刻地体会到福贵所经历的苦难。",
+        "“人是为活着本身而活着的，而不是为了活着之外的任何事物而活着。” 这是《活着》中最经典的一句话，也是对生命意义最深刻的诠释。 活着不是为了追求幸福，也不是为了逃避痛苦，而是为了活着本身。 活着，就是一切。",
+        "即使面对无尽的苦难，福贵依然选择活着，体现了对生命的坚韧和对苦难的承受力。 在绝望中，仍能看到希望的光芒。福贵的故事告诉我们，只要活着，就有希望。生命的奇迹，往往就在于这份不屈不挠的坚韧。",
+        "《活着》是一部关于生命、苦难和希望的深刻作品。它提醒我们珍惜当下，感受生命的美好，拥抱生命的坚韧。我们希望通过今天的介绍，能让更多的人了解《活着》，阅读《活着》，感受生命的真谛。点击下方按钮，开始您的阅读之旅吧！",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>

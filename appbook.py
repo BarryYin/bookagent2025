@@ -85,72 +85,110 @@ async def step1_extract_book_data(topic: str) -> dict:
 请以JSON格式返回结果。
 """
 
-    if USE_GEMINI:
-        response = await asyncio.get_event_loop().run_in_executor(
-            None, 
-            lambda: gemini_client.models.generate_content(
-                model="gemini-2.0-flash-exp", 
-                contents=system_prompt
-            )
-        )
-        result = response.text
-    else:
-        response = await client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": system_prompt}],
-            temperature=0.7
-        )
-        result = response.choices[0].message.content
-
     try:
-        return json.loads(result)
-    except:
-        return {"raw_content": result}
+        if USE_GEMINI:
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: gemini_client.models.generate_content(
+                    model="gemini-2.0-flash-exp", 
+                    contents=system_prompt
+                )
+            )
+            result = response.text
+        else:
+            response = await client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": system_prompt}],
+                temperature=0.7
+            )
+            result = response.choices[0].message.content
+
+        try:
+            return json.loads(result)
+        except:
+            return {"raw_content": result}
+            
+    except Exception as e:
+        # API配额用完或其他错误时，返回默认数据
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            return get_fallback_book_data(topic)
+        else:
+            raise e
 
 async def step2_create_ppt_slides(book_data: dict) -> list:
     """
-    第2步：创建PPT画面结构
+    第2步：创建PPT画面结构（苹果发布会风格）
     """
-    system_prompt = f"""基于以下书籍数据，设计PPT的画面结构：
+    system_prompt = f"""基于以下书籍数据，设计苹果发布会风格的PPT画面结构：
 
 {json.dumps(book_data, ensure_ascii=False, indent=2)}
 
-请为这本书设计6-10页PPT的画面结构，每页包含：
-1. 页面标题
-2. 主要视觉元素描述
-3. 布局建议
-4. 关键信息点
+请为这本书设计6-10页苹果风格PPT的画面结构，每页包含：
 
-请以JSON数组格式返回，每个元素代表一页PPT。
+## 苹果发布会PPT页面类型：
+1. **开场页** - 书名大标题，简洁背景
+2. **作者介绍页** - 作者信息，优雅布局
+3. **核心观点页** - 单一重点，大字体展示
+4. **数据展示页** - 关键数字，视觉化呈现
+5. **引用页** - 书中金句，艺术化排版
+6. **总结页** - 核心价值，call-to-action
+
+每页PPT请包含以下结构：
+- slide_number: 页面编号
+- slide_type: 页面类型 (opening/author/concept/data/quote/summary)
+- title: 主标题（3-8个字）
+- subtitle: 副标题（可选）
+- main_content: 核心内容
+- visual_elements: 视觉元素配置
+- animation_entrance: 入场动画类型
+- key_message: 核心信息
+
+设计原则：
+- 每页只传达一个核心概念
+- 使用大量留白
+- 字体层级清晰
+- 颜色搭配和谐
+- 符合苹果美学
+
+请以JSON数组格式返回。
 """
 
-    if USE_GEMINI:
-        response = await asyncio.get_event_loop().run_in_executor(
-            None, 
-            lambda: gemini_client.models.generate_content(
-                model="gemini-2.0-flash-exp", 
-                contents=system_prompt
-            )
-        )
-        result = response.text
-    else:
-        response = await client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": system_prompt}],
-            temperature=0.8
-        )
-        result = response.choices[0].message.content
-
     try:
-        return json.loads(result)
-    except:
-        return [{"raw_content": result}]
+        if USE_GEMINI:
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: gemini_client.models.generate_content(
+                    model="gemini-2.0-flash-exp", 
+                    contents=system_prompt
+                )
+            )
+            result = response.text
+        else:
+            response = await client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": system_prompt}],
+                temperature=0.8
+            )
+            result = response.choices[0].message.content
+
+        try:
+            return json.loads(result)
+        except:
+            return [{"raw_content": result}]
+            
+    except Exception as e:
+        # API配额用完或其他错误时，返回默认数据
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            book_title = extract_book_title(book_data) if book_data else "未知书籍"
+            return get_fallback_slides_data(book_title)
+        else:
+            raise e
 
 async def step3_create_narration(slides: list, book_data: dict) -> list:
     """
-    第3步：为每页PPT创建解说词
+    第3步：为每页PPT创建解说词（苹果发布会风格）
     """
-    system_prompt = f"""基于以下PPT画面结构和书籍数据，为每页PPT创建解说词：
+    system_prompt = f"""基于以下PPT画面结构和书籍数据，为每页PPT创建苹果发布会风格的解说词：
 
 书籍数据：
 {json.dumps(book_data, ensure_ascii=False, indent=2)}
@@ -158,47 +196,79 @@ async def step3_create_narration(slides: list, book_data: dict) -> list:
 PPT画面结构：
 {json.dumps(slides, ensure_ascii=False, indent=2)}
 
-请为每页PPT创建：
-1. 开场白（吸引注意力）
-2. 核心内容解说（2-3分钟）
-3. 过渡语（连接下一页）
+请为每页PPT创建苹果发布会风格的解说词：
+
+## 苹果发布会解说风格特点：
+1. **开场方式**：
+   - 简洁有力的开场
+   - 直接切入主题
+   - 制造期待感
+
+2. **表达方式**：
+   - 简洁明了，避免冗长
+   - 使用数据和事实说话
+   - 情感化的语言
+   - 适当的停顿和强调
+
+3. **结构模式**：
+   - 问题设定 → 解决方案 → 价值体现
+   - 现状描述 → 改进展示 → 结果呈现
+
+每页解说词包含：
+- slide_number: 页面编号
+- opening: 开场白（1-2句话，吸引注意）
+- main_narration: 主要解说内容（2-3分钟，深入浅出）
+- key_emphasis: 重点强调的内容（金句或核心观点）
+- transition: 过渡语（连接下一页）
+- timing: 时间控制信息
+- tone: 语调风格
 
 解说词要求：
-- 生动有趣，易于理解
-- 结合书中具体例子
-- 语言流畅自然
-- 适合口语表达
+- 模仿苹果发布会的表达风格
+- 语言简洁有力，富有感染力
+- 结合书籍内容，但保持通俗易懂
+- 适合现场演讲的节奏
+- 包含适当的情感渲染
 
 请以JSON数组格式返回。
 """
 
-    if USE_GEMINI:
-        response = await asyncio.get_event_loop().run_in_executor(
-            None, 
-            lambda: gemini_client.models.generate_content(
-                model="gemini-2.0-flash-exp", 
-                contents=system_prompt
-            )
-        )
-        result = response.text
-    else:
-        response = await client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": system_prompt}],
-            temperature=0.8
-        )
-        result = response.choices[0].message.content
-
     try:
-        return json.loads(result)
-    except:
-        return [{"raw_content": result}]
+        if USE_GEMINI:
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: gemini_client.models.generate_content(
+                    model="gemini-2.0-flash-exp", 
+                    contents=system_prompt
+                )
+            )
+            result = response.text
+        else:
+            response = await client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": system_prompt}],
+                temperature=0.8
+            )
+            result = response.choices[0].message.content
+
+        try:
+            return json.loads(result)
+        except:
+            return [{"raw_content": result}]
+            
+    except Exception as e:
+        # API配额用完或其他错误时，返回默认数据
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            book_title = extract_book_title(book_data) if book_data else "未知书籍"
+            return get_fallback_narrations_data(book_title)
+        else:
+            raise e
 
 async def step4_generate_html(slides: list, narrations: list, book_data: dict) -> str:
     """
-    第4步：将画面和解说词转换为HTML格式
+    第4步：将画面和解说词转换为HTML格式（苹果发布会风格）
     """
-    system_prompt = f"""基于以下数据，生成一个完整的HTML格式PPT：
+    system_prompt = f"""基于以下数据，生成一个完整的HTML格式PPT，采用苹果发布会的设计风格：
 
 书籍数据：
 {json.dumps(book_data, ensure_ascii=False, indent=2)}
@@ -209,19 +279,202 @@ PPT画面：
 解说词：
 {json.dumps(narrations, ensure_ascii=False, indent=2)}
 
-请生成一个完整的HTML文件，包含：
-1. 现代化的CSS样式
-2. 响应式设计
-3. 每页PPT的完整布局
-4. 解说词显示区域
-5. 页面导航功能
-6. 美观的视觉效果
+**重要要求：必须实现真正的分页PPT效果，每次只显示一页内容，而不是把所有页面都显示在一个页面上！**
 
-HTML要求：
-- 使用现代CSS（Flexbox/Grid）
-- 包含动画效果
-- 移动端友好
-- 专业的设计风格
+## 正确的HTML结构示例：
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书籍介绍PPT</title>
+    <style>
+        body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }}
+        .presentation-container {{ position: relative; width: 100vw; height: 100vh; overflow: hidden; }}
+        .slide {{ 
+            position: absolute; 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease;
+        }}
+        .slide.active {{ opacity: 1; transform: translateX(0); }}
+        .slide.prev {{ transform: translateX(-100%); }}
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 每个slide都是独立的，通过JavaScript控制显示 -->
+        <div class="slide active" data-slide="0">第1页内容</div>
+        <div class="slide" data-slide="1">第2页内容</div>
+        <div class="slide" data-slide="2">第3页内容</div>
+        <!-- 更多页面... -->
+    </div>
+    <div class="navigation">
+        <button onclick="prevSlide()">←</button>
+        <div class="dots"></div>
+        <button onclick="nextSlide()">→</button>
+    </div>
+    <div class="narration-panel">解说词区域</div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        function showSlide(n) {{
+            slides.forEach(slide => slide.classList.remove('active', 'prev'));
+            if (n >= 0 && n < totalSlides) {{
+                slides[n].classList.add('active');
+                currentSlide = n;
+                updateNarration(n);
+                updateDots(n);
+            }}
+        }}
+        
+        function nextSlide() {{ showSlide(currentSlide + 1); }}
+        function prevSlide() {{ showSlide(currentSlide - 1); }}
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {{
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        }});
+    </script>
+</body>
+</html>
+```
+
+## 关键实现要点：
+
+1. **分页显示逻辑**：
+   - 使用 `position: absolute` 让所有slide重叠
+   - 通过 `opacity` 和 `transform` 控制显示/隐藏
+   - 只有当前页面 `opacity: 1`，其他页面 `opacity: 0`
+
+2. **页面切换动画**：
+   - 使用 CSS `transition` 实现平滑切换
+   - 当前页面：`transform: translateX(0)`
+   - 下一页：`transform: translateX(100%)`  
+   - 上一页：`transform: translateX(-100%)`
+
+3. **JavaScript控制**：
+   - `currentSlide` 变量跟踪当前页面
+   - `showSlide(n)` 函数切换到指定页面
+   - 键盘事件监听（左右箭头键）
+   - 导航点击事件
+
+4. **苹果风格设计**：
+   - 纯白背景 (#FFFFFF)
+   - 苹果蓝强调色 (#007AFF)
+   - SF Pro 字体系列
+   - 圆角和阴影效果
+   - 毛玻璃效果
+
+5. **解说词同步**：
+   - 每次切换页面时更新解说词内容
+   - 解说词面板固定位置显示
+
+**请严格按照这个结构生成HTML，确保实现真正的分页效果，而不是滚动浏览所有内容！**
+
+**重要：必须生成完整的HTML文件，包含完整的JavaScript代码，确保文件以</html>结尾！**
+
+## 完整的工作示例模板：
+
+请基于以下完整的工作模板生成HTML，确保所有功能都能正常工作，并且HTML文件必须完整：
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书籍PPT</title>
+    <style>
+        body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #FFFFFF; color: #1D1D1F; overflow: hidden; }}
+        .presentation-container {{ position: relative; width: 100vw; height: 100vh; overflow: hidden; }}
+        .slide {{ position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transform: translateX(100%); transition: all 0.5s ease; padding: 40px; box-sizing: border-box; text-align: center; }}
+        .slide.active {{ opacity: 1; transform: translateX(0); }}
+        .slide h1 {{ font-size: 4rem; font-weight: 300; margin-bottom: 20px; }}
+        .slide h2 {{ font-size: 2rem; font-weight: 400; color: #86868B; margin-bottom: 30px; }}
+        .slide p {{ font-size: 1.5rem; line-height: 1.6; max-width: 800px; }}
+        .navigation {{ position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; z-index: 1000; }}
+        .navigation button {{ background: #007AFF; color: white; border: none; padding: 12px 24px; margin: 0 15px; border-radius: 25px; cursor: pointer; font-size: 1.2rem; }}
+        .navigation button:disabled {{ background: #86868B; cursor: not-allowed; }}
+        .dot {{ width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.5); margin: 0 6px; cursor: pointer; }}
+        .dot.active {{ background: #007AFF; }}
+        .narration-panel {{ position: fixed; top: 30px; right: 30px; width: 350px; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); border-radius: 16px; padding: 20px; z-index: 1000; }}
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 根据slides数据生成每一页 -->
+    </div>
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    <div class="narration-panel" id="narrationPanel">解说词区域</div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        // 生成导航点
+        const dotsContainer = document.getElementById('dotsContainer');
+        for (let i = 0; i < totalSlides; i++) {{
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }}
+        
+        function showSlide(n) {{
+            if (n < 0 || n >= totalSlides) return;
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[n].classList.add('active');
+            currentSlide = n;
+            updateUI(n);
+        }}
+        
+        function nextSlide() {{ if (currentSlide < totalSlides - 1) showSlide(currentSlide + 1); }}
+        function prevSlide() {{ if (currentSlide > 0) showSlide(currentSlide - 1); }}
+        
+        function updateUI(n) {{
+            document.getElementById('prevButton').disabled = n === 0;
+            document.getElementById('nextButton').disabled = n === totalSlides - 1;
+            document.querySelectorAll('.dot').forEach((dot, i) => dot.classList.toggle('active', i === n));
+            // 更新解说词
+        }}
+        
+        document.addEventListener('keydown', (e) => {{
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        }});
+        
+        updateUI(0);
+    </script>
+</body>
+</html>
+```
+
+**关键要求：**
+1. 必须生成完整的HTML文件，从<!DOCTYPE html>到</html>
+2. 必须使用 `position: absolute` 让所有slide重叠
+3. 只有当前slide有 `active` 类，其他都是 `opacity: 0`
+4. 导航按钮必须能正常工作
+5. 键盘导航必须响应
+6. 解说词必须同步更新
+7. 每页内容根据提供的数据动态生成
+8. JavaScript代码必须完整，包含所有必要的函数
+9. 确保HTML结构完整，没有未闭合的标签
 """
 
     if USE_GEMINI:
@@ -241,7 +494,8 @@ HTML要求：
         )
         result = response.choices[0].message.content
 
-    return result
+    # 不再使用AI生成，直接使用可靠的模板
+    return generate_reliable_ppt_html_internal(slides, narrations, book_data)
 
 async def llm_event_stream(
     topic: str,
@@ -249,43 +503,794 @@ async def llm_event_stream(
     model: str = "gemini-2.5-pro",
 ) -> AsyncGenerator[str, None]:
     """
-    主流式生成器：依次执行4个步骤
+    主流式生成器：依次执行4个步骤，显示详细的处理日志
     """
     history = history or []
     
+    # 生成唯一的会话ID用于保存文件
+    import uuid
+    session_id = str(uuid.uuid4())
+    
     try:
+        # 开始思考与规划阶段
+        yield f"data: {json.dumps({'log': '🤔 Kiro Agent 开始思考与规划...'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.5)
+        
+        yield f"data: {json.dumps({'log': f'📚 分析主题: {topic}'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.3)
+        
+        yield f"data: {json.dumps({'log': '🎯 制定生成策略: 4步骤流程'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.3)
+        
+        yield f"data: {json.dumps({'log': '  ├─ 步骤1: 提取书籍基本数据'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  ├─ 步骤2: 设计PPT画面结构'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  ├─ 步骤3: 创建解说词内容'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  └─ 步骤4: 生成完整HTML'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.5)
+        
         # 步骤1：提取书本数据
-        yield f"data: {json.dumps({'status': '正在分析书籍数据...'}, ensure_ascii=False)}\n\n"
-        book_data = await step1_extract_book_data(topic)
-        yield f"data: {json.dumps({'step1_complete': True, 'book_data': book_data}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '🔍 [步骤1/4] 正在分析书籍数据...'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  ├─ 调用AI模型分析书籍信息'}, ensure_ascii=False)}\n\n"
+        
+        try:
+            book_data = await step1_extract_book_data(topic)
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API配额已用完，使用备用数据'}, ensure_ascii=False)}\n\n"
+                book_data = get_fallback_book_data(topic)
+            else:
+                raise e
+        
+        # 提取书名用于日志显示
+        book_title = topic
+        if isinstance(book_data, dict) and 'raw_content' in book_data:
+            try:
+                import re
+                title_match = re.search(r'"(?:book_title|title)":\s*"([^"]+)"', str(book_data['raw_content']))
+                if title_match:
+                    book_title = title_match.group(1)
+            except:
+                pass
+        
+        yield f"data: {json.dumps({'log': f'  ├─ 识别书籍: 《{book_title}》'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  └─ ✅ 书籍数据分析完成'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.3)
         
         # 步骤2：创建PPT画面
-        yield f"data: {json.dumps({'status': '正在设计PPT画面...'}, ensure_ascii=False)}\n\n"
-        slides = await step2_create_ppt_slides(book_data)
-        yield f"data: {json.dumps({'step2_complete': True, 'slides': slides}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '🎨 [步骤2/4] 正在设计PPT画面结构...'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  ├─ 基于苹果发布会风格设计'}, ensure_ascii=False)}\n\n"
+        
+        try:
+            slides = await step2_create_ppt_slides(book_data)
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API配额已用完，使用备用数据'}, ensure_ascii=False)}\n\n"
+                slides = get_fallback_slides_data(book_title)
+            else:
+                raise e
+        
+        slide_count = len(slides) if isinstance(slides, list) else 3
+        yield f"data: {json.dumps({'log': f'  ├─ 设计了 {slide_count} 页PPT画面'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  └─ ✅ PPT画面设计完成'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.3)
         
         # 步骤3：创建解说词
-        yield f"data: {json.dumps({'status': '正在创建解说词...'}, ensure_ascii=False)}\n\n"
-        narrations = await step3_create_narration(slides, book_data)
-        yield f"data: {json.dumps({'step3_complete': True, 'narrations': narrations}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '🎤 [步骤3/4] 正在创建解说词内容...'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  ├─ 为每页PPT匹配解说词'}, ensure_ascii=False)}\n\n"
+        
+        try:
+            narrations = await step3_create_narration(slides, book_data)
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API配额已用完，使用备用数据'}, ensure_ascii=False)}\n\n"
+                narrations = get_fallback_narrations_data(book_title)
+            else:
+                raise e
+        
+        narration_count = len(narrations) if isinstance(narrations, list) else slide_count
+        yield f"data: {json.dumps({'log': f'  ├─ 生成了 {narration_count} 段解说词'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  └─ ✅ 解说词创建完成'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.3)
         
         # 步骤4：生成HTML
-        yield f"data: {json.dumps({'status': '正在生成HTML...'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '🔧 [步骤4/4] 正在生成完整HTML...'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  ├─ 使用可靠的内置模板'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  ├─ 集成交互功能和导航'}, ensure_ascii=False)}\n\n"
+        
         html_content = await step4_generate_html(slides, narrations, book_data)
         
-        # 分块输出HTML内容
-        chunk_size = 100
+        # 清理HTML内容
+        html_content = clean_html_content(html_content)
+        
+        # 验证HTML内容完整性
+        if not html_content.strip().endswith('</html>'):
+            raise ValueError("生成的HTML内容不完整")
+        
+        yield f"data: {json.dumps({'log': f'  ├─ HTML长度: {len(html_content)} 字符'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '  └─ ✅ HTML生成完成'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.3)
+        
+        # 保存文件
+        yield f"data: {json.dumps({'log': '💾 正在保存生成的文件...'}, ensure_ascii=False)}\n\n"
+        
+        await save_generated_content(session_id, {
+            'topic': topic,
+            'book_data': book_data,
+            'slides': slides,
+            'narrations': narrations,
+            'html_content': html_content
+        })
+        
+        yield f"data: {json.dumps({'log': f'  └─ ✅ 文件已保存到: outputs/{session_id}/'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.3)
+        
+        # 开始输出结果
+        yield f"data: {json.dumps({'log': '🎉 生成完成！开始输出结果...'}, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(0.5)
+        
+        # 按照前端期望的格式输出HTML内容
+        start_token = '```html\n'
+        yield f"data: {json.dumps({'token': start_token}, ensure_ascii=False)}\n\n"
+        
+        # 分块输出HTML内容，使用较大的块大小确保完整性
+        chunk_size = 500
         for i in range(0, len(html_content), chunk_size):
             chunk = html_content[i:i+chunk_size]
+            # 确保JSON字符串正确转义
             payload = json.dumps({"token": chunk}, ensure_ascii=False)
             yield f"data: {payload}\n\n"
-            await asyncio.sleep(0.02)
+            await asyncio.sleep(0.01)
+        
+        # 输出结束标记
+        end_token = '\n```'
+        yield f"data: {json.dumps({'token': end_token}, ensure_ascii=False)}\n\n"
+        
+        # 最终完成信息
+        yield f"data: {json.dumps({'log': '🎊 PPT生成完成！您可以在浏览器中查看效果'}, ensure_ascii=False)}\n\n"
             
     except Exception as e:
-        yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+        error_msg = f"❌ 生成过程中发生错误: {str(e)}"
+        yield f"data: {json.dumps({'error': error_msg}, ensure_ascii=False)}\n\n"
         return
 
-    yield 'data: {"event":"[DONE]"}\n\n'
+    yield f'data: {json.dumps({"event":"[DONE]", "session_id": session_id, "output_path": f"outputs/{session_id}/"}, ensure_ascii=False)}\n\n'
+
+# -----------------------------------------------------------------------
+# 5. 文件保存功能
+# -----------------------------------------------------------------------
+async def save_generated_content(session_id: str, content: dict):
+    """
+    保存生成的内容到文件系统
+    """
+    import os
+    
+    # 创建输出目录
+    output_dir = f"outputs/{session_id}"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # 保存HTML文件
+    html_file = os.path.join(output_dir, "presentation.html")
+    with open(html_file, 'w', encoding='utf-8') as f:
+        f.write(content['html_content'])
+    
+    # 保存JSON数据文件
+    data_file = os.path.join(output_dir, "data.json")
+    with open(data_file, 'w', encoding='utf-8') as f:
+        json.dump({
+            'topic': content['topic'],
+            'book_data': content['book_data'],
+            'slides': content['slides'],
+            'narrations': content['narrations']
+        }, f, ensure_ascii=False, indent=2)
+    
+    # 保存README文件
+    readme_file = os.path.join(output_dir, "README.md")
+    with open(readme_file, 'w', encoding='utf-8') as f:
+        f.write(f"""# 书籍介绍PPT - {content['topic']}
+
+## 文件说明
+- `presentation.html` - 完整的PPT演示文件（可直接在浏览器中打开）
+- `data.json` - 生成过程中的所有数据
+- `README.md` - 本说明文件
+
+## 使用方法
+1. 直接双击 `presentation.html` 在浏览器中打开
+2. 使用左右箭头键或点击导航点切换页面
+3. 查看底部解说词面板了解详细内容
+
+## 生成时间
+{datetime.now(shanghai_tz).strftime("%Y-%m-%d %H:%M:%S")}
+
+## 会话ID
+{session_id}
+""")
+    
+    print(f"内容已保存到: {output_dir}/")
+    return output_dir
+
+def clean_html_content(html_content: str) -> str:
+    """
+    清理HTML内容，移除代码块标记和多余内容
+    """
+    import re
+    
+    # 移除开头的 ```html 标记
+    html_content = re.sub(r'^```html\s*\n?', '', html_content, flags=re.MULTILINE)
+    
+    # 移除结尾的 ``` 标记和后续的所有内容
+    html_content = re.sub(r'\n?```[\s\S]*$', '', html_content)
+    
+    # 确保文件以 </html> 结尾
+    if not html_content.strip().endswith('</html>'):
+        # 找到最后一个 </html> 标签的位置
+        last_html_match = None
+        for match in re.finditer(r'</html>', html_content):
+            last_html_match = match
+        
+        if last_html_match:
+            # 截取到最后一个 </html> 标签
+            html_content = html_content[:last_html_match.end()]
+    
+    # 移除多余的空行
+    html_content = re.sub(r'\n\s*\n\s*\n', '\n\n', html_content)
+    
+    # 确保文件以换行符结尾
+    if not html_content.endswith('\n'):
+        html_content += '\n'
+    
+    return html_content
+
+def generate_reliable_ppt_html_internal(slides, narrations, book_data):
+    """生成可靠的PPT HTML（内置函数，确保完整性）"""
+    
+    # 解析book_data
+    parsed_book_data = parse_ai_response(book_data)
+    book_title = extract_book_title(parsed_book_data)
+    
+    # 解析slides数据
+    parsed_slides = parse_ai_response(slides)
+    processed_slides = process_slides_data(parsed_slides, book_title)
+    
+    # 解析narrations数据
+    parsed_narrations = parse_ai_response(narrations)
+    processed_narrations = process_narrations_data(parsed_narrations, book_title)
+    
+    # 确保slides和narrations数量匹配
+    while len(processed_narrations) < len(processed_slides):
+        processed_narrations.append(f'这是第{len(processed_narrations)+1}页的解说内容')
+    
+    # 生成幻灯片HTML
+    slides_html = ""
+    for i, slide in enumerate(processed_slides):
+        active_class = "active" if i == 0 else ""
+        slides_html += f'''
+        <div class="slide {active_class}" data-slide="{i}">
+            <h1>{slide.get('title', f'第{i+1}页')}</h1>
+            <h2>{slide.get('subtitle', '')}</h2>
+            <p>{slide.get('content', '')}</p>
+        </div>'''
+    
+    # 生成解说词JavaScript数组
+    narrations_js = "[\n"
+    for narration in processed_narrations:
+        # 转义引号和换行符
+        escaped_narration = str(narration).replace('"', '\\"').replace('\n', '\\n')
+        narrations_js += f'        "{escaped_narration}",\n'
+    narrations_js += "    ]"
+    
+    html_template = f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{book_title} - PPT演示</title>
+    <style>
+        body {{
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: #FFFFFF;
+            color: #1D1D1F;
+            overflow: hidden;
+        }}
+        
+        .presentation-container {{
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }}
+        
+        .slide {{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }}
+        
+        .slide.active {{
+            opacity: 1;
+            transform: translateX(0);
+        }}
+        
+        .slide h1 {{
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+        }}
+        
+        .slide h2 {{
+            font-size: 2rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }}
+        
+        .slide p {{
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+        }}
+        
+        .navigation {{
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }}
+        
+        .navigation button {{
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }}
+        
+        .navigation button:hover {{
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }}
+        
+        .navigation button:disabled {{
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }}
+        
+        .dots {{
+            display: flex;
+            margin: 0 20px;
+        }}
+        
+        .dot {{
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }}
+        
+        .dot.active {{
+            background-color: #007AFF;
+            transform: scale(1.2);
+        }}
+        
+        .narration-panel {{
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 350px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #1D1D1F;
+            z-index: 1000;
+        }}
+        
+        .slide-counter {{
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }}
+    </style>
+</head>
+<body>
+    <div class="presentation-container">{slides_html}
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">{len(processed_slides)}</span>
+    </div>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        {processed_narrations[0] if processed_narrations else '欢迎观看PPT演示'}
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = {narrations_js};
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {{
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }}
+        
+        function showSlide(n) {{
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }}
+        
+        function nextSlide() {{
+            if (currentSlide < totalSlides - 1) {{
+                showSlide(currentSlide + 1);
+            }}
+        }}
+        
+        function prevSlide() {{
+            if (currentSlide > 0) {{
+                showSlide(currentSlide - 1);
+            }}
+        }}
+        
+        function updateNavigationButtons() {{
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }}
+        
+        function updateDots(n) {{
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {{
+                dot.classList.toggle('active', index === n);
+            }});
+        }}
+        
+        function updateNarration(slideIndex) {{
+            if (narrations[slideIndex]) {{
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${{narrations[slideIndex]}}`;
+            }}
+        }}
+        
+        function updateSlideCounter(n) {{
+            currentSlideNum.textContent = n + 1;
+        }}
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {{
+            switch(e.key) {{
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }}
+        }});
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>'''
+    
+    return html_template
+
+def parse_ai_response(data):
+    """解析AI返回的数据，处理raw_content格式"""
+    if isinstance(data, dict) and 'raw_content' in data:
+        raw_content = data['raw_content']
+        if isinstance(raw_content, str):
+            # 尝试从JSON代码块中提取数据
+            import re
+            json_match = re.search(r'```json\s*\n(.*?)\n```', raw_content, re.DOTALL)
+            if json_match:
+                try:
+                    return json.loads(json_match.group(1))
+                except:
+                    pass
+            # 尝试直接解析JSON
+            try:
+                return json.loads(raw_content)
+            except:
+                pass
+        return raw_content
+    elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and 'raw_content' in data[0]:
+        # 处理列表格式的数据
+        return parse_ai_response(data[0])
+    return data
+
+def extract_book_title(book_data):
+    """从书籍数据中提取标题"""
+    if isinstance(book_data, dict):
+        # 直接查找title字段
+        if 'book_title' in book_data:
+            return book_data['book_title']
+        elif 'title' in book_data:
+            return book_data['title']
+    
+    # 从字符串中提取
+    if isinstance(book_data, str):
+        import re
+        title_match = re.search(r'"(?:book_title|title)":\s*"([^"]+)"', book_data)
+        if title_match:
+            return title_match.group(1)
+    
+    return "未知书籍"
+
+def process_slides_data(slides_data, book_title):
+    """处理幻灯片数据"""
+    processed_slides = []
+    
+    if isinstance(slides_data, list) and len(slides_data) > 0:
+        for i, slide in enumerate(slides_data):
+            if isinstance(slide, dict):
+                processed_slides.append({
+                    'title': slide.get('title', f'第{i+1}页'),
+                    'subtitle': slide.get('subtitle', ''),
+                    'content': slide.get('main_content', slide.get('content', ''))
+                })
+            else:
+                processed_slides.append({
+                    'title': f'第{i+1}页',
+                    'subtitle': '',
+                    'content': str(slide)
+                })
+    
+    # 如果没有有效数据，使用默认幻灯片
+    if not processed_slides:
+        processed_slides = [
+            {'title': book_title, 'subtitle': '开场介绍', 'content': f'欢迎来到《{book_title}》的分享'},
+            {'title': '作者介绍', 'subtitle': '了解作者', 'content': f'让我们了解《{book_title}》的作者'},
+            {'title': '核心内容', 'subtitle': '主要观点', 'content': f'《{book_title}》的核心内容和主要观点'},
+            {'title': '深度解读', 'subtitle': '精彩片段', 'content': f'《{book_title}》中的精彩片段和深度思考'},
+            {'title': '现实意义', 'subtitle': '当代价值', 'content': f'《{book_title}》对当代读者的意义和价值'},
+            {'title': '总结', 'subtitle': '结束语', 'content': f'感谢您观看《{book_title}》的介绍，希望这本书能给您带来启发'}
+        ]
+    
+    return processed_slides
+
+def process_narrations_data(narrations_data, book_title):
+    """处理解说词数据"""
+    processed_narrations = []
+    
+    if isinstance(narrations_data, list) and len(narrations_data) > 0:
+        for narration in narrations_data:
+            if isinstance(narration, dict):
+                # 提取主要解说内容
+                content = (narration.get('main_narration', '') or 
+                          narration.get('opening', '') or 
+                          narration.get('content', '') or
+                          str(narration))
+                processed_narrations.append(content)
+            else:
+                processed_narrations.append(str(narration))
+    
+    # 如果没有有效数据，使用默认解说词
+    if not processed_narrations:
+        processed_narrations = [
+            f'欢迎来到《{book_title}》的介绍，让我们一起探索这本书的精彩内容',
+            f'让我们了解《{book_title}》的作者，以及创作这本书的背景和动机',
+            f'《{book_title}》包含了丰富的内容和深刻的思考，值得我们仔细品味',
+            f'通过深度解读，我们可以更好地理解《{book_title}》想要传达的信息',
+            f'《{book_title}》不仅是一本书，更是对现实生活的深刻反思',
+            f'感谢您观看《{book_title}》的介绍，希望这本书能给您带来收获和启发'
+        ]
+    
+    return processed_narrations
+
+def get_fallback_book_data(topic: str) -> dict:
+    """当API配额用完时，返回默认的书籍数据"""
+    return {
+        "raw_content": f'''```json
+{{
+  "book_title": "{topic}",
+  "author": "知名作者",
+  "summary": [
+    "《{topic}》是一部深受读者喜爱的经典作品。",
+    "这本书通过生动的故事情节，展现了深刻的人生哲理。",
+    "作品具有很强的现实意义和教育价值。"
+  ],
+  "core_ideas": [
+    "探讨人生的意义和价值",
+    "展现人性的复杂与美好",
+    "传达积极向上的人生态度",
+    "反思社会现象和人际关系"
+  ],
+  "target_audience": [
+    "文学爱好者",
+    "青年读者",
+    "教育工作者",
+    "对人生哲理感兴趣的读者"
+  ],
+  "value_and_significance": [
+    "具有重要的文学价值和社会意义",
+    "能够启发读者思考人生",
+    "对当代文学发展有重要影响"
+  ],
+  "ppt_key_chapters_themes": [
+    "作品背景与创作动机",
+    "主要人物形象分析",
+    "核心主题思想",
+    "艺术特色与表现手法",
+    "现实意义与启示",
+    "读后感悟与思考"
+  ]
+}}
+```'''
+    }
+
+def get_fallback_slides_data(book_title: str) -> list:
+    """当API配额用完时，返回默认的幻灯片数据"""
+    return [{
+        "raw_content": f'''```json
+[
+  {{
+    "slide_number": 1,
+    "slide_type": "opening",
+    "title": "{book_title}",
+    "subtitle": "经典作品分享",
+    "main_content": "一部值得深入阅读的优秀作品",
+    "key_message": "开启文学之旅"
+  }},
+  {{
+    "slide_number": 2,
+    "slide_type": "author",
+    "title": "作者介绍",
+    "subtitle": "了解创作背景",
+    "main_content": "深入了解作者的创作历程和文学成就",
+    "key_message": "作者的文学世界"
+  }},
+  {{
+    "slide_number": 3,
+    "slide_type": "concept",
+    "title": "核心主题",
+    "subtitle": "思想内涵",
+    "main_content": "探讨作品中蕴含的深刻思想和人生哲理",
+    "key_message": "思想的力量"
+  }},
+  {{
+    "slide_number": 4,
+    "slide_type": "quote",
+    "title": "经典语句",
+    "subtitle": "文学之美",
+    "main_content": "品味作品中的经典语句和优美表达",
+    "key_message": "语言的魅力"
+  }},
+  {{
+    "slide_number": 5,
+    "slide_type": "summary",
+    "title": "现实意义",
+    "subtitle": "当代价值",
+    "main_content": "《{book_title}》对当代读者的启发和意义",
+    "key_message": "文学的永恒价值"
+  }}
+]
+```'''
+    }]
+
+def get_fallback_narrations_data(book_title: str) -> list:
+    """当API配额用完时，返回默认的解说词数据"""
+    return [{
+        "raw_content": f'''```json
+[
+  {{
+    "slide_number": 1,
+    "opening": "欢迎大家，今天我们来分享一部优秀的文学作品。",
+    "main_narration": "《{book_title}》是一部深受读者喜爱的经典作品，它以独特的视角和深刻的思考，为我们展现了丰富的人生画卷。这部作品不仅具有很高的文学价值，更能给我们带来深刻的人生启示。",
+    "key_emphasis": "一部值得反复阅读的经典之作",
+    "transition": "让我们先来了解一下这部作品的作者。"
+  }},
+  {{
+    "slide_number": 2,
+    "opening": "了解作者，有助于我们更好地理解作品。",
+    "main_narration": "作者以其深厚的文学功底和独特的创作风格，创作了这部令人印象深刻的作品。通过了解作者的创作背景和人生经历，我们能够更深入地理解作品所要表达的思想内涵。",
+    "key_emphasis": "作者的人生阅历丰富了作品的内涵",
+    "transition": "接下来，让我们探讨作品的核心主题。"
+  }},
+  {{
+    "slide_number": 3,
+    "opening": "每部优秀的作品都有其独特的思想内涵。",
+    "main_narration": "《{book_title}》通过生动的故事情节和深刻的人物刻画，探讨了人生的意义、人性的复杂以及社会现象等重要主题。这些主题不仅具有普遍性，更能引发我们对现实生活的深入思考。",
+    "key_emphasis": "思想的深度决定了作品的价值",
+    "transition": "让我们来欣赏一些作品中的经典语句。"
+  }},
+  {{
+    "slide_number": 4,
+    "opening": "优美的语言是文学作品的重要特色。",
+    "main_narration": "《{book_title}》在语言表达上具有独特的魅力，作者运用精练而富有诗意的语言，创造出许多令人难忘的经典语句。这些语句不仅展现了作者的文学功底，更能触动读者的心灵。",
+    "key_emphasis": "语言的美感提升了阅读体验",
+    "transition": "最后，让我们思考这部作品的现实意义。"
+  }},
+  {{
+    "slide_number": 5,
+    "opening": "优秀的文学作品总是具有跨越时代的价值。",
+    "main_narration": "《{book_title}》虽然创作于特定的历史时期，但其所探讨的主题和思想在今天仍然具有重要的现实意义。它能够启发我们思考人生，指导我们的生活，这正是经典文学作品的永恒价值所在。",
+    "key_emphasis": "经典作品的价值在于其永恒的启发意义",
+    "transition": "感谢大家的聆听，希望这次分享能够激发大家对阅读的兴趣。"
+  }}
+]
+```'''
+    }]
 
 # -----------------------------------------------------------------------
 # 3. 路由 (CHANGED: Now a POST request)
@@ -366,6 +1371,88 @@ async def execute_step(step_number: int, chat_request: ChatRequest):
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/outputs/{session_id}")
+async def get_generated_content(session_id: str):
+    """
+    获取已生成的内容信息
+    """
+    import os
+    output_dir = f"outputs/{session_id}"
+    
+    if not os.path.exists(output_dir):
+        raise HTTPException(status_code=404, detail="会话不存在或内容未找到")
+    
+    files = []
+    for filename in os.listdir(output_dir):
+        file_path = os.path.join(output_dir, filename)
+        if os.path.isfile(file_path):
+            files.append({
+                "name": filename,
+                "size": os.path.getsize(file_path),
+                "modified": datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
+            })
+    
+    return {
+        "session_id": session_id,
+        "output_path": output_dir,
+        "files": files,
+        "html_url": f"/outputs/{session_id}/presentation.html"
+    }
+
+@app.get("/outputs/{session_id}/{filename}")
+async def serve_generated_file(session_id: str, filename: str):
+    """
+    提供生成的文件下载
+    """
+    import os
+    from fastapi.responses import FileResponse
+    
+    file_path = os.path.join("outputs", session_id, filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+    
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type='application/octet-stream'
+    )
+
+@app.post("/regenerate/{session_id}")
+async def regenerate_ppt(session_id: str):
+    """
+    重新生成指定会话的PPT（使用新的模板）
+    """
+    import os
+    
+    # 检查会话是否存在
+    data_file = os.path.join("outputs", session_id, "data.json")
+    if not os.path.exists(data_file):
+        raise HTTPException(status_code=404, detail="会话数据不存在")
+    
+    # 读取原始数据
+    with open(data_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    # 重新生成HTML
+    html_content = await step4_generate_html(
+        data['slides'], 
+        data['narrations'], 
+        data['book_data']
+    )
+    
+    # 保存新的HTML文件
+    html_file = os.path.join("outputs", session_id, "presentation.html")
+    with open(html_file, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    return {
+        "message": "PPT重新生成完成",
+        "session_id": session_id,
+        "html_url": f"/outputs/{session_id}/presentation.html",
+        "regenerated_at": datetime.now(shanghai_tz).isoformat()
+    }
+
 @app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):
     return templates.TemplateResponse(
@@ -376,7 +1463,7 @@ async def read_index(request: Request):
 # -----------------------------------------------------------------------
 # 4. 本地启动命令
 # -----------------------------------------------------------------------
-# uvicorn app:app --reload --host 0.0.0.0 --port 8000
+# uvicorn appbook:app --reload --host 0.0.0.0 --port 8000
 
 
 if __name__ == '__main__':

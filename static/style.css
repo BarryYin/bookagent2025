@@ -246,3 +246,46 @@ body.show-chat-view .chat-view { display: flex; flex-direction: column; height: 
     from { opacity: 0; transform: translate(-50%, -40%); }
     to { opacity: 1; transform: translate(-50%, -50%); }
 }
+/* 日志显示样式 */
+.log-container {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+    font-size: 0.9em !important;
+    line-height: 1.4 !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin-top: 8px !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    white-space: pre-wrap !important;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.thinking-complete {
+    border-left: 4px solid #34C759;
+    background: rgba(52, 199, 89, 0.05) !important;
+}
+
+@keyframes fadeInLog {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* 日志文本样式 */
+.log-container div {
+    margin-bottom: 2px;
+    opacity: 0;
+    animation: fadeInLog 0.3s ease forwards;
+}
+
+/* 特殊日志样式 */
+.log-container div:contains("🤔") { color: #007AFF; }
+.log-container div:contains("✅") { color: #34C759; }
+.log-container div:contains("❌") { color: #FF3B30; }
+.log-container div:contains("🎉") { color: #FF9500; font-weight: 500; }

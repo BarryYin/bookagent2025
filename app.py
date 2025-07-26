@@ -5,7 +5,7 @@ import asyncio
 import json
 import os
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, AsyncGenerator
 
 import pytz
 from fastapi import FastAPI, Request, HTTPException
@@ -14,10 +14,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from openai import AsyncOpenAI, OpenAIError
 
 from models import BookInfo, BookIntroductionRequest, GenerationProgress, ProcessContext
 from processors import ProcessOrchestrator
 
+try:
+    import google.generativeai as genai
+except ModuleNotFoundError:
+    from google import genai
 # -----------------------------------------------------------------------
 # 0. 配置
 # -----------------------------------------------------------------------
@@ -28,10 +33,32 @@ try:
     credentials = json.load(open("credentials.json"))
     API_KEY = credentials["API_KEY"]
     BASE_URL = credentials.get("BASE_URL", "")
+    MODEL = credentials.get("MODEL", "gemini-2.5-pro")
 except (FileNotFoundError, json.JSONDecodeError, KeyError):
     print("警告: credentials.json 文件不存在或格式错误，将使用模拟数据")
     API_KEY = "mock_api_key"
     BASE_URL = ""
+    MODEL = "gemini-2.5-pro"
+
+if API_KEY.startswith("sk-"):
+    # 为 OpenRouter 添加应用标识
+    extra_headers = {}
+    if "openrouter.ai" in BASE_URL.lower():
+        extra_headers = {
+            "HTTP-Referer": "https://github.com/fogsightai/fogsight",
+            "X-Title": "Fogsight - AI Animation Generator"
+        }
+    
+    client = AsyncOpenAI(
+        api_key=API_KEY, 
+        base_url=BASE_URL,
+        default_headers=extra_headers
+    )
+    USE_GEMINI = False
+else:
+    os.environ["GEMINI_API_KEY"] = API_KEY
+    gemini_client = genai.Client()
+    USE_GEMINI = True
 
 # 检查API密钥
 if API_KEY.startswith("sk-REPLACE_ME"):
@@ -129,6 +156,81 @@ async def generate_book_introduction_stream(
     
     yield 'data: {"event":"[DONE]"}\n\n'
 
+async def llm_event_stream(
+    topic: str,
+    history: Optional[List[dict]] = None,
+    model: str = None, # Will use MODEL from config if not specified
+) -> AsyncGenerator[str, None]:
+    """动画生成的流式处理函数"""
+    
+    # Use configured model if not specified
+    if model is None:
+        model = MODEL
+    
+    # The system prompt is now more focused
+    system_prompt = f"""请你生成一个非常精美的动态动画,讲讲 {topic}
+要动态的,要像一个完整的,正在播放的视频。包含一个完整的过程，能把知识点讲清楚。
+页面极为精美，好看，有设计感，同时能够很好的传达知识。知识和图像要准确
+附带一些旁白式的文字解说,从头到尾讲清楚一个小的知识点
+不需要任何互动按钮,直接开始播放
+使用和谐好看，广泛采用的浅色配色方案，使用很多的，丰富的视觉元素。双语字幕
+**请保证任何一个元素都在一个2k分辨率的容器中被摆在了正确的位置，避免穿模，字幕遮挡，图形位置错误等等问题影响正确的视觉传达**
+html+css+js+svg，放进一个html里"""
+
+    if USE_GEMINI:
+        try:
+            full_prompt = system_prompt + "\n\n" + topic
+            if history:
+                history_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+                full_prompt = history_text + "\n\n" + full_prompt
+            
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: gemini_client.models.generate_content(
+                    model=model, 
+                    contents=full_prompt
+                )
+            )
+            
+            text = response.text
+            chunk_size = 50
+            
+            for i in range(0, len(text), chunk_size):
+                chunk = text[i:i+chunk_size]
+                payload = json.dumps({"token": chunk}, ensure_ascii=False)
+                yield f"data: {payload}\n\n"
+                await asyncio.sleep(0.05)
+                
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            return
+    else:
+        messages = [
+            {"role": "system", "content": system_prompt},
+            *history,
+            {"role": "user", "content": topic},
+        ]
+
+        try:
+            response = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                stream=True,
+                temperature=0.8, 
+            )
+        except OpenAIError as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            return
+
+        async for chunk in response:
+            token = chunk.choices[0].delta.content or ""
+            if token:
+                payload = json.dumps({"token": token}, ensure_ascii=False)
+                yield f"data: {payload}\n\n"
+                await asyncio.sleep(0.001)
+
+    yield 'data: {"event":"[DONE]"}\n\n'
+
 # -----------------------------------------------------------------------
 # 4. API路由
 # -----------------------------------------------------------------------
@@ -145,6 +247,33 @@ async def generate_book_introduction(
         try:
             async for chunk in generate_book_introduction_stream(request):
                 if await http_request.is_disconnected():
+                    break
+                yield chunk
+        except Exception as e:
+            yield f"data: {json.dumps({'event': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+
+    headers = {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+    }
+    return StreamingResponse(event_generator(), headers=headers)
+
+@app.post("/generate")
+async def generate_animation(
+    request: Request,
+):
+    """
+    生成动画的API端点 (兼容原有接口)
+    """
+    body = await request.json()
+    topic = body.get("topic", "")
+    history = body.get("history", [])
+    
+    async def event_generator():
+        try:
+            async for chunk in llm_event_stream(topic, history):
+                if await request.is_disconnected():
                     break
                 yield chunk
         except Exception as e:

@@ -66,28 +66,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitButton = isInitial
             ? initialForm?.querySelector('button')
             : chatForm?.querySelector('button');
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.classList.add('disabled');
-        }
+        
         const input = isInitial ? initialInput : chatInput;
         const topic = input.value.trim();
         if (!topic) return;
 
-        submitButton.disabled = true;
-        submitButton.classList.add('disabled');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.classList.add('disabled');
+        }
 
         if (isInitial) switchToChatView();
 
         conversationHistory.push({ role: 'user', content: topic });
-        startGeneration(topic);
+        startGeneration(topic, submitButton);  // 传递submitButton参数
         input.value = '';
         if (isInitial) placeholderContainer?.classList?.remove('hidden');
     }
 
-    async function startGeneration(topic) {
+    async function startGeneration(topic, submitButton) {
         appendUserMessage(topic);
-        const agentThinkingMessage = appendAgentStatus(translations.agentThinking[currentLang]);
+        let agentThinkingMessage = appendAgentStatus(translations.agentThinking[currentLang]);
         accumulatedCode = '';
         let inCodeBlock = false;
         let codeBlockElement = null;
@@ -129,11 +128,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = JSON.parse(jsonStr);
                     if (data.error) throw new Error(data.error);
 
+                    // 处理日志消息
+                    if (data.log) {
+                        if (agentThinkingMessage) {
+                            updateThinkingMessage(agentThinkingMessage, data.log);
+                        } else {
+                            agentThinkingMessage = appendAgentStatus(data.log);
+                        }
+                        continue;
+                    }
+
+                    // 处理状态消息
+                    if (data.status) {
+                        if (agentThinkingMessage) {
+                            updateThinkingMessage(agentThinkingMessage, data.status);
+                        }
+                        continue;
+                    }
+
                     const token = data.token || '';
 
                     if (!inCodeBlock && token.includes('```')) {
                         inCodeBlock = true;
-                        if (agentThinkingMessage) agentThinkingMessage.remove();
+                        if (agentThinkingMessage) {
+                            // 将思考消息转换为日志显示
+                            convertThinkingToLog(agentThinkingMessage);
+                            agentThinkingMessage = null;
+                        }
                         codeBlockElement = appendCodeBlock();
                         const contentAfterMarker = token.substring(token.indexOf('```') + 3).replace(/^html\n/, '');
                         updateCodeBlock(codeBlockElement, contentAfterMarker);
@@ -162,11 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             appendErrorMessage(translations.errorMessage[currentLang]);  // 保留 chat-log 中的提示
         } finally {
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.classList.remove('disabled');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('disabled');
+            }
         }
-    }
     }
 
     function switchToChatView() {
@@ -194,6 +215,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const appendAgentStatus = (text) => appendFromTemplate(templates.status, text);
     const appendErrorMessage = (text) => appendFromTemplate(templates.error, text);
     const appendCodeBlock = () => appendFromTemplate(templates.code);
+
+    // 日志处理函数
+    function updateThinkingMessage(thinkingElement, logText) {
+        const logContainer = thinkingElement.querySelector('.log-container');
+        if (!logContainer) {
+            // 创建日志容器
+            const container = document.createElement('div');
+            container.className = 'log-container';
+            container.style.cssText = `
+                font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+                font-size: 0.9em;
+                line-height: 1.4;
+                background: rgba(0, 0, 0, 0.05);
+                border-radius: 8px;
+                padding: 12px;
+                margin-top: 8px;
+                max-height: 300px;
+                overflow-y: auto;
+                white-space: pre-wrap;
+            `;
+            thinkingElement.appendChild(container);
+        }
+        
+        const container = thinkingElement.querySelector('.log-container');
+        const logLine = document.createElement('div');
+        logLine.textContent = logText;
+        logLine.style.cssText = `
+            margin-bottom: 2px;
+            opacity: 0;
+            animation: fadeInLog 0.3s ease forwards;
+        `;
+        container.appendChild(logLine);
+        
+        // 自动滚动到底部
+        container.scrollTop = container.scrollHeight;
+        scrollToBottom();
+    }
+
+    function convertThinkingToLog(thinkingElement) {
+        // 将思考状态转换为完成状态
+        const dotsElement = thinkingElement.querySelector('.thinking-dots');
+        if (dotsElement) {
+            dotsElement.style.display = 'none';
+        }
+        
+        const statusText = thinkingElement.querySelector('p');
+        if (statusText) {
+            statusText.textContent = '✅ 思考与规划完成，开始生成内容...';
+        }
+        
+        // 添加完成样式
+        thinkingElement.classList.add('thinking-complete');
+    }
 
     function updateCodeBlock(codeBlockElement, text) {
         const codeElement = codeBlockElement.querySelector('code');

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活着 - 余华</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #FFFFFF; color: #1D1D1F; overflow: hidden; }
+        .presentation-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        .slide { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transform: translateX(100%); transition: all 0.5s ease; padding: 40px; box-sizing: border-box; text-align: center; }
+        .slide.active { opacity: 1; transform: translateX(0); }
+        .slide h1 { font-size: 4rem; font-weight: 300; margin-bottom: 20px; }
+        .slide h2 { font-size: 2rem; font-weight: 400; color: #86868B; margin-bottom: 30px; }
+        .slide p { font-size: 1.5rem; line-height: 1.6; max-width: 800px; }
+        .navigation { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; z-index: 1000; }
+        .navigation button { background: #007AFF; color: white; border: none; padding: 12px 24px; margin: 0 15px; border-radius: 25px; cursor: pointer; font-size: 1.2rem; }
+        .navigation button:disabled { background: #86868B; cursor: not-allowed; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.5); margin: 0 6px; cursor: pointer; }
+        .dot.active { background: #007AFF; }
+        .narration-panel { position: fixed; top: 30px; right: 30px; width: 350px; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); border-radius: 16px; padding: 20px; z-index: 1000; text-align: left; }
+        .narration-panel p { font-size: 1rem; line-height: 1.4; }
+        .layout-image-left { display: flex; align-items: center; }
+        .layout-image-left img { width: 40%; margin-right: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .layout-image-left div { width: 60%; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 根据slides数据生成每一页 -->
+        <div class="slide active" data-slide="0">
+            <h1>活着</h1>
+            <h2>一部余华的经典之作</h2>
+        </div>
+        <div class="slide" data-slide="1">
+            <div class="layout-image-left">
+                <img src="author_image.jpg" alt="余华">
+                <div>
+                    <h1>余华</h1>
+                    <h2>中国当代著名作家</h2>
+                    <p>作品被翻译成多种语言，影响深远。<br>以深刻的洞察力和独特的叙事风格著称。</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide" data-slide="2">
+            <h1>活着，本身</h1>
+            <h2>就是一种意义</h2>
+            <p>无论生活多么艰难，活着，并努力地活着，这本身就足够有意义。</p>
+        </div>
+        <div class="slide" data-slide="3">
+            <h1>时代的烙印</h1>
+            <h2>个人命运与时代</h2>
+            <p>内战：福贵的家产流失<br>大跃进：有庆的意外离世<br>文革：凤霞的艰难生活</p>
+        </div>
+        <div class="slide" data-slide="4">
+            <h1>经典语录</h1>
+            <h2></h2>
+            <p style="font-style: italic;">“没有什么比活着更快乐，也没有什么比活着更艰辛。”</p>
+        </div>
+        <div class="slide" data-slide="5">
+            <h1>苦难的意义</h1>
+            <h2>直面苦难，方能成长</h2>
+            <p>苦难是普遍存在的，接受它，并在其中寻找力量。</p>
+        </div>
+        <div class="slide" data-slide="6">
+            <h1>家庭的消逝</h1>
+            <h2>亲人的离去</h2>
+            <p>死亡人数：5/6</p>
+        </div>
+        <div class="slide" data-slide="7">
+            <h1>反思与启示</h1>
+            <h2>《活着》的价值</h2>
+            <p>直面历史，珍爱生命，感受人性的光辉。</p>
+        </div>
+    </div>
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    <div class="narration-panel" id="narrationPanel">
+        <p id="narrationText">Good morning, everyone. Today, we're not unveiling a new device, but exploring a timeless piece of literature. We're diving deep into "To Live" by Yu Hua, a story that resonates with the core of human experience. It's a journey through hardship, resilience, and ultimately, the profound value of life itself. This isn't just a story; it's a mirror reflecting our own struggles and triumphs. At its heart, "To Live" reminds us of the unwavering significance and value of life. Let's begin by acknowledging the visionary who brought this masterpiece to life.</p>
+    </div>
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const narrationPanel = document.getElementById('narrationPanel');
+        const narrationTextElement = document.getElementById('narrationText');
+
+        const narrations = [
+            "Good morning, everyone. Today, we're not unveiling a new device, but exploring a timeless piece of literature. We're diving deep into \"To Live\" by Yu Hua, a story that resonates with the core of human experience. It's a journey through hardship, resilience, and ultimately, the profound value of life itself. This isn't just a story; it's a mirror reflecting our own struggles and triumphs. At its heart, \"To Live\" reminds us of the unwavering significance and value of life. Let's begin by acknowledging the visionary who brought this masterpiece to life.",
+            "Meet Yu Hua, a literary giant from China. His work transcends cultural boundaries, translated into countless languages, touching hearts worldwide. Yu Hua's unique storytelling blends sharp observation with raw emotion, creating narratives that linger long after you've turned the final page. He gives voice to the voiceless and light to the darkness. Understanding Yu Hua's perspective is key to unlocking the depth of \"To Live\". But what exactly is the core message of this powerful novel?",
+            "What is truly the essence of a life? The central theme of \"To Live\" is simple, yet profound: Living, *itself*, is an inherent value. Life may throw storms at you but to persevere, to strive, to simply *be*… is meaningful. In the face of adversity, existence becomes not just survival, but a testament to the human spirit. Life's worth is not defined by its ease, but by its endurance. The story unfolds against a backdrop of significant change, as the forces of the epoch press upon one ordinary family.",
+            "The times, they are a-changin'. Yu Hua skillfully weaves the story of Xu Fugui with the turbulent backdrop of Chinese history. The Civil War sweeps away his family's wealth; The Great Leap Forward leads to the tragic death of his son, Youqing; and the Cultural Revolution brings hardship to his daughter, Fengxia. His family's narrative becomes a metaphor for the entire country. The story demonstrates that our lives don't exist in a vacuum, and are intertwined with historical forces. So, how does one describe all of this suffering?",
+            "Here is a line that encapsulates the soul of this book: The text reads: 'Nothing is more joyful than living, and nothing is more painful than living.' This statement captures the dual nature of existence, the co-existence of joy and pain. It's a poignant reminder that within the struggle, there is still a profound beauty and a reason to keep going. What can we learn from this experience?",
+            "Let’s now discuss our response to our struggles. The novel doesn’t shy away from the dark side of existence. It acknowledges that suffering is inevitable. To face these struggles, and grow, we must accept that suffering is a fact of life. In adversity, the strength of the human spirit comes alive. It is not only important to accept hardship, but vital to learn from it, and to grow from it. Another critical factor is the theme of family. How does the story address this point?",
+            "At the book's core is a chronicle of tragedy. In \"To Live,\" death casts a long shadow. Out of a family of six, five meet tragic ends. This striking statistic underscores the profound sense of loss that pervades the novel. It highlights how precious and fragile each life is. The narrative emphasizes the importance of family and the void created by loss. How will this book influence our lives?",
+            "So, what is the key takeaway? \"To Live\" is more than just a story. It's a call to embrace life, to learn from the past, and to cherish the present. Yu Hua's masterpiece invites us to confront difficult truths, appreciate the small joys, and recognize the enduring strength within ourselves. This story makes you understand how powerful resilience can be. Ultimately, \"To Live\" encourages us to value life, learn to cherish our relationships with family and friends and appreciate the beauty of the human spirit. Thank you."
+        ];
+        
+        // 生成导航点
+        const dotsContainer = document.getElementById('dotsContainer');
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            if (n < 0 || n >= totalSlides) return;
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[n].classList.add('active');
+            currentSlide = n;
+            updateUI(n);
+        }
+        
+        function nextSlide() { if (currentSlide < totalSlides - 1) showSlide(currentSlide + 1); }
+        function prevSlide() { if (currentSlide > 0) showSlide(currentSlide - 1); }
+        
+        function updateUI(n) {
+            document.getElementById('prevButton').disabled = n === 0;
+            document.getElementById('nextButton').disabled = n === totalSlides - 1;
+            document.querySelectorAll('.dot').forEach((dot, i) => dot.classList.toggle('active', i === n));
+            updateNarration(n);
+        }
+
+        function updateNarration(slideIndex) {
+            narrationTextElement.textContent = narrations[slideIndex];
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+        
+        updateUI(0);
+    </script>
+</body>
+</html>

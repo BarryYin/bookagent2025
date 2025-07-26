@@ -1,0 +1,416 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我与地坛 - 史铁生</title>
+    <style>
+        /* 苹果发布会风格 CSS */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            background-color: #FFFFFF;
+            color: #1D1D1F;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 隐藏滚动条 */
+        }
+
+        .slides-container {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            width: 100%;
+            height: 100vh;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* 幻灯片内容样式 */
+        .slide h1 {
+            font-family: "SF Pro Display", sans-serif;
+            font-size: 72px;
+            font-weight: 200;
+            margin-bottom: 10px;
+        }
+
+        .slide h2 {
+            font-family: "SF Pro Display", sans-serif;
+            font-size: 48px;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 20px;
+        }
+
+        .slide p {
+            font-family: "SF Pro Text", sans-serif;
+            font-size: 28px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .slide img {
+            max-width: 60%;
+            max-height: 40%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 导航样式 */
+        .navigation {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #86868B;
+            margin: 0 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-dot.active {
+            background-color: #007AFF;
+        }
+
+        /* 解说词样式 */
+        .narration-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px); /* 毛玻璃效果 */
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            font-size: 18px;
+            line-height: 1.4;
+            color: #1D1D1F;
+            z-index: 10;
+        }
+
+        /* 特殊幻灯片样式 */
+        .opening-slide {
+            background-color: #F5F5F7;
+        }
+
+        .author-slide {
+            background-color: #FFFFFF;
+        }
+
+        .concept-slide {
+            background-color: #E8F5E9; /* 浅绿色 */
+        }
+
+        .data-slide {
+            background-color: #1A237E; /* 深蓝色 */
+            color: #FFFFFF;
+        }
+
+        .quote-slide {
+            background-color: #FFF8E1; /* 米色 */
+        }
+
+        .summary-slide {
+            background-color: #F5F5F5;
+        }
+        .narration-panel {
+            transition: opacity 0.3s ease; /* 添加过渡效果 */
+        }
+        .hidden {
+            opacity: 0;
+            pointer-events: none; /* 阻止点击 */
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .kenburns {
+            animation: kenburns-animation 15s ease-out forwards;
+            transform-origin: center; /* 设置缩放中心 */
+            overflow: hidden; /* 确保图像不会超出容器 */
+        }
+        @keyframes kenburns-animation {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.2);
+            }
+        }
+    
+        /* 确保分页显示正确 */
+        .slide {
+            position: absolute !important;
+            width: 100% !important;
+            height: 100% !important;
+            opacity: 0 !important;
+            transform: translateX(100%) !important;
+            transition: all 0.5s ease !important;
+        }
+        
+        .slide.active {
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+        }
+        
+        .navigation {
+            z-index: 9999 !important;
+        }
+        
+        .narration-panel {
+            z-index: 9999 !important;
+        }
+    
+    </style>
+</head>
+<body>
+
+<div class="slides-container">
+    <div class="slide opening-slide fade-in" data-slide-number="1">
+        <h1>我与地坛</h1>
+        <h2>史铁生</h2>
+        <p>一段关于生命、命运与希望的对话</p>
+    </div>
+    <div class="slide author-slide" data-slide-number="2">
+        <h1>史铁生</h1>
+        <h2>一位用文字探索生命的哲人</h2>
+        <p>中国当代著名作家、散文家。其作品充满对生命、苦难和人生的深刻思考，感动了无数读者。</p>
+        <img src="https://www.eeo.cn/res/article/image/2021/10/19/616de03f0302f.jpg" alt="史铁生肖像">
+    </div>
+    <div class="slide concept-slide" data-slide-number="3">
+        <h1>精神家园</h1>
+        <h2>地坛：疗愈与思考之地</h2>
+        <p>地坛不仅仅是一个公园，它是史铁生的精神寄托，一个观察、思考和写作的空间。</p>
+        <img src="https://s.isanji.cn/uploads/allimg/201104/1-201104225259153.jpg" alt="地坛">
+    </div>
+    <div class="slide data-slide" data-slide-number="4">
+        <h1>十五年</h1>
+        <h2>地坛陪伴的漫长岁月</h2>
+        <p>史铁生在地坛度过了十五年，这段时间成为他生命中重要的组成部分。</p>
+    </div>
+    <div class="slide quote-slide" data-slide-number="5">
+        <h1>经典语句</h1>
+        <h2>那些触动心灵的文字</h2>
+        <p>“死是一件不必急于求成的事，死是一个必然会降临的节日。”</p>
+    </div>
+    <div class="slide concept-slide" data-slide-number="6">
+        <h1>苦难与生命</h1>
+        <h2>在绝望中寻找希望</h2>
+        <p>苦难是生命的一部分，但它也可以激发人的潜能，让人更加深刻地认识自己和世界。</p>
+        <img src="https://www.sina.com.cn/dy/slidenews/28_img/2015_10/150_2527571_13934307824273531993.jpg" alt="破土而出的嫩芽">
+    </div>
+    <div class="slide quote-slide" data-slide-number="7">
+        <h1>母爱</h1>
+        <h2>永恒的光辉</h2>
+        <p>“母亲生我养我，爱我至深，可我给她什么？我只有一颗叛逆的心。”</p>
+    </div>
+    <div class="slide summary-slide" data-slide-number="8">
+        <h1>价值与意义</h1>
+        <h2>一次深刻的生命体验</h2>
+        <p>《我与地坛》是一部感人至深的文学作品，它引发了人们对生命价值和意义的深入思考。 推荐阅读，感受文字的力量！</p>
+    </div>
+</div>
+
+<div class="navigation">
+    <div class="nav-dot active" data-slide="1"></div>
+    <div class="nav-dot" data-slide="2"></div>
+    <div class="nav-dot" data-slide="3"></div>
+    <div class="nav-dot" data-slide="4"></div>
+    <div class="nav-dot" data-slide="5"></div>
+    <div class="nav-dot" data-slide="6"></div>
+    <div class="nav-dot" data-slide="7"></div>
+    <div class="nav-dot" data-slide="8"></div>
+</div>
+
+<div class="narration-panel fade-in">
+    <p id="narration-text"></p>
+</div>
+
+<script>
+    const slidesContainer = document.querySelector('.slides-container');
+    const slides = document.querySelectorAll('.slide');
+    const navDots = document.querySelectorAll('.nav-dot');
+    const narrationPanel = document.querySelector('.narration-panel');
+    const narrationText = document.getElementById('narration-text');
+
+    let currentSlide = 1; // 当前幻灯片编号
+
+    const narrations = [
+        {
+            slide_number: 1,
+            opening: "Good morning, everyone. Today, we're not just talking about a book. We're talking about a journey.",
+            main_narration: "《我与地坛》，史铁生的经典之作。这是一部超越时代的作品，讲述了一个人与一座公园的故事，一段关于生命、命运与希望的深刻对话。它触动了无数读者的心灵，成为了文学史上的永恒经典。我们将一起探索这本书背后的力量，发现它带给我们的启示。",
+            key_emphasis: "《我与地坛》：经典文学的永恒魅力，历久弥新。",
+            transition: "接下来，让我们一起走近史铁生，了解这位用文字探索生命的哲人。",
+            timing: "0:30",
+            tone: "庄重，充满期待"
+        },
+        {
+            slide_number: 2,
+            opening: "To truly understand the book, you need to understand the author.",
+            main_narration: "史铁生，中国当代文学的瑰宝。他的一生充满了挑战，但他用文字将苦难转化为力量。他用细腻的笔触，描绘了对生命、苦难和人生的深刻思考。他的作品不仅仅是文学，更是一种哲学，一种对生命意义的追问。他的文字影响着一代又一代的读者，鼓舞着我们面对人生的困境。",
+            key_emphasis: "了解史铁生，理解作品，感受他文字中蕴含的哲思。",
+            transition: "而《我与地坛》中，地坛不仅仅是一个地点，更是一个...",
+            timing: "0:45",
+            tone: "尊敬，饱含深情"
+        },
+        {
+            slide_number: 3,
+            opening: "What if a place could heal you? What if it became your sanctuary?",
+            main_narration: "地坛，对于史铁生而言，不仅仅是一个公园，更是他的精神家园。在这里，他找到了内心的平静，完成了对生命的思考与沉淀。它是一个观察、思考和写作的空间，一个疗愈伤痛、重塑自我的地方。地坛成为了史铁生的精神寄托，见证了他的痛苦与成长。",
+            key_emphasis: "地坛：史铁生的精神家园，寻找内心的平静。",
+            transition: "而史铁生与地坛的这段缘分，持续了整整...",
+            timing: "0:40",
+            tone: "充满敬意，带有一丝神秘"
+        },
+        {
+            slide_number: 4,
+            opening: "Think about it: fifteen years. What can you achieve in that time?",
+            main_narration: "整整十五年！史铁生在地坛度过了他生命中重要的十五年。这十五年，是他与自己、与命运对话的十五年。时间轴上的每一个小圆点，都代表着他在地坛的思考与感悟，每一个圆点都凝聚着他与地坛的深刻羁绊。这十五年，在地坛的陪伴下，他完成了自我救赎，成就了文学经典。",
+            key_emphasis: "时间的沉淀与思考，十五年，成就一段不朽的文学传奇。",
+            transition: "而这十五年的思考，也汇聚成了许多触动心灵的文字...",
+            timing: "0:50",
+            tone: "激动，充满力量"
+        },
+        {
+            slide_number: 5,
+            opening: "These words... they stay with you.",
+            main_narration: "“死是一件不必急于求成的事，死是一个必然会降临的节日。” 简单的一句话，却蕴含着对生命深刻的理解。史铁生的文字，总能以最朴实的语言，触动我们内心最柔软的地方。他用文字的力量，教会我们如何面对死亡，如何珍爱生命。他的文字，值得我们反复品味，不断思考。",
+            key_emphasis: "体会文字的力量，感受史铁生带给我们的生命启迪。",
+            transition: "而面对人生的终极命题，史铁生也在不断思考...",
+            timing: "0:35",
+            tone: "平静，但充满哲理"
+        },
+        {
+            slide_number: 6,
+            opening: "What happens when life throws you a curveball?",
+            main_narration: "苦难，是生命中不可避免的一部分。但史铁生告诉我们，苦难也可以成为一种力量，一种让我们更加深刻地认识自己和世界的力量。他用自己的经历告诉我们，即使身处绝望，也要努力寻找希望，即使身处黑暗，也要相信光明终将到来。他让我们明白，生命的意义在于经历和体验，在于我们如何面对苦难，如何拥抱生命。",
+            key_emphasis: "拥抱苦难，迎接新生。在绝望中寻找希望，在黑暗中看到光明。",
+            transition: "而在这段充满苦难与希望的旅程中，还有一种力量始终陪伴着史铁生...",
+            timing: "0:45",
+            tone: "充满希望，鼓舞人心"
+        },
+        {
+            slide_number: 7,
+            opening: "There's no bond quite like it.",
+            main_narration: "母爱，是永恒的光辉。史铁生对母亲的描写，充满了愧疚与感恩。“母亲生我养我，爱我至深，可我给她什么？我只有一颗叛逆的心。” 这句简单的句子，道出了多少子女的心声。母爱是生命中最重要的力量，它给予我们支持和希望，让我们在绝望中看到光明。让我们珍惜这份伟大的爱，感恩母亲的付出。",
+            key_emphasis: "感受母爱的伟大，珍惜与母亲相处的每一刻。",
+            transition: "最后，让我们一起回顾这本书的价值与意义...",
+            timing: "0:40",
+            tone: "温柔，充满感恩"
+        },
+        {
+            slide_number: 8,
+            opening: "So, what's the takeaway?",
+            main_narration: "《我与地坛》不仅仅是一本书，更是一次深刻的生命体验。它引发了我们对生命价值和意义的深入思考，它让我们更加珍惜生命，更加热爱生活。它是一部感人至深的文学作品，一部值得我们反复阅读的经典之作。我们强烈推荐您阅读这本书，感受文字的力量，感悟人生的真谛。",
+            key_emphasis: "阅读经典，感悟人生。《我与地坛》，值得您细细品味。",
+            transition: "Thank you.",
+            timing: "0:30",
+            tone: "真诚，充满力量"
+        }
+    ];
+
+    function goToSlide(slideNumber) {
+        if (slideNumber < 1 || slideNumber > slides.length) {
+            return;
+        }
+        currentSlide = slideNumber;
+        const translateValue = -(slideNumber - 1) * 100 + '%';
+        slidesContainer.style.transform = 'translateX(' + translateValue + ')';
+
+        // 更新导航点状态
+        navDots.forEach(dot => dot.classList.remove('active'));
+        navDots[slideNumber - 1].classList.add('active');
+
+        // 更新解说词
+        updateNarration(slideNumber);
+
+        //重新添加fade-in,来确保动画触发
+         slides.forEach(slide => slide.classList.remove('fade-in'));
+         setTimeout(() => {
+            slides[slideNumber - 1].classList.add('fade-in');
+
+         },10);
+
+    }
+
+    function nextSlide() {
+        goToSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+        goToSlide(currentSlide - 1);
+    }
+
+    function updateNarration(slideNumber) {
+        const narration = narrations.find(n => n.slide_number === slideNumber);
+        if (narration) {
+            narrationText.textContent = narration.main_narration;
+            //添加淡入效果
+            narrationPanel.classList.remove('fade-in');
+                setTimeout(() => {
+                    narrationPanel.classList.add('fade-in');
+                }, 50);
+
+        } else {
+            narrationText.textContent = '';
+        }
+    }
+
+    // 导航点点击事件
+    navDots.forEach(dot => {
+        dot.addEventListener('click', function() {
+            const slideNumber = parseInt(this.dataset.slide);
+            goToSlide(slideNumber);
+        });
+    });
+
+    // 键盘导航
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'ArrowLeft') {
+            prevSlide();
+        } else if (event.key === 'ArrowRight') {
+            nextSlide();
+        }
+    });
+
+    // 初始化
+    goToSlide(1);
+
+        // 确保初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('PPT初始化开始...');
+            updateDots(currentSlide);
+            updateNarration(currentSlide);
+            updateNavigationButtons();
+            console.log('PPT初始化完成，当前页:', currentSlide + 1, '/', totalSlides);
+        });
+    
+    </script>
+
+</body>
+</html>

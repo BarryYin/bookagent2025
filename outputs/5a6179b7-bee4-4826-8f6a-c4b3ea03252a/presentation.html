@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>活着 - 生命的韧性</title>
+  <style>
+    /* 苹果风格CSS */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #FFFFFF;
+      color: #1D1D1F;
+      overflow: hidden; /* 隐藏滚动条 */
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    .slide {
+      display: none;
+      width: 80%; /* 调整宽度 */
+      max-width: 1200px;
+      height: 80%; /* 调整高度 */
+      padding: 20px;
+      border-radius: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      background-color: rgba(255, 255, 255, 0.8); /* 添加透明度 */
+      backdrop-filter: blur(20px); /* 毛玻璃效果 */
+      text-align: center;
+      overflow: auto; /* 允许内容滚动 */
+      position: relative; /* 相对定位，方便动画定位 */
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; /* 动画 */
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px); /* 从下方进入 */
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .slide h1 {
+      font-family: "SF Pro Display", sans-serif;
+      font-size: 72px;
+      font-weight: 400;
+      color: #1D1D1F;
+      margin-bottom: 10px;
+    }
+
+    .slide h2 {
+      font-family: "SF Pro Display", sans-serif;
+      font-size: 48px;
+      font-weight: 400;
+      color: #86868B;
+      margin-bottom: 20px;
+    }
+
+    .slide p {
+      font-family: "SF Pro Text", sans-serif;
+      font-size: 28px;
+      color: #1D1D1F;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    /* 其他元素样式 */
+    .author-photo {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* 添加阴影 */
+    }
+
+    .time-chart {
+      width: 80%;
+      height: 300px;
+      background-color: #F5F5F7;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .quote {
+      font-style: italic;
+      font-size: 36px;
+      color: #1D1D1F;
+      margin-bottom: 20px;
+    }
+
+    .family-photo {
+      width: 60%;
+      max-width: 600px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .cta-button {
+      background: linear-gradient(to right, #007AFF, #29ABE2);
+      color: #FFFFFF;
+      font-size: 24px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 缓动函数 */
+    }
+
+    .cta-button:hover {
+      transform: scale(1.05);
+    }
+
+    /* 导航 */
+    .navigation {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+
+    .navigation-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #86868B;
+      cursor: pointer;
+      transition: background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .navigation-dot.active {
+      background-color: #007AFF;
+    }
+
+    /* 解说词 */
+    .narration {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      padding: 15px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      font-size: 16px;
+      color: #1D1D1F;
+    }
+
+    /* 箭头 */
+    .arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 30px;
+        color: #86868B;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.5);
+        transition: color 0.3s;
+        z-index: 10;
+    }
+
+    .arrow:hover {
+        color: #007AFF;
+    }
+
+    .arrow.left {
+        left: 20px;
+    }
+
+    .arrow.right {
+        right: 20px;
+    }
+
+     /* Opening Slide Specific Styles */
+     .opening-slide {
+      background: linear-gradient(to bottom, #ADD8E6, #FFFFFF); /* Light Blue to White */
+     }
+
+    /* Add Responsive Design */
+    @media (max-width: 768px) {
+      .slide {
+        width: 90%;
+        height: 70%;
+        padding: 10px;
+      }
+
+      .slide h1 {
+        font-size: 48px;
+      }
+
+      .slide h2 {
+        font-size: 32px;
+      }
+
+      .slide p {
+        font-size: 20px;
+      }
+
+      .narration {
+        width: 200px;
+        font-size: 14px;
+      }
+
+      .arrow {
+          font-size: 20px;
+          padding: 5px;
+      }
+
+      .navigation {
+        bottom: 10px;
+      }
+
+      .navigation-dot {
+        width: 8px;
+        height: 8px;
+      }
+
+      .cta-button {
+        font-size: 18px;
+        padding: 10px 20px;
+      }
+    }
+
+        /* 确保分页显示正确 */
+        .slide {
+            position: absolute !important;
+            width: 100% !important;
+            height: 100% !important;
+            opacity: 0 !important;
+            transform: translateX(100%) !important;
+            transition: all 0.5s ease !important;
+        }
+        
+        .slide.active {
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+        }
+        
+        .navigation {
+            z-index: 9999 !important;
+        }
+        
+        .narration-panel {
+            z-index: 9999 !important;
+        }
+    
+    </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="arrow left" onclick="prevSlide()">&#9664;</div>
+    <div class="arrow right" onclick="nextSlide()">&#9654;</div>
+
+    <!-- 幻灯片 -->
+    <div class="slide opening-slide" id="slide1">
+      <h1>活着</h1>
+      <h2>感受生命的韧性</h2>
+      <p></p>
+    </div>
+
+    <div class="slide" id="slide2">
+      <h1>余华</h1>
+      <h2>中国当代文学巨匠</h2>
+      <img src="https://www.google.com/logos/doodles/2021/yu-huas-61st-birthday-6724563501214004-law.gif" alt="余华" class="author-photo">
+      <p>余华，中国当代著名作家，代表作《活着》、《许三观卖血记》。以细腻的笔触，展现底层人民的苦难与坚韧。</p>
+    </div>
+
+    <div class="slide" id="slide3">
+      <h1>韧性</h1>
+      <h2>在苦难中绽放</h2>
+      <p>即使面对无尽的苦难，生命依然可以顽强地活着，这本身就是一种意义。</p>
+    </div>
+
+    <div class="slide" id="slide4">
+      <h1>时代</h1>
+      <h2>洪流下的命运</h2>
+      <p>跨越数十年历史，见证社会变迁，个体的命运在时代洪流中显得渺小而脆弱。</p>
+      <div class="time-chart">时间轴图表 (占位符)</div>
+    </div>
+
+    <div class="slide" id="slide5">
+      <h1>活着</h1>
+      <h2>活下去</h2>
+      <p class="quote">“没有什么比活着更快乐，也没有什么比活着更艰辛。”</p>
+    </div>
+
+    <div class="slide" id="slide6">
+      <h1>亲情</h1>
+      <h2>最后的慰藉</h2>
+      <p>家庭是福贵心中最后的慰藉，失去亲人是他最大的痛苦，也塑造了他坚韧的性格。</p>
+      <img src="https://picsum.photos/600/400" alt="家庭合影" class="family-photo">
+    </div>
+
+    <div class="slide" id="slide7">
+      <h1>致敬</h1>
+      <h2>生命的价值</h2>
+      <p>《活着》展现了中国底层人民的真实生活和精神面貌，引发人们对生命意义的深刻思考。珍惜生命，直面苦难。</p>
+      <button class="cta-button">推荐阅读《活着》</button>
+    </div>
+
+    <!-- 导航点 -->
+    <div class="navigation">
+      <div class="navigation-dot active" onclick="goToSlide(1)"></div>
+      <div class="navigation-dot" onclick="goToSlide(2)"></div>
+      <div class="navigation-dot" onclick="goToSlide(3)"></div>
+      <div class="navigation-dot" onclick="goToSlide(4)"></div>
+      <div class="navigation-dot" onclick="goToSlide(5)"></div>
+      <div class="navigation-dot" onclick="goToSlide(6)"></div>
+      <div class="navigation-dot" onclick="goToSlide(7)"></div>
+    </div>
+
+    <!-- 解说词 -->
+    <div class="narration" id="narrationBox">
+      欢迎大家！今天，我们将一起走进一部震撼人心的作品——《活着》。
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.navigation-dot');
+    const narrationBox = document.getElementById('narrationBox');
+    let currentSlide = 1;
+
+    const narrations = {
+      1: "欢迎大家！今天，我们将一起走进一部震撼人心的作品——《活着》。这本书不仅仅是一个故事，更是一次对生命本质的深刻叩问。它讲述了福贵跌宕起伏的一生，一个普通人在时代洪流中，如何用最朴素的方式，诠释生命的韧性。我们相信，它会触动你内心最柔软的地方。",
+      2: "要理解《活着》，首先要了解它的作者——余华。余华，一位用冷静的笔触描绘残酷现实的中国当代文学巨匠。他的作品，如《活着》和《许三观卖血记》，以其深刻的社会洞察力和对底层人民的关怀，赢得了无数读者的喜爱。他用文字，为那些沉默的大多数发声。",
+      3: "《活着》的核心，是韧性。在福贵的人生中，苦难似乎永无止境。但他从未放弃，即使面对一次又一次的打击，他依然顽强地活着。这种在绝望中寻找希望，在苦难中绽放光芒的力量，就是我们所说的韧性。这不仅仅是福贵的故事，更是每一个普通人都能拥有的力量。",
+      4: "时代，是《活着》不可或缺的背景。从解放战争到改革开放，福贵经历了中国社会各个重要的历史时期。大炼钢铁，人民公社…这些历史事件深刻地影响了他的命运，也塑造了他的性格。我们可以看到，个体的命运在时代洪流中显得多么渺小，但即使如此，他们也在努力地活着。",
+      5: "“没有什么比活着更快乐，也没有什么比活着更艰辛。”这是《活着》中最经典的一句话，也是对福贵一生的最好概括。它简洁而深刻地揭示了生命的本质：快乐与艰辛并存。这句话不仅仅是福贵的人生感悟，也是对我们每一个人的提醒：珍惜当下，勇敢面对生活中的一切。",
+      6: "亲情，是福贵心中最后的慰藉。家庭是福贵生命中最重要的一部分。失去亲人是他最大的痛苦，但也正是这些痛苦，塑造了他坚韧的性格。有庆、凤霞、苦根…这些鲜活的生命，都因为时代的悲剧而早早凋零。他们的离去，让福贵更加珍惜活着的每一天。",
+      7: "《活着》，一部致敬生命的杰作。它展现了中国底层人民的真实生活和精神面貌，引发我们对生命意义的深刻思考。它告诉我们，即使面对再多的苦难，也要珍惜生命，勇敢地活下去。我们希望通过今天的分享，能够让更多的人了解这部作品，感受生命的力量。"
+    };
+
+    function showSlide(n) {
+      slides.forEach(slide => slide.classList.remove('active'));
+      dots.forEach(dot => dot.classList.remove('active'));
+
+      slides[n - 1].classList.add('active');
+      dots[n - 1].classList.add('active');
+      narrationBox.textContent = narrations[n] || "";
+    }
+
+    function nextSlide() {
+      currentSlide = (currentSlide === slides.length) ? 1 : currentSlide + 1;
+      showSlide(currentSlide);
+    }
+
+    function prevSlide() {
+      currentSlide = (currentSlide === 1) ? slides.length : currentSlide - 1;
+      showSlide(currentSlide);
+    }
+
+    function goToSlide(n) {
+      currentSlide = n;
+      showSlide(currentSlide);
+    }
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'ArrowLeft') {
+        prevSlide();
+      } else if (event.key === 'ArrowRight') {
+        nextSlide();
+      }
+    });
+
+    showSlide(currentSlide); // 初始化显示第一页
+
+        // 确保初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('PPT初始化开始...');
+            updateDots(currentSlide);
+            updateNarration(currentSlide);
+            updateNavigationButtons();
+            console.log('PPT初始化完成，当前页:', currentSlide + 1, '/', totalSlides);
+        });
+    
+    </script>
+
+</body>
+</html>
