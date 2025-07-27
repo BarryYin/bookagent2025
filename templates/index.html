@@ -20,7 +20,7 @@
     </div>
 
     <div id="initial-view" class="initial-view">
-        <img src="/static/logo.png" alt="Studio Logo" class="logo" id="logo-initial">
+        <img src="/static/logo.png?v={{ time }}" alt="Studio Logo" class="logo" id="logo-initial">
 
         <div class="initial-content">
             <div class="hero-group">
@@ -82,7 +82,7 @@
                 </svg>
                 <span data-translate-key="newChat">新对话</span>
             </button>
-            <img src="/static/logo.png" alt="Studio Logo" class="logo" id="logo-chat">
+            <img src="/static/logo.png?v={{ time }}" alt="Studio Logo" class="logo" id="logo-chat">
         </header>
         <main id="chat-log" class="chat-log"></main>
         <footer class="chat-footer">
@@ -204,27 +204,27 @@
 
     <script>
         // 测试日志显示功能
-        window.testLogDisplay = function() {
+        window.testLogDisplay = function () {
             console.log('测试日志显示功能');
-            
+
             // 测试appendAgentStatus函数
             try {
                 const templates = {
                     status: document.getElementById('agent-status-template')
                 };
-                
+
                 if (!templates.status) {
                     console.error('找不到agent-status-template');
                     return;
                 }
-                
+
                 console.log('模板找到，开始测试');
-                
+
                 // 模拟appendAgentStatus函数
                 const node = templates.status.content.cloneNode(true);
                 const element = node.firstElementChild;
                 element.innerHTML = element.innerHTML.replace('${text}', '测试日志消息');
-                
+
                 const chatLog = document.getElementById('chat-log');
                 if (chatLog) {
                     chatLog.appendChild(element);
@@ -232,7 +232,7 @@
                 } else {
                     console.error('找不到chat-log元素');
                 }
-                
+
             } catch (error) {
                 console.error('测试日志显示失败:', error);
             }

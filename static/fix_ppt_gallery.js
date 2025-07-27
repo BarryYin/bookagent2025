@@ -112,11 +112,11 @@ function renderPPTCardsFixed(ppts) {
                 </div>
             </div>
             <div class="ppt-card-actions">
-                <a href="${ppt.preview_url}" target="_blank" class="action-btn primary">
+                <a href="${ppt.html_url}" target="_blank" class="action-btn primary">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15,3 21,3 21,9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                     查看PPT
                 </a>
-                <button class="action-btn" onclick="copyPPTLinkFixed('${ppt.preview_url}')">
+                <button class="action-btn" onclick="copyPPTLinkFixed('${ppt.html_url}')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
                     复制链接
                 </button>

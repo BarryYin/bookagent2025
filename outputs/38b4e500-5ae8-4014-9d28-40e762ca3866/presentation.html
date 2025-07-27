@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未知书籍 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: #FFFFFF;
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .navigation button {
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .navigation button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background-color: #007AFF;
+            transform: scale(1.2);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 350px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #1D1D1F;
+            z-index: 1000;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <h1>我与地坛</h1>
+            <h2>史铁生</h2>
+            <p>一部关于生命、苦难与希望的散文集</p>
+        </div>
+        <div class="slide " data-slide="1">
+            <h1>史铁生</h1>
+            <h2>用文字点亮生命</h2>
+            <p>著名作家、散文家。代表作：《我与地坛》、《务虚笔记》等。因病致残，在地坛公园找到精神寄托，创作了大量优秀作品。</p>
+        </div>
+        <div class="slide " data-slide="2">
+            <h1>苦难与意义</h1>
+            <h2>生命的深刻追问</h2>
+            <p>“生病的经验是一步步懂得人类苦难经验的过程。”</p>
+        </div>
+        <div class="slide " data-slide="3">
+            <h1>地坛</h1>
+            <h2>精神的栖息地</h2>
+            <p>15年，地坛陪伴史铁生走过无数个日夜，成为他思考人生、疗养身心的场所。</p>
+        </div>
+        <div class="slide " data-slide="4">
+            <h1>经典语录</h1>
+            <h2>字字珠玑</h2>
+            <p>“死亡是一个必然会降临的节日。”</p>
+        </div>
+        <div class="slide " data-slide="5">
+            <h1>母爱</h1>
+            <h2>深沉的怀念</h2>
+            <p>“我的母亲已经去世了多年，我是在她的祭日写的这篇散文，那是1990年，离她去世快6年了。”</p>
+        </div>
+        <div class="slide " data-slide="6">
+            <h1>经典语录</h1>
+            <h2>关于命运</h2>
+            <p>“命运不是人所能完全左右的，但人也不是完全听命于命运的。”</p>
+        </div>
+        <div class="slide " data-slide="7">
+            <h1>感悟生命</h1>
+            <h2>活出精彩</h2>
+            <p>《我与地坛》是一部充满智慧和力量的作品，它启发我们思考生命的意义，勇敢面对人生的挑战，珍惜当下的每一天。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">8</span>
+    </div>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        《我与地坛》. A timeless masterpiece by Shi Tiesheng. This isn't just a story; it's a journey through life's hardships, found amidst the ancient grounds of Beijing's Temple of Earth. It's a testament to the enduring human spirit, beautifully written and profoundly moving. We'll delve into the core of this work, uncovering the layers of meaning within its pages.
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "《我与地坛》. A timeless masterpiece by Shi Tiesheng. This isn't just a story; it's a journey through life's hardships, found amidst the ancient grounds of Beijing's Temple of Earth. It's a testament to the enduring human spirit, beautifully written and profoundly moving. We'll delve into the core of this work, uncovering the layers of meaning within its pages.",
+        "Shi Tiesheng faced immense personal challenges, losing the use of his legs at a young age. But through his pain, he found his voice. 《我与地坛》 is a product of his time spent reflecting in the Temple of Earth, a place that became his sanctuary. His words offer us a glimpse into a life lived with courage and unwavering determination. He is known for 'I and the Temple of Earth' and 'Notes on the Void'.",
+        "Shi Tiesheng doesn't shy away from the harsh realities of life. He confronts pain, loss, and the question of existence head-on. His perspective is insightful. He offers us a new way to view our own challenges. He himself once wrote, 'The experience of illness is a step-by-step understanding of the experience of human suffering'.",
+        "For fifteen years, Shi Tiesheng found refuge in the Temple of Earth. It was there, amidst the ancient trees and weathered stones, that he contemplated life's biggest questions. It became his writing place, his sanctuary, his place of healing. This relationship is not merely a setting; it’s a character in itself.",
+        "Words that cut right to the core. Shi Tiesheng had a way of expressing profound truths with remarkable simplicity. Like this: 'Death is a festival that is bound to come.' This quote reframes our understanding of mortality, urging us to live each day with intention.",
+        "His reflections on his mother are some of the most moving passages in the book. He once said, 'My mother has been gone for many years, I wrote this essay on her memorial day, that was in 1990, almost 6 years after her death'. The bond between a mother and child. A theme explored with grace and tenderness.",
+        "“命运不是人所能完全左右的，但人也不是完全听命于命运的。”Or in other words: 'Fate is not something that one can completely control, but one is not completely at the mercy of fate.' It highlights the delicate balance between acceptance and action, reminding us that we always have a choice in how we respond to life's challenges.",
+        "It inspires us to find beauty in the everyday, to confront our challenges with courage, and to cherish the precious moments we have. It’s a story that stays with you long after you've turned the final page. In a world often filled with noise, 《我与地坛》 offers a moment of quiet reflection and profound understanding.",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>
