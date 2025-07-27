@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>百年孤独 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: #FFFFFF;
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .navigation button {
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .navigation button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background-color: #007AFF;
+            transform: scale(1.2);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 350px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #1D1D1F;
+            z-index: 1000;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <h1>百年孤独</h1>
+            <h2>一个家族的史诗</h2>
+            <p>加西亚·马尔克斯</p>
+        </div>
+        <div class="slide " data-slide="1">
+            <h1>作家</h1>
+            <h2>加西亚·马尔克斯</h2>
+            <p>诺贝尔文学奖得主，魔幻现实主义大师。他的作品深刻影响了世界文学。</p>
+        </div>
+        <div class="slide " data-slide="2">
+            <h1>核心</h1>
+            <h2>魔幻现实主义</h2>
+            <p>现实与幻想交织，展现拉丁美洲独特的历史和文化。</p>
+        </div>
+        <div class="slide " data-slide="3">
+            <h1>七代</h1>
+            <h2>布恩迪亚家族</h2>
+            <p>跨越百年的家族史，见证了马孔多的兴衰。</p>
+        </div>
+        <div class="slide " data-slide="4">
+            <h1>金句</h1>
+            <h2>记忆的流逝</h2>
+            <p>“生命中真正重要的不是你遭遇了什么，而是你记住了哪些事，又是如何铭记的。”</p>
+        </div>
+        <div class="slide " data-slide="5">
+            <h1>孤独</h1>
+            <h2>永恒的宿命</h2>
+            <p>即使在家族和群体中，个体也无法摆脱孤独的宿命。</p>
+        </div>
+        <div class="slide " data-slide="6">
+            <h1>兴衰</h1>
+            <h2>马孔多的命运</h2>
+            <p>从乌托邦式的建立到最终的毁灭，马孔多象征着时代的变迁。</p>
+        </div>
+        <div class="slide " data-slide="7">
+            <h1>轮回</h1>
+            <h2>历史的重演</h2>
+            <p>“过去永远是现在的一部分。”</p>
+        </div>
+        <div class="slide " data-slide="8">
+            <h1>价值</h1>
+            <h2>文学的瑰宝</h2>
+            <p>《百年孤独》是魔幻现实主义的巅峰之作，深刻探讨了人类的生存困境和命运。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">9</span>
+    </div>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        We're incredibly excited to present 'One Hundred Years of Solitude,' a groundbreaking work by Gabriel García Márquez. This isn't just a book; it's an experience. A journey through the rise and fall of the Buendía family in the mythical town of Macondo. Get ready to be captivated.
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "We're incredibly excited to present 'One Hundred Years of Solitude,' a groundbreaking work by Gabriel García Márquez. This isn't just a book; it's an experience. A journey through the rise and fall of the Buendía family in the mythical town of Macondo. Get ready to be captivated.",
+        "Márquez, a Nobel laureate and a true master of magical realism, redefined Latin American literature. His unique storytelling style seamlessly blends the fantastical with the everyday, offering a profound reflection on the human condition. His vision has inspired generations.",
+        "Imagine a world where the ordinary dances with the extraordinary. That's magical realism. In 'One Hundred Years of Solitude,' Márquez masterfully weaves together realistic settings and events with elements of fantasy, myth, and folklore. It’s not just about adding magic; it’s about reflecting the rich cultural tapestry of Latin America.",
+        "The Buendía family's journey is the backbone of 'One Hundred Years of Solitude.' Their births, loves, wars, and losses paint a vibrant portrait of a family grappling with fate, ambition, and the relentless passage of time. Their story mirrors the rise and fall of Macondo itself.",
+        "Márquez writes, “Life isn't what one lived, but what one remembers and how one remembers it in order to recount it.” This powerful quote speaks to the subjective nature of memory and its profound impact on how we shape our personal narratives. What we choose to remember, and how we remember it, defines us.",
+        "Despite the bonds of family and community, each member of the Buendía family grapples with their own profound sense of isolation. This loneliness, this yearning for connection, is a fundamental part of the human experience that Márquez explores with unflinching honesty. It transcends time and culture.",
+        "Macondo, the town founded by the Buendías, represents more than just a place. It's a microcosm of Latin American history, reflecting the dreams, struggles, and ultimately, the disappointments of a continent grappling with modernization and political turmoil. Its rise and fall is a poignant reminder of the cyclical nature of history.",
+        "Márquez observes, “The past was always a lie, memory has no return, every spring gone by could never be recovered, and the wildest and most tenacious love was an ephemeral truth in the end.” This illustrates the cyclical nature of history, the repetition of patterns and mistakes that haunt generations.",
+        "This masterpiece of magical realism offers a profound exploration of the human condition, tackling themes of love, loss, memory, and the enduring power of solitude. It's a book that will stay with you long after you've turned the final page, prompting you to reflect on your own place in the grand tapestry of history and family.",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>

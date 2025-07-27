@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API测试</title>
+</head>
+<body>
+    <h1>PPT API测试</h1>
+    <button onclick="testAPI()">测试API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '正在测试...';
+            
+            try {
+                const response = await fetch('/api/generated-ppts');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h2>API响应成功！</h2>
+                    <p>找到 ${data.ppts ? data.ppts.length : 0} 个PPT</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h2>API错误</h2>
+                    <p style="color: red;">${error.message}</p>
+                `;
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.onload = testAPI;
+    </script>
+</body>
+</html>

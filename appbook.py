@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import AsyncGenerator, List, Optional
 
 import pytz
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI, OpenAIError
@@ -49,6 +49,7 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 class ChatRequest(BaseModel):
     topic: str
@@ -110,10 +111,12 @@ async def step1_extract_book_data(topic: str) -> dict:
             
     except Exception as e:
         # API配额用完或其他错误时，返回默认数据
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
+            print(f"API调用失败，使用备用数据: {e}")
             return get_fallback_book_data(topic)
         else:
-            raise e
+            print(f"未知错误，使用备用数据: {e}")
+            return get_fallback_book_data(topic)
 
 async def step2_create_ppt_slides(book_data: dict) -> list:
     """
@@ -178,11 +181,14 @@ async def step2_create_ppt_slides(book_data: dict) -> list:
             
     except Exception as e:
         # API配额用完或其他错误时，返回默认数据
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
             book_title = extract_book_title(book_data) if book_data else "未知书籍"
+            print(f"Step2 API调用失败，使用备用数据: {e}")
             return get_fallback_slides_data(book_title)
         else:
-            raise e
+            book_title = extract_book_title(book_data) if book_data else "未知书籍"
+            print(f"Step2 未知错误，使用备用数据: {e}")
+            return get_fallback_slides_data(book_title)
 
 async def step3_create_narration(slides: list, book_data: dict) -> list:
     """
@@ -258,11 +264,14 @@ PPT画面结构：
             
     except Exception as e:
         # API配额用完或其他错误时，返回默认数据
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
             book_title = extract_book_title(book_data) if book_data else "未知书籍"
+            print(f"Step3 API调用失败，使用备用数据: {e}")
             return get_fallback_narrations_data(book_title)
         else:
-            raise e
+            book_title = extract_book_title(book_data) if book_data else "未知书籍"
+            print(f"Step3 未知错误，使用备用数据: {e}")
+            return get_fallback_narrations_data(book_title)
 
 async def step4_generate_html(slides: list, narrations: list, book_data: dict) -> str:
     """
@@ -535,11 +544,12 @@ async def llm_event_stream(
         try:
             book_data = await step1_extract_book_data(topic)
         except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API配额已用完，使用备用数据'}, ensure_ascii=False)}\n\n"
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
+                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API连接问题，使用备用数据'}, ensure_ascii=False)}\n\n"
                 book_data = get_fallback_book_data(topic)
             else:
-                raise e
+                yield f"data: {json.dumps({'log': f'  ├─ ⚠️  未知错误，使用备用数据: {str(e)}'}, ensure_ascii=False)}\n\n"
+                book_data = get_fallback_book_data(topic)
         
         # 提取书名用于日志显示
         book_title = topic
@@ -563,11 +573,12 @@ async def llm_event_stream(
         try:
             slides = await step2_create_ppt_slides(book_data)
         except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API配额已用完，使用备用数据'}, ensure_ascii=False)}\n\n"
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
+                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API连接问题，使用备用数据'}, ensure_ascii=False)}\n\n"
                 slides = get_fallback_slides_data(book_title)
             else:
-                raise e
+                yield f"data: {json.dumps({'log': f'  ├─ ⚠️  未知错误，使用备用数据: {str(e)}'}, ensure_ascii=False)}\n\n"
+                slides = get_fallback_slides_data(book_title)
         
         slide_count = len(slides) if isinstance(slides, list) else 3
         yield f"data: {json.dumps({'log': f'  ├─ 设计了 {slide_count} 页PPT画面'}, ensure_ascii=False)}\n\n"
@@ -581,11 +592,12 @@ async def llm_event_stream(
         try:
             narrations = await step3_create_narration(slides, book_data)
         except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API配额已用完，使用备用数据'}, ensure_ascii=False)}\n\n"
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
+                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API连接问题，使用备用数据'}, ensure_ascii=False)}\n\n"
                 narrations = get_fallback_narrations_data(book_title)
             else:
-                raise e
+                yield f"data: {json.dumps({'log': f'  ├─ ⚠️  未知错误，使用备用数据: {str(e)}'}, ensure_ascii=False)}\n\n"
+                narrations = get_fallback_narrations_data(book_title)
         
         narration_count = len(narrations) if isinstance(narrations, list) else slide_count
         yield f"data: {json.dumps({'log': f'  ├─ 生成了 {narration_count} 段解说词'}, ensure_ascii=False)}\n\n"
@@ -628,31 +640,48 @@ async def llm_event_stream(
         yield f"data: {json.dumps({'log': '🎉 生成完成！开始输出结果...'}, ensure_ascii=False)}\n\n"
         await asyncio.sleep(0.5)
         
+        # 检查HTML内容
+        yield f"data: {json.dumps({'log': f'🔍 检查HTML内容: 长度={len(html_content)}, 类型={type(html_content)}'}, ensure_ascii=False)}\n\n"
+        
+        if not html_content:
+            yield f"data: {json.dumps({'log': '❌ HTML内容为空！'}, ensure_ascii=False)}\n\n"
+            return
+        
         # 按照前端期望的格式输出HTML内容
+        yield f"data: {json.dumps({'log': '📤 开始输出HTML内容...'}, ensure_ascii=False)}\n\n"
+        
         start_token = '```html\n'
         yield f"data: {json.dumps({'token': start_token}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': f'  ├─ 已发送开始标记: {repr(start_token)}'}, ensure_ascii=False)}\n\n"
         
         # 分块输出HTML内容，使用较大的块大小确保完整性
         chunk_size = 500
+        chunk_count = 0
         for i in range(0, len(html_content), chunk_size):
             chunk = html_content[i:i+chunk_size]
+            chunk_count += 1
             # 确保JSON字符串正确转义
             payload = json.dumps({"token": chunk}, ensure_ascii=False)
             yield f"data: {payload}\n\n"
             await asyncio.sleep(0.01)
         
+        yield f"data: {json.dumps({'log': f'  ├─ 已发送 {chunk_count} 个HTML块'}, ensure_ascii=False)}\n\n"
+        
         # 输出结束标记
         end_token = '\n```'
         yield f"data: {json.dumps({'token': end_token}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': f'  └─ 已发送结束标记: {repr(end_token)}'}, ensure_ascii=False)}\n\n"
         
         # 最终完成信息
         yield f"data: {json.dumps({'log': '🎊 PPT生成完成！您可以在浏览器中查看效果'}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'log': '✅ 准备发送DONE信号'}, ensure_ascii=False)}\n\n"
             
     except Exception as e:
         error_msg = f"❌ 生成过程中发生错误: {str(e)}"
         yield f"data: {json.dumps({'error': error_msg}, ensure_ascii=False)}\n\n"
         return
 
+    yield f"data: {json.dumps({'log': '📡 发送DONE信号'}, ensure_ascii=False)}\n\n"
     yield f'data: {json.dumps({"event":"[DONE]", "session_id": session_id, "output_path": f"outputs/{session_id}/"}, ensure_ascii=False)}\n\n'
 
 # -----------------------------------------------------------------------
@@ -1087,13 +1116,39 @@ def extract_book_title(book_data):
             return book_data['book_title']
         elif 'title' in book_data:
             return book_data['title']
+        # 检查raw_content字段
+        elif 'raw_content' in book_data:
+            raw_content = book_data['raw_content']
+            if isinstance(raw_content, str):
+                import re
+                # 尝试多种模式匹配
+                patterns = [
+                    r'"book_title":\s*"([^"]+)"',
+                    r'"title":\s*"([^"]+)"',
+                    r'《([^》]+)》',  # 匹配书名号
+                    r'"([^"]*)"'  # 最后尝试匹配任何引号内容
+                ]
+                for pattern in patterns:
+                    match = re.search(pattern, raw_content)
+                    if match:
+                        title = match.group(1).strip()
+                        if title and title != "未知书籍":
+                            return title
     
     # 从字符串中提取
     if isinstance(book_data, str):
         import re
-        title_match = re.search(r'"(?:book_title|title)":\s*"([^"]+)"', book_data)
-        if title_match:
-            return title_match.group(1)
+        patterns = [
+            r'"(?:book_title|title)":\s*"([^"]+)"',
+            r'《([^》]+)》',
+            r'"([^"]*)"'
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, book_data)
+            if match:
+                title = match.group(1).strip()
+                if title and title != "未知书籍":
+                    return title
     
     return "未知书籍"
 
@@ -1402,7 +1457,7 @@ async def get_generated_content(session_id: str):
 @app.get("/outputs/{session_id}/{filename}")
 async def serve_generated_file(session_id: str, filename: str):
     """
-    提供生成的文件下载
+    提供生成的文件访问，HTML文件在浏览器中打开，其他文件下载
     """
     import os
     from fastapi.responses import FileResponse
@@ -1412,11 +1467,31 @@ async def serve_generated_file(session_id: str, filename: str):
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="文件不存在")
     
-    return FileResponse(
-        path=file_path,
-        filename=filename,
-        media_type='application/octet-stream'
-    )
+    # 根据文件类型设置不同的媒体类型
+    if filename.endswith('.html'):
+        # HTML文件在浏览器中打开（不设置filename参数避免下载）
+        return FileResponse(
+            path=file_path,
+            media_type='text/html; charset=utf-8',
+            headers={
+                "Cache-Control": "no-cache",
+                "Content-Disposition": "inline"  # 强制在浏览器中显示
+            }
+        )
+    elif filename.endswith('.json'):
+        # JSON文件在浏览器中显示
+        return FileResponse(
+            path=file_path,
+            media_type='application/json; charset=utf-8',
+            headers={"Content-Disposition": "inline"}
+        )
+    else:
+        # 其他文件作为下载
+        return FileResponse(
+            path=file_path,
+            filename=filename,
+            media_type='application/octet-stream'
+        )
 
 @app.post("/regenerate/{session_id}")
 async def regenerate_ppt(session_id: str):
@@ -1452,6 +1527,185 @@ async def regenerate_ppt(session_id: str):
         "html_url": f"/outputs/{session_id}/presentation.html",
         "regenerated_at": datetime.now(shanghai_tz).isoformat()
     }
+
+@app.get("/api/generated-ppts")
+async def get_generated_ppts(limit: int = None):
+    """
+    获取已生成的PPT列表
+    limit: 限制返回的数量，默认返回所有
+    """
+    import os
+    import glob
+    
+    ppt_list = []
+    output_dirs = glob.glob('outputs/*/data.json')
+    
+    for data_file in output_dirs:
+        try:
+            session_id = os.path.basename(os.path.dirname(data_file))
+            
+            # 读取数据文件
+            with open(data_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # 检查HTML文件是否存在
+            html_file = os.path.join(os.path.dirname(data_file), 'presentation.html')
+            if os.path.exists(html_file):
+                # 获取文件修改时间
+                mtime = os.path.getmtime(html_file)
+                created_time = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
+                
+                # 提取书籍标题
+                topic = data.get('topic', '未知书籍')
+                book_data = data.get('book_data', {})
+                book_title = extract_book_title(book_data) if book_data else topic
+                
+                ppt_list.append({
+                    'session_id': session_id,
+                    'title': book_title,
+                    'topic': topic,
+                    'created_time': created_time,
+                    'html_url': f'/outputs/{session_id}/presentation.html',
+                    'preview_url': f'/api/ppt-preview/{session_id}'
+                })
+        except Exception as e:
+            print(f"Error processing {data_file}: {e}")
+            continue
+    
+    # 按创建时间倒序排列
+    ppt_list.sort(key=lambda x: x['created_time'], reverse=True)
+    
+    # 如果指定了限制数量，则只返回前N个
+    if limit is not None and limit > 0:
+        ppt_list = ppt_list[:limit]
+    
+    return {"ppts": ppt_list}
+
+@app.get("/api/ppt-preview/{session_id}")
+async def get_ppt_preview(session_id: str):
+    """
+    获取PPT预览信息
+    """
+    import os
+    
+    data_file = f"outputs/{session_id}/data.json"
+    if not os.path.exists(data_file):
+        raise HTTPException(status_code=404, detail="PPT不存在")
+    
+    try:
+        with open(data_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        # 解析数据
+        book_data = data.get('book_data', {})
+        slides_data = data.get('slides', [])
+        
+        parsed_book_data = parse_ai_response(book_data)
+        parsed_slides = parse_ai_response(slides_data)
+        
+        book_title = extract_book_title(parsed_book_data)
+        
+        # 获取前3页幻灯片作为预览
+        preview_slides = []
+        if isinstance(parsed_slides, list):
+            for i, slide in enumerate(parsed_slides[:3]):
+                if isinstance(slide, dict):
+                    preview_slides.append({
+                        'title': slide.get('title', f'第{i+1}页'),
+                        'subtitle': slide.get('subtitle', ''),
+                        'content': slide.get('main_content', slide.get('content', ''))[:100] + '...'
+                    })
+        
+        return {
+            'session_id': session_id,
+            'title': book_title,
+            'topic': data.get('topic', ''),
+            'preview_slides': preview_slides,
+            'total_slides': len(parsed_slides) if isinstance(parsed_slides, list) else 0
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取预览失败: {str(e)}")
+
+@app.get("/api/generated-ppts")
+async def get_generated_ppts(limit: int = 10):
+    """获取已生成的PPT列表"""
+    import os
+    import json
+    from pathlib import Path
+    
+    try:
+        outputs_dir = Path("outputs")
+        if not outputs_dir.exists():
+            return {"ppts": []}
+        
+        ppt_list = []
+        
+        # 遍历outputs目录下的所有子目录
+        for session_dir in outputs_dir.iterdir():
+            if session_dir.is_dir():
+                data_file = session_dir / "data.json"
+                html_file = session_dir / "presentation.html"
+                
+                if data_file.exists() and html_file.exists():
+                    try:
+                        # 读取数据文件获取PPT信息
+                        with open(data_file, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        
+                        # 获取文件创建时间
+                        created_time = datetime.fromtimestamp(
+                            data_file.stat().st_ctime, 
+                            tz=shanghai_tz
+                        ).strftime("%Y-%m-%d %H:%M")
+                        
+                        ppt_info = {
+                            "session_id": session_dir.name,
+                            "title": data.get("topic", "未知主题"),
+                            "created_time": created_time,
+                            "html_path": f"/outputs/{session_dir.name}/presentation.html",
+                            "preview_url": f"/ppt-preview/{session_dir.name}"
+                        }
+                        
+                        ppt_list.append(ppt_info)
+                        
+                    except (json.JSONDecodeError, KeyError) as e:
+                        print(f"读取PPT数据失败: {session_dir.name}, 错误: {e}")
+                        continue
+        
+        # 按创建时间排序，最新的在前
+        ppt_list.sort(key=lambda x: x["created_time"], reverse=True)
+        
+        # 限制返回数量
+        ppt_list = ppt_list[:limit]
+        
+        return {"ppts": ppt_list}
+        
+    except Exception as e:
+        print(f"获取PPT列表失败: {e}")
+        return {"error": str(e), "ppts": []}
+
+@app.get("/ppt-preview/{session_id}", response_class=HTMLResponse)
+async def get_ppt_preview(session_id: str):
+    """获取PPT预览页面"""
+    import os
+    from pathlib import Path
+    
+    try:
+        html_file = Path(f"outputs/{session_id}/presentation.html")
+        if html_file.exists():
+            with open(html_file, 'r', encoding='utf-8') as f:
+                return HTMLResponse(content=f.read())
+        else:
+            raise HTTPException(status_code=404, detail="PPT文件不存在")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"读取PPT文件失败: {str(e)}")
+
+@app.get("/test_stream.html", response_class=HTMLResponse)
+async def test_stream():
+    """测试流数据的页面"""
+    with open("test_stream.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):

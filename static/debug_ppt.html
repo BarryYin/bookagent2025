@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT调试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        .test-section { margin: 2rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
+        .result { margin: 1rem 0; padding: 1rem; background: #f5f5f5; border-radius: 4px; }
+        .error { background: #ffe6e6; color: #d00; }
+        .success { background: #e6ffe6; color: #080; }
+        button { padding: 0.5rem 1rem; margin: 0.5rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>PPT API调试页面</h1>
+    
+    <div class="test-section">
+        <h2>1. 基础API测试</h2>
+        <button onclick="testBasicAPI()">测试基础API</button>
+        <div id="basic-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 限制数量API测试</h2>
+        <button onclick="testLimitAPI()">测试限制3个PPT</button>
+        <div id="limit-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 预览API测试</h2>
+        <button onclick="testPreviewAPI()">测试预览API</button>
+        <div id="preview-result" class="result"></div>
+    </div>
+
+    <script>
+        async function testBasicAPI() {
+            const resultDiv = document.getElementById('basic-result');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch('/api/generated-ppts');
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h3>✅ 基础API测试成功</h3>
+                    <p>状态码: ${response.status}</p>
+                    <p>PPT数量: ${data.ppts ? data.ppts.length : 0}</p>
+                    <details>
+                        <summary>详细数据</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ 基础API测试失败</h3>
+                    <p>错误: ${error.message}</p>
+                    <p>详细: ${error.stack}</p>
+                `;
+            }
+        }
+
+        async function testLimitAPI() {
+            const resultDiv = document.getElementById('limit-result');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch('/api/generated-ppts?limit=3');
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h3>✅ 限制API测试成功</h3>
+                    <p>状态码: ${response.status}</p>
+                    <p>PPT数量: ${data.ppts ? data.ppts.length : 0}</p>
+                    <p>PPT列表:</p>
+                    <ul>
+                        ${data.ppts ? data.ppts.map(ppt => `<li>${ppt.title} (${ppt.created_time})</li>`).join('') : ''}
+                    </ul>
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ 限制API测试失败</h3>
+                    <p>错误: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testPreviewAPI() {
+            const resultDiv = document.getElementById('preview-result');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                // 先获取一个PPT的session_id
+                const listResponse = await fetch('/api/generated-ppts?limit=1');
+                const listData = await listResponse.json();
+                
+                if (!listData.ppts || listData.ppts.length === 0) {
+                    throw new Error('没有找到PPT用于测试预览');
+                }
+                
+                const sessionId = listData.ppts[0].session_id;
+                const previewResponse = await fetch(`/api/ppt-preview/${sessionId}`);
+                const previewData = await previewResponse.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h3>✅ 预览API测试成功</h3>
+                    <p>测试PPT: ${previewData.title}</p>
+                    <p>幻灯片数量: ${previewData.total_slides}</p>
+                    <p>预览幻灯片数量: ${previewData.preview_slides ? previewData.preview_slides.length : 0}</p>
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ 预览API测试失败</h3>
+                    <p>错误: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 页面加载时自动运行测试
+        window.onload = function() {
+            console.log('调试页面加载完成');
+            testBasicAPI();
+        };
+    </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body class="show-initial-view">
 
     <div id="language-switcher" class="language-switcher">
@@ -22,21 +24,50 @@
 
         <div class="initial-content">
             <div class="hero-group">
-                <h1 data-translate-key="heroTitle">在此赋予概念以生命，转瞬之间</h1>
+                <h1 data-translate-key="heroTitle">今天读点啥</h1>
                 <form id="initial-form" class="initial-form">
                     <div id="animated-placeholder" class="animated-placeholder"></div>
                     <input type="text" id="initial-input" required>
                     <button type="submit" data-translate-key="startCreatingTitle" title="开始创作">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M3 20V4l19 8Z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M3 20V4l19 8Z" />
+                        </svg>
                     </button>
                 </form>
             </div>
-             <footer class="initial-footer">
-                <a href="https://github.com/fogsightai/fogsight" target="_blank" data-translate-key="githubrepo">Github 开源仓库</a>
+
+            <!-- PPT展示区域 -->
+            <div class="ppt-gallery" id="ppt-gallery">
+                <div class="gallery-header">
+                    <h2 data-translate-key="recentPPTs">最近生成的PPT</h2>
+                    <button id="refresh-gallery" class="refresh-button" title="刷新">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ppt-grid" id="ppt-grid">
+                    <!-- PPT卡片将通过JavaScript动态加载 -->
+                    <div class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p>正在加载PPT...</p>
+                        <button onclick="testAPIDirectly()"
+                            style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">测试API</button>
+                        <button onclick="testLogDisplay()"
+                            style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">测试日志显示</button>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="initial-footer">
+                <!-- <a href="https://github.com/fogsightai/fogsight" target="_blank" data-translate-key="githubrepo">Github 开源仓库</a>
                 <span>•</span>
                 <a href="http://waytoagi.fogsight.ai" target="_blank" data-translate-key="officialWebsite">通向 AGI 之路社区</a>
                 <span>•</span>
-                <a href="http://contact.fogsight.ai" data-translate-key="groupChat">联系我们/加入交流群</a>
+                <a href="http://contact.fogsight.ai" data-translate-key="groupChat">联系我们/加入交流群</a> -->
             </footer>
         </div>
     </div>
@@ -44,7 +75,11 @@
     <div id="chat-view" class="chat-view">
         <header class="chat-header">
             <button id="new-chat-button" class="new-chat-button" data-translate-key="newChatTitle" title="新对话">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
+                </svg>
                 <span data-translate-key="newChat">新对话</span>
             </button>
             <img src="/static/logo.png" alt="Studio Logo" class="logo" id="logo-chat">
@@ -53,9 +88,14 @@
         <footer class="chat-footer">
             <form id="chat-form" class="chat-form">
                 <div class="input-container">
-                    <input type="text" id="chat-input" data-translate-key="chatPlaceholder" placeholder="AI 生成结果具有随机性，您可在此输入修改意见，通过多轮对话调整结果" autocomplete="off" required>
+                    <input type="text" id="chat-input" data-translate-key="chatPlaceholder"
+                        placeholder="AI 生成结果具有随机性，您可在此输入修改意见，通过多轮对话调整结果" autocomplete="off" required>
                     <button type="submit" class="submit-button" data-translate-key="sendTitle" title="发送">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
                     </button>
                 </div>
             </form>
@@ -65,9 +105,11 @@
 
 
     <template id="user-message-template">
-        <div class="message-group user"><div class="message-bubble">${text}</div></div>
+        <div class="message-group user">
+            <div class="message-bubble">${text}</div>
+        </div>
     </template>
-    
+
     <template id="agent-status-template">
         <div class="message-group agent">
             <div class="status-bubble">
@@ -80,7 +122,11 @@
     <template id="agent-error-template">
         <div class="message-group agent">
             <div class="status-bubble error-bubble">
-                <svg viewBox="0 0 24 24" class="icon-error"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
+                <svg viewBox="0 0 24 24" class="icon-error">
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z">
+                    </path>
+                </svg>
                 <p>${text}</p>
             </div>
         </div>
@@ -91,31 +137,53 @@
             <details class="code-details" open>
                 <summary class="code-summary">
                     <div class="summary-title">
-                        <svg class="icon-code" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                        <svg class="icon-code" viewBox="0 0 24 24">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
                         <span data-translate-key="generatingCode">生成代码中...</span>
                     </div>
-                    <svg class="icon-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                    <svg class="icon-chevron" viewBox="0 0 24 24">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </summary>
-                <div class="code-content"><pre><code></code></pre></div>
+                <div class="code-content">
+                    <pre><code></code></pre>
+                </div>
             </details>
         </div>
     </template>
-    
+
     <template id="animation-player-template">
         <div class="message-group agent has-player">
             <div class="player-container">
-                <div class="iframe-wrapper"><iframe class="animation-iframe" sandbox="allow-scripts allow-same-origin"></iframe></div>
+                <div class="iframe-wrapper"><iframe class="animation-iframe"
+                        sandbox="allow-scripts allow-same-origin"></iframe></div>
                 <div class="player-actions">
                     <button class="action-button open-new-window">
-                        <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        <svg viewBox="0 0 24 24">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                            <polyline points="15 3 21 3 21 9" />
+                            <line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
                         <span data-translate-key="openInNewWindow">在新窗口中打开</span>
                     </button>
                     <button class="action-button save-html">
-                        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        <svg viewBox="0 0 24 24">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                            <polyline points="17 21 17 13 7 13 7 21" />
+                            <polyline points="7 3 7 8 15 8" />
+                        </svg>
                         <span data-translate-key="saveAsHTML">保存为 HTML</span>
                     </button>
                     <button class="action-button export-video">
-                        <svg viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 10l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -1.447 .894l-4.553 -2.276v-4z" /><path d="M3 6m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" /></svg>
+                        <svg viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path
+                                d="M15 10l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -1.447 .894l-4.553 -2.276v-4z" />
+                            <path d="M3 6m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" />
+                        </svg>
                         <span data-translate-key="exportAsVideo">导出为视频</span>
                     </button>
                 </div>
@@ -132,12 +200,120 @@
     </div>
 
     <script src="/static/script.js?v={{ time }}"></script>
+    <script src="/static/fix_ppt_gallery.js?v={{ time }}"></script>
+
+    <script>
+        // 测试日志显示功能
+        window.testLogDisplay = function() {
+            console.log('测试日志显示功能');
+            
+            // 测试appendAgentStatus函数
+            try {
+                const templates = {
+                    status: document.getElementById('agent-status-template')
+                };
+                
+                if (!templates.status) {
+                    console.error('找不到agent-status-template');
+                    return;
+                }
+                
+                console.log('模板找到，开始测试');
+                
+                // 模拟appendAgentStatus函数
+                const node = templates.status.content.cloneNode(true);
+                const element = node.firstElementChild;
+                element.innerHTML = element.innerHTML.replace('${text}', '测试日志消息');
+                
+                const chatLog = document.getElementById('chat-log');
+                if (chatLog) {
+                    chatLog.appendChild(element);
+                    console.log('测试消息已添加到聊天日志');
+                } else {
+                    console.error('找不到chat-log元素');
+                }
+                
+            } catch (error) {
+                console.error('测试日志显示失败:', error);
+            }
+        };
+
+        // 直接在HTML中定义测试函数
+        window.testAPIDirectly = async function () {
+            console.log('直接测试API...');
+            const pptGrid = document.getElementById('ppt-grid');
+
+            try {
+                console.log('发送请求到:', '/api/generated-ppts?limit=3');
+                const response = await fetch('/api/generated-ppts?limit=3');
+                console.log('API响应状态:', response.status);
+                console.log('API响应对象:', response);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('API返回数据:', data);
+
+                pptGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; background: #e6ffe6; border-radius: 8px;">
+                        <h3>✅ API测试成功！</h3>
+                        <p>找到 ${data.ppts ? data.ppts.length : 0} 个PPT</p>
+                        <div style="text-align: left; background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow: auto; margin: 1rem 0;">
+                            <strong>PPT列表:</strong><br>
+                            ${data.ppts ? data.ppts.map(ppt => `• ${ppt.title} (${ppt.created_time})`).join('<br>') : '无'}
+                        </div>
+                        <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">刷新页面</button>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('API测试失败:', error);
+                pptGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; background: #ffe6e6; border-radius: 8px;">
+                        <h3>❌ API测试失败</h3>
+                        <p style="color: red; margin: 1rem 0;"><strong>错误:</strong> ${error.message}</p>
+                        <p style="font-size: 0.9rem; color: #666;">
+                            请检查：<br>
+                            1. 服务器是否运行在正确端口<br>
+                            2. 是否运行的是 appbook.py<br>
+                            3. 浏览器控制台是否有其他错误
+                        </p>
+                        <button onclick="testAPIDirectly()" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">重试</button>
+                    </div>
+                `;
+            }
+        };
+
+        // 页面加载完成后的调试信息
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('=== PPT画廊调试信息 ===');
+            console.log('当前URL:', window.location.href);
+            console.log('script.js是否加载:', typeof initPPTGallery !== 'undefined');
+            console.log('ppt-grid元素:', document.getElementById('ppt-grid'));
+
+            // 5秒后如果还在显示loading，就显示错误信息
+            setTimeout(() => {
+                const pptGrid = document.getElementById('ppt-grid');
+                if (pptGrid && pptGrid.innerHTML.includes('loading-spinner')) {
+                    console.log('5秒后仍在加载，可能有问题');
+                    pptGrid.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
+                            <h3>⚠️ 加载超时</h3>
+                            <p>PPT列表加载时间过长，可能存在问题</p>
+                            <button onclick="testAPIDirectly()" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">手动测试API</button>
+                        </div>
+                    `;
+                }
+            }, 5000);
+        });
+    </script>
 
     <div id="overlay" class="overlay" style="display: none;"></div>
     <div id="warning-box" class="warning-box" style="display: none;">
-    <span id="warning-message">警告信息</span>
-    <button class="close-button" onclick="hideWarning()">×</button>
+        <span id="warning-message">警告信息</span>
+        <button class="close-button" onclick="hideWarning()">×</button>
     </div>
 </body>
-</html>
 
+</html>

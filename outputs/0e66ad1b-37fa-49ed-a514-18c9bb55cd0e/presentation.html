@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>边城 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: #FFFFFF;
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .navigation button {
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .navigation button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background-color: #007AFF;
+            transform: scale(1.2);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 350px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #1D1D1F;
+            z-index: 1000;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <h1>边城</h1>
+            <h2>沈从文</h2>
+            <p>一部关于爱与等待的永恒经典</p>
+        </div>
+        <div class="slide " data-slide="1">
+            <h1>沈从文</h1>
+            <h2>中国现代文学大师</h2>
+            <p>（配沈从文先生的照片）
+
+一位扎根于乡土，洞察人性的伟大作家。
+
+作品充满诗意，笔触细腻，影响深远。</p>
+        </div>
+        <div class="slide " data-slide="2">
+            <h1>纯真</h1>
+            <h2>人性之光</h2>
+            <p>《边城》对人性的纯真与善良进行了深刻的赞美。
+
+翠翠、爷爷，以及茶峒人民的淳朴，构成了故事的核心基调。</p>
+        </div>
+        <div class="slide " data-slide="3">
+            <h1>时间</h1>
+            <h2>永恒的等待</h2>
+            <p>翠翠的等待：
+
+**也许一天，也许十年，也许一生...**
+
+等待，成为了《边城》中最令人动容的力量。</p>
+        </div>
+        <div class="slide " data-slide="4">
+            <h1>金句</h1>
+            <h2>经典语录</h2>
+            <p>“这个人也许永远不回来了，也许明天回来！”</p>
+        </div>
+        <div class="slide " data-slide="5">
+            <h1>湘西</h1>
+            <h2>地域文化</h2>
+            <p>《边城》展现了湘西独特的民俗文化和地域风情。 
+
+ 摆渡、歌声、吊脚楼，构成了边城独特的地域风貌。
+
+ (配湘西风土人情的图片)</p>
+        </div>
+        <div class="slide " data-slide="6">
+            <h1>回味</h1>
+            <h2>经典永存</h2>
+            <p>《边城》是一部值得反复阅读的经典之作。
+
+它让我们思考人性、爱情和生命的意义。
+
+欢迎阅读《边城》，感受那份纯真与美好。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">7</span>
+    </div>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        欢迎来到今天的分享，我们将一起走进沈从文先生的经典之作——《边城》。这是一部跨越时空，触动人心的作品，它讲述了爱与等待的故事，一个关于纯真与希望的永恒经典。如同苹果的产品一样，《边城》也在不断地被阅读和理解，历久弥新。
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "欢迎来到今天的分享，我们将一起走进沈从文先生的经典之作——《边城》。这是一部跨越时空，触动人心的作品，它讲述了爱与等待的故事，一个关于纯真与希望的永恒经典。如同苹果的产品一样，《边城》也在不断地被阅读和理解，历久弥新。",
+        "沈从文先生，中国现代文学的代表人物，一位扎根于乡土，却能洞察人性的伟大作家。他的作品充满诗意，笔触细腻，如同精雕细琢的工艺品，影响深远。他将湘西的风土人情带给了世界，也让我们看到了人性的光辉。",
+        "《边城》的核心，是对人性的纯真与善良的赞美。翠翠、爷爷，以及茶峒人民的淳朴、善良，构成了故事的核心基调。他们不求回报的付出，他们简单而快乐的生活，让我们看到了人性的光辉。就像苹果致力于打造简单易用的产品一样，《边城》也用最朴实的语言，讲述了最动人的故事。",
+        "翠翠的等待，也许一天，也许十年，也许一生... 这种漫长的等待，成为了《边城》中最令人动容的力量。时间轴上，翠翠的等待仿佛没有尽头。但正是这种等待，赋予了《边城》独特的魅力。正如苹果不断追求卓越，翠翠也在无尽的等待中，展现了生命的韧性。",
+        "“这个人也许永远不回来了，也许明天回来！” 这句话，充满了希望与绝望，包含了对未来的期许，也包含了对现实的无奈。正如我们对新产品的期待，既希望它完美无缺，又担心它存在瑕疵。这种矛盾的心情，正是人生的常态。",
+        "《边城》展现了湘西独特的民俗文化和地域风情。摆渡、歌声、吊脚楼，构成了边城独特的地域风貌。这里的人们生活简单而快乐，他们用歌声表达情感，用勤劳创造生活。正如苹果的设计灵感来源于生活，《边城》的故事也根植于湘西的土地。",
+        "《边城》是一部值得反复阅读的经典之作。它让我们思考人性、爱情和生命的意义。欢迎大家阅读《边城》，感受那份纯真与美好。就像苹果的产品一样，《边城》也将在时间的洗礼下，历久弥新，成为永恒的经典。",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>

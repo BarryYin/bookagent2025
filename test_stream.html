@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>流测试</title>
+</head>
+<body>
+    <h1>流数据测试</h1>
+    <button id="testBtn">测试流数据</button>
+    <div id="output"></div>
+    
+    <script>
+        document.getElementById('testBtn').addEventListener('click', async function() {
+            console.log('开始测试流数据');
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>开始测试...</p>';
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic: '测试书籍', history: [] })
+                });
+                
+                console.log('响应状态:', response.status);
+                console.log('响应头:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let messageCount = 0;
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        console.log('流结束');
+                        break;
+                    }
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop();
+                    
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        
+                        messageCount++;
+                        const jsonStr = line.substring(6);
+                        console.log(`消息 ${messageCount}:`, jsonStr);
+                        
+                        output.innerHTML += `<p><strong>消息 ${messageCount}:</strong> ${jsonStr.substring(0, 100)}${jsonStr.length > 100 ? '...' : ''}</p>`;
+                        
+                        if (jsonStr.includes('[DONE]')) {
+                            console.log('收到DONE信号');
+                            output.innerHTML += '<p><strong>流结束</strong></p>';
+                            return;
+                        }
+                        
+                        try {
+                            const data = JSON.parse(jsonStr);
+                            if (data.log) {
+                                console.log('日志消息:', data.log);
+                                output.innerHTML += `<p style="color: blue;"><strong>日志:</strong> ${data.log}</p>`;
+                            }
+                            if (data.token) {
+                                console.log('Token消息:', data.token.substring(0, 50));
+                                output.innerHTML += `<p style="color: green;"><strong>Token:</strong> ${data.token.substring(0, 50)}...</p>`;
+                            }
+                        } catch (e) {
+                            console.log('JSON解析失败:', e);
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('测试失败:', error);
+                output.innerHTML += `<p style="color: red;"><strong>错误:</strong> ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
