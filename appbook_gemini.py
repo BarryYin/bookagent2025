@@ -25,20 +25,14 @@ credentials = json.load(open("credentials.json"))
 API_KEY = credentials["API_KEY"]
 BASE_URL = credentials.get("BASE_URL", "")
 
-# 配置Qwen模型客户端
-QWEN_BASE_URL = "https://api-inference.modelscope.cn/v1/"
-QWEN_API_KEY = "ms-076e7668-1000-4ce8-be4e-f475ddfeead7"  # ModelScope Token
-QWEN_MODEL = "Qwen/Qwen3-Coder-480B-A35B-Instruct"
-
 if API_KEY.startswith("sk-"):
     client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
     USE_GEMINI = False
-    USE_QWEN = False
 else:
-    # 使用Qwen模型
-    client = AsyncOpenAI(api_key=QWEN_API_KEY, base_url=QWEN_BASE_URL)
-    USE_GEMINI = False
-    USE_QWEN = True
+    import os
+    os.environ["GEMINI_API_KEY"] = API_KEY
+    gemini_client = genai.Client()
+    USE_GEMINI = True
 
 if API_KEY.startswith("sk-REPLACE_ME"):
     raise RuntimeError("请在环境变量里配置 API_KEY")
@@ -190,13 +184,15 @@ async def step1_extract_book_data(topic: str) -> dict:
 """
 
     try:
-        if USE_QWEN:
-            response = await client.chat.completions.create(
-                model=QWEN_MODEL,
-                messages=[{"role": "user", "content": system_prompt}],
-                temperature=0.7
+        if USE_GEMINI:
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: gemini_client.models.generate_content(
+                    model="gemini-2.0-flash-exp", 
+                    contents=system_prompt
+                )
             )
-            result = response.choices[0].message.content
+            result = response.text
         else:
             response = await client.chat.completions.create(
                 model="gpt-4",
@@ -296,13 +292,15 @@ async def step2_create_ppt_slides(book_data: dict) -> list:
 """
 
     try:
-        if USE_QWEN:
-            response = await client.chat.completions.create(
-                model=QWEN_MODEL,
-                messages=[{"role": "user", "content": system_prompt}],
-                temperature=0.8
+        if USE_GEMINI:
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: gemini_client.models.generate_content(
+                    model="gemini-2.0-flash-exp", 
+                    contents=system_prompt
+                )
             )
-            result = response.choices[0].message.content
+            result = response.text
         else:
             response = await client.chat.completions.create(
                 model="gpt-4",
@@ -377,13 +375,15 @@ PPT画面结构：
 """
 
     try:
-        if USE_QWEN:
-            response = await client.chat.completions.create(
-                model=QWEN_MODEL,
-                messages=[{"role": "user", "content": system_prompt}],
-                temperature=0.8
+        if USE_GEMINI:
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: gemini_client.models.generate_content(
+                    model="gemini-2.0-flash-exp", 
+                    contents=system_prompt
+                )
             )
-            result = response.choices[0].message.content
+            result = response.text
         else:
             response = await client.chat.completions.create(
                 model="gpt-4",
@@ -621,13 +621,15 @@ PPT画面：
 9. 确保HTML结构完整，没有未闭合的标签
 """
 
-    if USE_QWEN:
-        response = await client.chat.completions.create(
-            model=QWEN_MODEL,
-            messages=[{"role": "user", "content": system_prompt}],
-            temperature=0.7
+    if USE_GEMINI:
+        response = await asyncio.get_event_loop().run_in_executor(
+            None, 
+            lambda: gemini_client.models.generate_content(
+                model="gemini-2.0-flash-exp", 
+                contents=system_prompt
+            )
         )
-        result = response.choices[0].message.content
+        result = response.text
     else:
         response = await client.chat.completions.create(
             model="gpt-4",
@@ -642,7 +644,7 @@ PPT画面：
 async def llm_event_stream(
     topic: str,
     history: Optional[List[dict]] = None,
-    model: str = QWEN_MODEL,
+    model: str = "gemini-2.5-pro",
 ) -> AsyncGenerator[str, None]:
     """
     主流式生成器：依次执行4个步骤，显示详细的处理日志
