@@ -14,9 +14,8 @@
 
 
 body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-color); color: var(--text-primary); overflow: hidden; }
-.initial-view, .chat-view { display: none; }
-body.show-initial-view .initial-view { display: flex; }
-body.show-chat-view .chat-view { display: flex; flex-direction: column; height: 100vh; }
+.initial-view { display: flex; }
+.chat-view { display: none; }
 .logo { height: clamp(40px, 7vw, 120px); width: auto; display: block; }
 
 

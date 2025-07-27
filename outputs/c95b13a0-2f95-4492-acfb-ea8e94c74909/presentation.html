@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>追风筝的人 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: #FFFFFF;
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .navigation button {
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .navigation button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background-color: #007AFF;
+            transform: scale(1.2);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 350px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #1D1D1F;
+            z-index: 1000;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <h1>追风筝的人</h1>
+            <h2>Khaled Hosseini</h2>
+            <p>一部关于背叛、救赎与友谊的史诗</p>
+        </div>
+        <div class="slide " data-slide="1">
+            <h1>作者：胡赛尼</h1>
+            <h2>卡勒德·胡赛尼</h2>
+            <p>阿富汗裔美国作家，联合国难民署亲善大使。他的作品关注战争、流离失所和人性的复杂性。</p>
+        </div>
+        <div class="slide " data-slide="2">
+            <h1>背叛与救赎</h1>
+            <h2>核心主题</h2>
+            <p>阿米尔的背叛是故事的起点，而他最终的救赎之路是他自我认知的过程。</p>
+        </div>
+        <div class="slide " data-slide="3">
+            <h1>经典语录</h1>
+            <h2>关于友谊</h2>
+            <p>“为你，千千万万遍。” – 哈桑</p>
+        </div>
+        <div class="slide " data-slide="4">
+            <h1>战争的影响</h1>
+            <h2>阿富汗</h2>
+            <p>数百万难民，无数破碎的家庭，无法磨灭的伤痛。</p>
+        </div>
+        <div class="slide " data-slide="5">
+            <h1>忠诚的意义</h1>
+            <h2>哈桑的牺牲</h2>
+            <p>哈桑对阿米尔的无私奉献和忠诚，体现了人性的光辉，也反衬出阿米尔的懦弱。</p>
+        </div>
+        <div class="slide " data-slide="6">
+            <h1>价值与意义</h1>
+            <h2>深刻的思考</h2>
+            <p>《追风筝的人》引发我们对道德、责任、救赎和人性的深刻思考，让我们更加关注战争对人类造成的伤害。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">7</span>
+    </div>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        We're thrilled to present a deep dive into Khaled Hosseini's masterpiece, 'The Kite Runner.' This isn't just a book; it's an experience. A journey that takes us from the sun-drenched streets of Kabul to the bustling cities of America, exploring the complexities of human nature along the way. At its heart, 'The Kite Runner' is a story of hope amidst devastation, a testament to the human spirit's capacity for forgiveness and self-discovery.
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "We're thrilled to present a deep dive into Khaled Hosseini's masterpiece, 'The Kite Runner.' This isn't just a book; it's an experience. A journey that takes us from the sun-drenched streets of Kabul to the bustling cities of America, exploring the complexities of human nature along the way. At its heart, 'The Kite Runner' is a story of hope amidst devastation, a testament to the human spirit's capacity for forgiveness and self-discovery.",
+        "Meet Khaled Hosseini, the Afghan-American writer whose words have touched millions. More than just an author, Hosseini is a voice for the voiceless, a humanitarian deeply committed to raising awareness about the plight of refugees. As a UN Refugee Agency Goodwill Ambassador, he uses his platform to shine a light on the challenges faced by those displaced by war and persecution. His own experiences and background deeply inform his writing, giving it a raw and authentic power. Hosseini brings the complex story to life.",
+        "Betrayal and Redemption. These are the twin pillars upon which the story is built. Amir's act of betrayal sets in motion a chain of events that will forever alter the course of his life, and the lives of those around him. But it's his journey towards redemption, his quest to right the wrongs of the past, that truly defines him. This is a story about confronting your demons, about facing your fears, and about finding the courage to become a better version of yourself. It’s about finding the strength to make amends for mistakes, no matter how long ago they occurred.",
+        "'For you, a thousand times over.' This iconic quote, spoken by Hassan, embodies the depth of his unwavering loyalty and devotion to Amir. It's a testament to the power of selfless love, a love that transcends social boundaries and personal sacrifice. These words encapsulate the pure, unconditional bond between two friends, a bond that will be tested in unimaginable ways. It’s a very powerful message.",
+        "Afghanistan. A nation scarred by decades of war. Millions displaced, families shattered, and wounds that run deep. 'The Kite Runner' doesn't shy away from the harsh realities of conflict. It exposes the devastating impact of war on innocent lives, highlighting the resilience and strength of those who have endured unimaginable suffering. The chart illustrates the deep impacts of the trauma.",
+        "Hassan's unwavering loyalty to Amir is one of the most defining aspects of 'The Kite Runner.' His selfless devotion, his willingness to sacrifice everything for his friend, serves as a powerful example of human goodness. His actions shine a light on the potential for compassion and empathy even in the face of adversity. His sacrifice inspires Amir to change for the better.",
+        "'The Kite Runner' is more than just a novel; it's a powerful exploration of morality, responsibility, redemption, and the enduring strength of the human spirit. It prompts us to confront difficult questions about our own choices, our own values, and our own capacity for compassion. It reminds us that even in the darkest of times, there is always hope for a better future. This story serves as a reminder of the impact that conflict has on so many people.",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>

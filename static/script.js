@@ -56,6 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
         player: document.getElementById('animation-player-template'),
         error: document.getElementById('agent-error-template'),
     };
+    
+    // 检查模板是否正确加载
+    console.log('模板加载状态:', {
+        user: !!templates.user,
+        status: !!templates.status,
+        code: !!templates.code,
+        player: !!templates.player,
+        error: !!templates.error
+    });
 
     let conversationHistory = [];
     let accumulatedCode = '';
@@ -376,13 +385,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function switchToChatView() {
-        body.classList.remove('show-initial-view');
-        body.classList.add('show-chat-view');
-        languageSwitcher.style.display = 'none';
-        document.getElementById('logo-chat').style.display = 'block';
+        console.log('=== 开始切换到聊天视图 ===');
+        
+        // 使用直接的DOM操作，而不是body类切换
+        const initialView = document.getElementById('initial-view');
+        const chatView = document.getElementById('chat-view');
+        
+        if (initialView) {
+            initialView.style.display = 'none';
+        }
+        
+        if (chatView) {
+            chatView.style.display = 'flex';
+            chatView.style.flexDirection = 'column';
+            chatView.style.height = '100vh';
+        }
+        
+        if (languageSwitcher) {
+            languageSwitcher.style.display = 'none';
+        }
+        
+        const logoChat = document.getElementById('logo-chat');
+        if (logoChat) {
+            logoChat.style.display = 'block';
+        }
+        
+        console.log('=== 聊天视图切换完成 ===');
     }
 
     function appendFromTemplate(template, text) {
+        if (!template) {
+            console.error('模板未找到:', template);
+            return null;
+        }
+        
         const node = template.content.cloneNode(true);
         const element = node.firstElementChild;
         if (text) element.innerHTML = element.innerHTML.replace('${text}', text);
@@ -476,6 +512,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function appendAnimationPlayer(htmlContent, topic) {
+        if (!templates.player) {
+            console.error('动画播放器模板未找到');
+            return;
+        }
+        
         const node = templates.player.content.cloneNode(true);
         const playerElement = node.firstElementChild;
         playerElement.querySelectorAll('[data-translate-key]').forEach(el => {

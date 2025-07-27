@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视图切换测试</title>
+    <style>
+        body { 
+            margin: 0; 
+            font-family: -apple-system, sans-serif; 
+            background-color: #F9F9FB; 
+            color: #1d1d1f; 
+            overflow: hidden; 
+        }
+        .initial-view, .chat-view { display: none; }
+        body.show-initial-view .initial-view { display: flex; }
+        body.show-chat-view .chat-view { display: flex; flex-direction: column; height: 100vh; }
+        
+        .initial-view { 
+            height: 100vh; 
+            display: flex;
+            flex-direction: column; 
+            align-items: center; 
+            padding: 2rem; 
+            position: relative; 
+            box-sizing: border-box; 
+            overflow-y: auto;
+        }
+        
+        .initial-content { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            width: 100%; 
+            flex: 1;
+            text-align: center;
+        }
+        
+        .hero-group { 
+            text-align: center; 
+            margin-bottom: 2rem;
+        }
+        
+        .hero-group h1 { 
+            font-size: 3rem; 
+            font-weight: 300; 
+            margin-bottom: 2rem; 
+        }
+        
+        .initial-form { 
+            position: relative; 
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .initial-form input { 
+            width: 100%; 
+            height: 60px; 
+            padding: 0 60px 0 25px; 
+            border: 1px solid #DFDFDF; 
+            border-radius: 12px; 
+            background-color: #fff; 
+            font-size: 1.1rem; 
+            box-sizing: border-box; 
+        }
+        
+        .initial-form button { 
+            position: absolute; 
+            right: 10px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            width: 40px; 
+            height: 40px; 
+            background: #0A84FF; 
+            border: none; 
+            border-radius: 10px; 
+            color: white; 
+            cursor: pointer; 
+        }
+        
+        .chat-view {
+            display: none;
+        }
+        
+        .chat-header { 
+            padding: 0.75rem 1.5rem; 
+            border-bottom: 1px solid #E5E5E5; 
+            background: rgba(255,255,255,0.7); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+        }
+        
+        .chat-log { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding: 1.5rem; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 1.25rem; 
+        }
+        
+        .chat-footer { 
+            padding: 1rem; 
+            flex-shrink: 0; 
+        }
+        
+        .input-container { 
+            position: relative; 
+        }
+        
+        .input-container input { 
+            width: 100%; 
+            height: 50px; 
+            padding: 0 50px 0 20px; 
+            border: 1px solid #E5E5E5; 
+            border-radius: 16px; 
+            font-size: 1rem; 
+            box-sizing: border-box; 
+            background-color: #fff; 
+        }
+        
+        .submit-button { 
+            position: absolute; 
+            right: 8px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            width: 34px; 
+            height: 34px; 
+            background: #0A84FF; 
+            border: none; 
+            border-radius: 50%; 
+            color: white; 
+            cursor: pointer; 
+        }
+        
+        .message-group { 
+            max-width: 80%; 
+            width: fit-content; 
+        }
+        
+        .message-group.user { 
+            align-self: flex-end; 
+        }
+        
+        .message-group.agent { 
+            align-self: flex-start; 
+        }
+        
+        .message-bubble { 
+            padding: 12px 18px; 
+            border-radius: 22px; 
+            font-size: 1rem; 
+            line-height: 1.5; 
+        }
+        
+        .user .message-bubble { 
+            background: #0A84FF; 
+            color: white; 
+            border-bottom-right-radius: 6px; 
+        }
+        
+        .status-bubble { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            padding: 12px 18px; 
+            border-radius: 22px; 
+            background: #EFEFF2; 
+            color: #8A8A8E; 
+        }
+        
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
+        .test-buttons {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        
+        .test-buttons button {
+            margin: 5px;
+            padding: 5px 10px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="show-initial-view">
+    <div class="debug-info" id="debug-info">
+        当前视图: 初始视图
+    </div>
+    
+    <div class="test-buttons">
+        <button onclick="switchToInitial()">切换到初始视图</button>
+        <button onclick="switchToChat()">切换到聊天视图</button>
+        <button onclick="checkBodyClasses()">检查body类</button>
+    </div>
+
+    <div id="initial-view" class="initial-view">
+        <div class="initial-content">
+            <div class="hero-group">
+                <h1>今天读点啥</h1>
+                <form id="initial-form" class="initial-form">
+                    <input type="text" id="initial-input" placeholder="输入书名..." required>
+                    <button type="submit" title="开始创作">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M3 20V4l19 8Z" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-view" class="chat-view">
+        <header class="chat-header">
+            <button id="new-chat-button" class="new-chat-button" title="新对话">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
+                </svg>
+                <span>新对话</span>
+            </button>
+            <div>聊天视图</div>
+        </header>
+        <main id="chat-log" class="chat-log">
+            <!-- 聊天内容将在这里显示 -->
+        </main>
+        <footer class="chat-footer">
+            <form id="chat-form" class="chat-form">
+                <div class="input-container">
+                    <input type="text" id="chat-input" placeholder="输入修改意见..." autocomplete="off" required>
+                    <button type="submit" class="submit-button" title="发送">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+            const initialForm = document.getElementById('initial-form');
+            const initialInput = document.getElementById('initial-input');
+            const chatForm = document.getElementById('chat-form');
+            const chatInput = document.getElementById('chat-input');
+            const chatLog = document.getElementById('chat-log');
+            const newChatButton = document.getElementById('new-chat-button');
+            const debugInfo = document.getElementById('debug-info');
+
+            function updateDebugInfo() {
+                const currentView = body.classList.contains('show-chat-view') ? '聊天视图' : '初始视图';
+                debugInfo.textContent = `当前视图: ${currentView}`;
+            }
+
+            function switchToChatView() {
+                console.log('切换到聊天视图');
+                body.classList.remove('show-initial-view');
+                body.classList.add('show-chat-view');
+                updateDebugInfo();
+            }
+
+            function handleFormSubmit(e) {
+                console.log('表单提交开始', e);
+                e.preventDefault();
+                console.log('preventDefault已调用');
+
+                const isInitial = e.currentTarget.id === 'initial-form';
+                console.log('是否为初始表单:', isInitial);
+
+                const input = isInitial ? initialInput : chatInput;
+                const topic = input.value.trim();
+                console.log('输入的主题:', topic);
+
+                if (!topic) {
+                    console.log('主题为空，返回');
+                    return;
+                }
+
+                if (isInitial) {
+                    console.log('切换到聊天视图');
+                    switchToChatView();
+                }
+
+                // 添加用户消息
+                const userMessage = document.createElement('div');
+                userMessage.className = 'message-group user';
+                userMessage.innerHTML = `<div class="message-bubble">${topic}</div>`;
+                chatLog.appendChild(userMessage);
+
+                // 添加AI状态消息
+                const aiMessage = document.createElement('div');
+                aiMessage.className = 'message-group agent';
+                aiMessage.innerHTML = `
+                    <div class="status-bubble">
+                        <div class="thinking-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <p>正在生成PPT...</p>
+                    </div>
+                `;
+                chatLog.appendChild(aiMessage);
+
+                // 清空输入框
+                input.value = '';
+                
+                // 滚动到底部
+                chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: 'smooth' });
+                
+                console.log('表单提交处理完成');
+            }
+
+            // 事件监听器
+            initialForm.addEventListener('submit', handleFormSubmit);
+            chatForm.addEventListener('submit', handleFormSubmit);
+            newChatButton.addEventListener('click', () => location.reload());
+
+            // 初始化调试信息
+            updateDebugInfo();
+            
+            console.log('页面初始化完成');
+        });
+
+        // 测试函数
+        function switchToInitial() {
+            document.body.classList.remove('show-chat-view');
+            document.body.classList.add('show-initial-view');
+            document.getElementById('debug-info').textContent = '当前视图: 初始视图';
+        }
+
+        function switchToChat() {
+            document.body.classList.remove('show-initial-view');
+            document.body.classList.add('show-chat-view');
+            document.getElementById('debug-info').textContent = '当前视图: 聊天视图';
+        }
+
+        function checkBodyClasses() {
+            const classes = document.body.className;
+            alert('Body类: ' + classes);
+            console.log('Body类:', classes);
+        }
+    </script>
+</body>
+</html> 

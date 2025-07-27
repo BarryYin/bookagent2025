@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>面纱 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: #FFFFFF;
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .navigation button {
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .navigation button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background-color: #007AFF;
+            transform: scale(1.2);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 350px;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #1D1D1F;
+            z-index: 1000;
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <h1>面纱</h1>
+            <h2>追寻真实的自我</h2>
+            <p></p>
+        </div>
+        <div class="slide " data-slide="1">
+            <h1>作者</h1>
+            <h2>W. Somerset Maugham</h2>
+            <p>英国著名作家，作品以洞察人性著称，文笔犀利，擅长描写复杂的情感关系。</p>
+        </div>
+        <div class="slide " data-slide="2">
+            <h1>婚姻</h1>
+            <h2>爱情、责任与忠诚</h2>
+            <p>《面纱》探讨了在缺乏感情基础的婚姻中，爱情、责任和忠诚的重要性以及它们遭受的挑战。</p>
+        </div>
+        <div class="slide " data-slide="3">
+            <h1>金句</h1>
+            <h2>关于爱与宽恕</h2>
+            <p>“我爱你已经爱到不认识我自己了” （书中引用，需要确认原文）。
+“宽恕别人就是释放自己” （自行提炼）</p>
+        </div>
+        <div class="slide " data-slide="4">
+            <h1>成长</h1>
+            <h2>自我认知与救赎</h2>
+            <p>凯蒂在困境中反思自我，寻求成长和自我救赎的过程，展现了女性的力量和勇气。</p>
+        </div>
+        <div class="slide " data-slide="5">
+            <h1>数据</h1>
+            <h2>关于霍乱</h2>
+            <p>霍乱爆发地区的死亡率：书中描述的内地霍乱爆发，突出了生命的脆弱性。</p>
+        </div>
+        <div class="slide " data-slide="6">
+            <h1>价值</h1>
+            <h2>文学的魅力与启迪</h2>
+            <p>《面纱》不仅是一部引人入胜的小说，更引发我们对爱情、婚姻、自我和人生意义的深刻思考。</p>
+        </div>
+        <div class="slide " data-slide="7">
+            <h1>推荐</h1>
+            <h2>走进《面纱》的世界</h2>
+            <p>现在就开始你的阅读之旅，感受经典文学的魅力。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">8</span>
+    </div>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        At its heart, 'The Painted Veil' is a journey of self-discovery. A story of a woman finding her true self amidst a backdrop of societal expectations and personal turmoil. A journey we can all relate to. We've chosen this powerful image of the book cover, slightly obscured, to symbolize the layers of identity we peel back as we journey through life. This story, more than just a book, is an experience.
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "At its heart, 'The Painted Veil' is a journey of self-discovery. A story of a woman finding her true self amidst a backdrop of societal expectations and personal turmoil. A journey we can all relate to. We've chosen this powerful image of the book cover, slightly obscured, to symbolize the layers of identity we peel back as we journey through life. This story, more than just a book, is an experience.",
+        "Maugham, a master of observation, possessed an uncanny ability to dissect the human condition. His writing, sharp and insightful, delves into the complexities of relationships and the hidden corners of the human heart. He crafts stories that stay with you long after you've turned the final page. A true wordsmith, shaping our understanding of ourselves and others.",
+        "'The Painted Veil' fearlessly confronts the complexities of marriage. It explores the delicate balance between love, responsibility, and loyalty. It asks the tough questions about what happens when these cornerstones are challenged, when the vows feel more like burdens. This isn't just about the characters; it's about the very essence of commitment.",
+        "\"I loved you to the point of not knowing myself any more.\". This raw, vulnerable line captures the intoxicating, sometimes destructive nature of love. And then, the profound realization: \"Forgiving others is freeing yourself.\". These aren't just lines; they're universal truths that speak to the heart of the human experience. They capture the essence of the journey of 'The Painted Veil'.",
+        "We watch Katie, our protagonist, navigate unimaginable circumstances. We witness her evolve from a place of naiveté and self-centeredness to one of understanding and compassion. It's a testament to the resilience of the human spirit, to the incredible capacity for change within each of us. It's a profound lesson in self-discovery and redemption.",
+        "The cholera outbreak adds another layer of depth to the narrative. The stark data reveals the relentless grip of the disease. We are reminded that life is precious. It highlights the vulnerability of human existence, and underscores the importance of compassion and empathy. It is the shadow that brings the light of Katie's transformation into sharper focus.",
+        "This novel challenges us to examine our own lives, our relationships, and our values. It provokes introspection, encourages empathy, and reminds us of the enduring power of the human spirit. This book continues to inspire readers, provoke thoughtful discussions, and provide enduring insights into the nature of life, love, and forgiveness.",
+        "'The Painted Veil' awaits. Dive into its pages, explore its depths, and discover the profound insights it has to offer. Start reading 'The Painted Veil' and embark on a journey that will stay with you long after you turn the final page. You won't regret it.",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>

@@ -225,17 +225,24 @@ async def step1_extract_book_data(topic: str) -> dict:
         return book_data
             
     except Exception as e:
-        # API配额用完或其他错误时，返回默认数据
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
-            print(f"API调用失败，使用备用数据: {e}")
-            fallback_data = get_fallback_book_data(topic)
-            fallback_data['cover_url'] = get_default_book_cover(topic)
-            return fallback_data
+        # 详细记录错误信息
+        error_str = str(e)
+        print(f"Step1 API调用出错，错误类型: {type(e).__name__}")
+        print(f"错误详情: {error_str}")
+        
+        # 根据错误类型提供不同的处理
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            print("检测到API配额限制，使用备用数据")
+        elif "ConnectError" in error_str or "SSL" in error_str or "EOF" in error_str:
+            print("检测到网络连接问题，使用备用数据")
+        elif "timeout" in error_str.lower():
+            print("检测到请求超时，使用备用数据")
         else:
-            print(f"未知错误，使用备用数据: {e}")
-            fallback_data = get_fallback_book_data(topic)
-            fallback_data['cover_url'] = get_default_book_cover(topic)
-            return fallback_data
+            print(f"未知错误类型，使用备用数据: {error_str}")
+        
+        fallback_data = get_fallback_book_data(topic)
+        fallback_data['cover_url'] = get_default_book_cover(topic)
+        return fallback_data
 
 async def step2_create_ppt_slides(book_data: dict) -> list:
     """
@@ -1845,6 +1852,13 @@ async def library_page(request: Request):
 async def read_index(request: Request):
     return templates.TemplateResponse(
         "index.html", {
+            "request": request,
+            "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")})
+
+@app.get("/simple_switch_test.html", response_class=HTMLResponse)
+async def simple_switch_test(request: Request):
+    return templates.TemplateResponse(
+        "simple_switch_test.html", {
             "request": request,
             "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")})
 

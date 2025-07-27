@@ -1,0 +1,24 @@
+[Unit]
+Description=Fogsight Book PPT Generator
+After=network.target
+
+[Service]
+Type=simple
+User=fogsight
+Group=fogsight
+WorkingDirectory=/opt/fogsight
+Environment=PATH=/opt/fogsight/venv/bin
+ExecStart=/opt/fogsight/venv/bin/uvicorn appbook:app --host 0.0.0.0 --port 8000
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=5
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/fogsight/outputs
+
+[Install]
+WantedBy=multi-user.target 
