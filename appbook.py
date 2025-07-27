@@ -944,7 +944,7 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-            background: #FFFFFF;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #1D1D1F;
             overflow: hidden;
         }}
@@ -970,6 +970,11 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             padding: 40px;
             box-sizing: border-box;
             text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }}
         
         .slide.active {{
@@ -977,18 +982,50 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             transform: translateX(0);
         }}
         
+        /* 开场页特殊样式 */
+        .slide[data-slide="0"] {{
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+        }}
+        
+        .slide[data-slide="0"] h1 {{
+            font-size: 5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }}
+        
+        /* 引用页特殊样式 */
+        .slide[data-slide="3"] p {{
+            font-size: 2rem;
+            font-style: italic;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 4px solid #667eea;
+        }}
+        
+        /* 总结页特殊样式 */
+        .slide[data-slide="6"] {{
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }}
+        
         .slide h1 {{
             font-size: 4rem;
-            font-weight: 300;
+            font-weight: 700;
             margin-bottom: 20px;
             color: #1D1D1F;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }}
         
         .slide h2 {{
             font-size: 2rem;
-            font-weight: 400;
+            font-weight: 500;
             color: #86868B;
             margin-bottom: 30px;
+            opacity: 0.8;
         }}
         
         .slide p {{
@@ -996,11 +1033,16 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             line-height: 1.6;
             max-width: 800px;
             color: #1D1D1F;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }}
         
         .navigation {{
             position: fixed;
-            bottom: 30px;
+            bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
@@ -1009,7 +1051,7 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
         }}
         
         .navigation button {{
-            background-color: #007AFF;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #FFFFFF;
             border: none;
             padding: 12px 24px;
@@ -1019,11 +1061,13 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             font-size: 1.2rem;
             font-weight: 500;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }}
         
         .navigation button:hover {{
-            background-color: #0056b3;
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }}
         
         .navigation button:disabled {{
@@ -1048,24 +1092,29 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
         }}
         
         .dot.active {{
-            background-color: #007AFF;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             transform: scale(1.2);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
         }}
         
         .narration-panel {{
             position: fixed;
-            top: 30px;
-            right: 30px;
-            width: 350px;
-            background-color: rgba(255, 255, 255, 0.9);
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 800px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
             backdrop-filter: blur(20px);
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
             font-size: 1rem;
-            line-height: 1.5;
+            line-height: 1.6;
             color: #1D1D1F;
             z-index: 1000;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }}
         
         .slide-counter {{
@@ -1079,6 +1128,34 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             font-size: 1rem;
             z-index: 1000;
         }}
+        
+        .back-home-button {{
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }}
+        
+        .back-home-button:hover {{
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: translateY(-2px);
+        }}
+        
+        .back-home-button svg {{
+            width: 16px;
+            height: 16px;
+        }}
     </style>
 </head>
 <body>
@@ -1088,6 +1165,14 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     <div class="slide-counter">
         <span id="currentSlideNum">1</span> / <span id="totalSlideNum">{len(processed_slides)}</span>
     </div>
+    
+    <button class="back-home-button" onclick="goBackHome()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/>
+            <path d="M12 19l-7-7 7-7"/>
+        </svg>
+        返回首页
+    </button>
     
     <div class="navigation">
         <button id="prevButton" onclick="prevSlide()">← 上一页</button>
@@ -1200,6 +1285,12 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
                     break;
             }}
         }});
+        
+        // 返回首页函数
+        function goBackHome() {{
+            // 返回到主应用页面
+            window.location.href = '/';
+        }}
         
         // 初始化显示
         updateNavigationButtons();

@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     const chatLog = document.getElementById('chat-log');
     const newChatButton = document.getElementById('new-chat-button');
+    const backHomeButton = document.getElementById('back-home-button');
     const languageSwitcher = document.getElementById('language-switcher');
     const placeholderContainer = document.getElementById('animated-placeholder');
     const featureModal = document.getElementById('feature-modal');
@@ -413,6 +414,41 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('=== 聊天视图切换完成 ===');
     }
 
+    function switchToInitialView() {
+        console.log('=== 开始切换到初始视图 ===');
+        const initialView = document.getElementById('initial-view');
+        const chatView = document.getElementById('chat-view');
+        
+        if (chatView) {
+            chatView.style.display = 'none';
+        }
+        
+        if (initialView) {
+            initialView.style.display = 'flex';
+        }
+        
+        if (languageSwitcher) {
+            languageSwitcher.style.display = 'flex';
+        }
+        
+        const logoChat = document.getElementById('logo-chat');
+        if (logoChat) {
+            logoChat.style.display = 'none';
+        }
+        
+        // 清空聊天记录
+        if (chatLog) {
+            chatLog.innerHTML = '';
+        }
+        
+        // 重置表单
+        if (chatInput) {
+            chatInput.value = '';
+        }
+        
+        console.log('=== 初始视图切换完成 ===');
+    }
+
     function appendFromTemplate(template, text) {
         if (!template) {
             console.error('模板未找到:', template);
@@ -602,6 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initialForm.addEventListener('submit', handleFormSubmit);
         chatForm.addEventListener('submit', handleFormSubmit);
         newChatButton.addEventListener('click', () => location.reload());
+        backHomeButton.addEventListener('click', switchToInitialView);
         languageSwitcher.addEventListener('click', (e) => {
             const target = e.target.closest('button');
             if (target) setLanguage(target.dataset.lang);
