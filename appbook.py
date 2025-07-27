@@ -1,5 +1,7 @@
 import asyncio
 import json
+import httpx
+import re
 from datetime import datetime
 from typing import AsyncGenerator, List, Optional
 
@@ -66,6 +68,92 @@ class BookData(BaseModel):
     chapters: Optional[List[str]] = None
 
 # -----------------------------------------------------------------------
+# 1.5. 书籍封面搜索功能
+# -----------------------------------------------------------------------
+
+async def search_book_cover(book_title: str, author: str = None) -> str:
+    """
+    搜索书籍封面图片
+    使用Google Books API或其他免费API搜索书籍封面
+    """
+    try:
+        # 构建搜索查询
+        query = book_title
+        if author:
+            query += f" {author}"
+        
+        # 使用Google Books API搜索
+        async with httpx.AsyncClient() as client:
+            url = "https://www.googleapis.com/books/v1/volumes"
+            params = {
+                "q": query,
+                "maxResults": 1,
+                "printType": "books",
+                "langRestrict": "zh"  # 优先中文书籍
+            }
+            
+            response = await client.get(url, params=params, timeout=10.0)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get("totalItems", 0) > 0:
+                    book = data["items"][0]
+                    volume_info = book.get("volumeInfo", {})
+                    image_links = volume_info.get("imageLinks", {})
+                    
+                    # 优先使用高质量图片
+                    cover_url = (
+                        image_links.get("extraLarge") or
+                        image_links.get("large") or
+                        image_links.get("medium") or
+                        image_links.get("small") or
+                        image_links.get("thumbnail")
+                    )
+                    
+                    if cover_url:
+                        # 将http替换为https以确保安全
+                        cover_url = cover_url.replace("http://", "https://")
+                        return cover_url
+        
+        # 如果Google Books API没有结果，尝试其他方法
+        # 这里可以添加其他书籍API的搜索逻辑
+        
+    except Exception as e:
+        print(f"搜索书籍封面失败: {e}")
+    
+    # 返回默认封面
+    return get_default_book_cover(book_title)
+
+def get_default_book_cover(book_title: str) -> str:
+    """
+    生成默认书籍封面
+    基于书名生成一个简单的封面样式
+    """
+    # 根据书名长度和内容选择不同的默认样式
+    title_length = len(book_title)
+    
+    # 预定义的渐变色方案
+    gradients = [
+        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+        "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+        "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+        "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+        "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
+        "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
+        "linear-gradient(135deg, #ff8a80 0%, #ea4c89 100%)",
+        "linear-gradient(135deg, #8fd3f4 0%, #84fab0 100%)"
+    ]
+    
+    # 根据书名哈希选择渐变
+    gradient_index = hash(book_title) % len(gradients)
+    gradient = gradients[gradient_index]
+    
+    # 返回CSS渐变字符串，前端可以直接使用
+    return f"gradient:{gradient}"
+
+# -----------------------------------------------------------------------
 # 2. 核心处理函数：分为4个步骤
 # -----------------------------------------------------------------------
 
@@ -105,18 +193,49 @@ async def step1_extract_book_data(topic: str) -> dict:
             result = response.choices[0].message.content
 
         try:
-            return json.loads(result)
+            book_data = json.loads(result)
         except:
-            return {"raw_content": result}
+            book_data = {"raw_content": result}
+        
+        # 搜索书籍封面
+        try:
+            # 从解析的数据中提取书名和作者
+            if isinstance(book_data, dict) and 'raw_content' not in book_data:
+                book_title = book_data.get('book_title', topic)
+                author = book_data.get('author', '')
+            else:
+                # 从raw_content中提取信息
+                book_title = topic
+                author = ''
+                if 'raw_content' in book_data:
+                    content = str(book_data['raw_content'])
+                    # 尝试从内容中提取作者信息
+                    author_match = re.search(r'"author":\s*"([^"]+)"', content)
+                    if author_match:
+                        author = author_match.group(1)
+            
+            # 搜索封面
+            cover_url = await search_book_cover(book_title, author)
+            book_data['cover_url'] = cover_url
+            
+        except Exception as cover_error:
+            print(f"搜索封面失败: {cover_error}")
+            book_data['cover_url'] = get_default_book_cover(topic)
+        
+        return book_data
             
     except Exception as e:
         # API配额用完或其他错误时，返回默认数据
         if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
             print(f"API调用失败，使用备用数据: {e}")
-            return get_fallback_book_data(topic)
+            fallback_data = get_fallback_book_data(topic)
+            fallback_data['cover_url'] = get_default_book_cover(topic)
+            return fallback_data
         else:
             print(f"未知错误，使用备用数据: {e}")
-            return get_fallback_book_data(topic)
+            fallback_data = get_fallback_book_data(topic)
+            fallback_data['cover_url'] = get_default_book_cover(topic)
+            return fallback_data
 
 async def step2_create_ppt_slides(book_data: dict) -> list:
     """
@@ -1659,12 +1778,17 @@ async def get_generated_ppts(limit: int = 10):
                             tz=shanghai_tz
                         ).strftime("%Y-%m-%d %H:%M")
                         
+                        # 获取封面信息
+                        book_data = data.get("book_data", {})
+                        cover_url = book_data.get("cover_url", get_default_book_cover(data.get("topic", "未知主题")))
+                        
                         ppt_info = {
                             "session_id": session_dir.name,
                             "title": data.get("topic", "未知主题"),
                             "created_time": created_time,
                             "html_path": f"/outputs/{session_dir.name}/presentation.html",
-                            "preview_url": f"/ppt-preview/{session_dir.name}"
+                            "preview_url": f"/ppt-preview/{session_dir.name}",
+                            "cover_url": cover_url
                         }
                         
                         ppt_list.append(ppt_info)
@@ -1706,6 +1830,16 @@ async def test_stream():
     """测试流数据的页面"""
     with open("test_stream.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
+@app.get("/library", response_class=HTMLResponse)
+async def library_page(request: Request):
+    """图书馆页面"""
+    return templates.TemplateResponse(
+        "library.html", {
+            "request": request,
+            "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
+        }
+    )
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):

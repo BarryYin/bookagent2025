@@ -19,6 +19,16 @@
         <button data-lang="en">EN</button>
     </div>
 
+    <nav class="top-nav">
+        <a href="/library" class="nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            图书馆
+        </a>
+    </nav>
+
     <div id="initial-view" class="initial-view">
         <img src="/static/logo.png?v={{ time }}" alt="Studio Logo" class="logo" id="logo-initial">
 
@@ -37,27 +47,12 @@
             </div>
 
             <!-- PPT展示区域 -->
-            <div class="ppt-gallery" id="ppt-gallery">
-                <div class="gallery-header">
-                    <h2 data-translate-key="recentPPTs">最近生成的PPT</h2>
-                    <button id="refresh-gallery" class="refresh-button" title="刷新">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="23 4 23 10 17 10"></polyline>
-                            <polyline points="1 20 1 14 7 14"></polyline>
-                            <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="ppt-grid" id="ppt-grid">
+            <div class="ppt-showcase" id="ppt-showcase">
+                <div class="ppt-showcase-grid" id="ppt-showcase-grid">
                     <!-- PPT卡片将通过JavaScript动态加载 -->
-                    <div class="loading-placeholder">
-                        <div class="loading-spinner"></div>
-                        <p>正在加载PPT...</p>
-                        <button onclick="testAPIDirectly()"
-                            style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">测试API</button>
-                        <button onclick="testLogDisplay()"
-                            style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">测试日志显示</button>
+                    <div class="loading-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 3rem 2rem; color: var(--text-secondary);">
+                        <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+                        <p style="margin: 0; font-size: 1rem;">正在加载最新作品...</p>
                     </div>
                 </div>
             </div>
@@ -203,6 +198,30 @@
     <script src="/static/fix_ppt_gallery.js?v={{ time }}"></script>
 
     <script>
+        // 查看更多PPT功能
+        window.showAllPPTs = async function() {
+            try {
+                const response = await fetch('/api/generated-ppts');
+                const data = await response.json();
+                
+                if (data.ppts && data.ppts.length > 0) {
+                    // 使用fix_ppt_gallery.js中的函数来渲染
+                    if (typeof renderPPTCardsFixed === 'function') {
+                        renderPPTCardsFixed(data.ppts);
+                    }
+                    
+                    // 更新按钮文本
+                    const viewMoreButton = document.getElementById('view-more-ppts');
+                    if (viewMoreButton) {
+                        viewMoreButton.innerHTML = `收起 (${data.ppts.length}个) <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>`;
+                        viewMoreButton.onclick = () => location.reload();
+                    }
+                }
+            } catch (error) {
+                console.error('加载所有PPT失败:', error);
+            }
+        };
+
         // 测试日志显示功能
         window.testLogDisplay = function () {
             console.log('测试日志显示功能');

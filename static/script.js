@@ -62,6 +62,124 @@ document.addEventListener('DOMContentLoaded', () => {
     let placeholderInterval;
     let pptGallery = null;
 
+    // 初始化PPT展示区域
+    function initPPTShowcase() {
+        loadShowcasePPTs();
+    }
+
+    // 加载展示PPT
+    async function loadShowcasePPTs() {
+        const grid = document.getElementById('ppt-showcase-grid');
+        if (!grid) return;
+
+        try {
+            const response = await fetch('/api/generated-ppts?limit=3');
+            const data = await response.json();
+
+            if (data.ppts && data.ppts.length > 0) {
+                renderShowcasePPTs(data.ppts);
+            } else {
+                grid.innerHTML = `
+                    <div class="empty-showcase" style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
+                        <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.6;">📚</div>
+                        <h3 style="font-size: 1.5rem; color: var(--text-primary); margin: 0 0 0.5rem 0; font-weight: 600;">还没有作品</h3>
+                        <p style="margin: 0; font-size: 1rem;">在上方输入框中输入书名，创建你的第一个PPT作品吧！</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('加载展示PPT失败:', error);
+            grid.innerHTML = `
+                <div class="error-showcase">
+                    <p style="text-align: center; color: var(--text-secondary); grid-column: 1 / -1;">
+                        加载失败，请稍后重试
+                    </p>
+                </div>
+            `;
+        }
+    }
+
+    // 渲染展示PPT
+    function renderShowcasePPTs(ppts) {
+        const grid = document.getElementById('ppt-showcase-grid');
+        grid.innerHTML = '';
+
+        ppts.forEach((ppt, index) => {
+            const card = createShowcasePPTCard(ppt, index);
+            grid.appendChild(card);
+        });
+    }
+
+    // 创建展示PPT卡片
+    function createShowcasePPTCard(ppt, index) {
+        const card = document.createElement('div');
+        card.className = 'showcase-ppt-card';
+        card.style.animationDelay = `${index * 0.15}s`;
+
+        // 处理封面显示
+        let previewContent = '';
+        if (ppt.cover_url && !ppt.cover_url.startsWith('gradient:')) {
+            // 使用真实书籍封面
+            previewContent = `
+                <div class="showcase-card-preview book-cover-preview">
+                    <img src="${ppt.cover_url}" alt="${escapeHtml(ppt.title)}" class="book-cover-image" 
+                         onerror="this.parentElement.innerHTML='<div class=\\'fallback-cover\\'><div class=\\'fallback-icon\\'>📚</div><div class=\\'fallback-title\\'>${escapeHtml(ppt.title)}</div></div>'">
+                </div>
+            `;
+        } else {
+            // 使用渐变背景或默认样式
+            let background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            if (ppt.cover_url && ppt.cover_url.startsWith('gradient:')) {
+                background = ppt.cover_url.replace('gradient:', '');
+            } else {
+                // 备用渐变色
+                const gradients = [
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+                ];
+                background = gradients[index % gradients.length];
+            }
+
+            const bookIcons = ['📖', '📚', '📘', '📙', '📗', '📕'];
+            const icon = bookIcons[index % bookIcons.length];
+
+            previewContent = `
+                <div class="showcase-card-preview" style="background: ${background};">
+                    <div class="showcase-preview-content">
+                        <div class="showcase-preview-icon">${icon}</div>
+                        <div class="showcase-preview-title">${escapeHtml(ppt.title)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
+            ${previewContent}
+            <div class="showcase-card-info">
+                <h3 class="showcase-card-title">${escapeHtml(ppt.title)}</h3>
+                <div class="showcase-card-meta">${ppt.created_time}</div>
+            </div>
+        `;
+
+        // 让整个卡片可点击
+        card.addEventListener('click', () => {
+            window.open(ppt.html_url, '_blank');
+        });
+
+        return card;
+    }
+
+    // HTML转义函数
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     function handleFormSubmit(e) {
         console.log('表单提交开始', e);
         e.preventDefault();
@@ -448,6 +566,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target) setLanguage(target.dataset.lang);
         });
 
+        // 初始化PPT展示区域
+        initPPTShowcase();
+
         function hideModal() {
             featureModal.classList.remove('visible');
         }
@@ -723,21 +844,17 @@ async function showAllPPTs() {
         const data = await response.json();
 
         if (data.ppts && data.ppts.length > 0) {
-            // 清空当前显示，重新渲染所有PPT
-            pptGallery.innerHTML = '';
-            data.ppts.forEach(ppt => {
-                const card = createPPTCard(ppt);
-                pptGallery.appendChild(card);
-            });
-
-            // 更新标题
-            const galleryHeader = document.querySelector('.gallery-header h2');
-            if (galleryHeader) {
-                galleryHeader.textContent = `所有PPT (${data.ppts.length}个)`;
+            // 使用fix_ppt_gallery.js中的函数来渲染
+            if (typeof renderPPTCardsFixed === 'function') {
+                renderPPTCardsFixed(data.ppts);
             }
 
-            // 添加"收起"按钮
-            const collapseCard = document.createElement('div');
+            // 更新按钮文本
+            const viewMoreButton = document.getElementById('view-more-ppts');
+            if (viewMoreButton) {
+                viewMoreButton.textContent = `收起 (${data.ppts.length}个)`;
+                viewMoreButton.onclick = () => location.reload(); // 收起时刷新页面
+            }
             collapseCard.className = 'view-more-card';
             collapseCard.innerHTML = `
                     <div class="view-more-content">

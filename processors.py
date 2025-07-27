@@ -10,6 +10,7 @@ from models import (
     BookInfo, Review, StructuredInfo, ProcessContext, 
     SlidesStructure, SlidesContent, SpeechScript, StyleConfig
 )
+from cover_search import search_book_cover
 
 # 配置日志
 logging.basicConfig(
