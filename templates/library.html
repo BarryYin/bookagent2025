@@ -146,24 +146,49 @@
             card.className = 'library-ppt-card';
             card.style.animationDelay = `${index * 0.1}s`;
             
-            // 生成渐变背景色
-            const gradients = [
-                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
-            ];
-            const gradient = gradients[index % gradients.length];
+            // 处理封面显示
+            let previewContent = '';
+            if (ppt.cover_url && !ppt.cover_url.startsWith('gradient:')) {
+                // 使用真实书籍封面
+                previewContent = `
+                    <div class="library-card-preview book-cover-preview">
+                        <img src="${ppt.cover_url}" alt="${escapeHtml(ppt.title)}" class="book-cover-image" 
+                             onerror="this.parentElement.innerHTML='<div class=\\'fallback-cover\\'><div class=\\'fallback-icon\\'>📚</div><div class=\\'fallback-title\\'>${escapeHtml(ppt.title)}</div></div>'">
+                    </div>
+                `;
+            } else {
+                // 使用渐变背景或默认样式
+                let background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                if (ppt.cover_url && ppt.cover_url.startsWith('gradient:')) {
+                    background = ppt.cover_url.replace('gradient:', '');
+                } else {
+                    // 备用渐变色
+                    const gradients = [
+                        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                        'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                        'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                        'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+                    ];
+                    background = gradients[index % gradients.length];
+                }
+
+                const bookIcons = ['📖', '📚', '📘', '📙', '📗', '📕'];
+                const icon = bookIcons[index % bookIcons.length];
+
+                previewContent = `
+                    <div class="library-card-preview" style="background: ${background};">
+                        <div class="preview-content">
+                            <div class="preview-icon">${icon}</div>
+                            <div class="preview-title">${escapeHtml(ppt.title)}</div>
+                        </div>
+                    </div>
+                `;
+            }
             
             card.innerHTML = `
-                <div class="library-card-preview" style="background: ${gradient};">
-                    <div class="preview-content">
-                        <div class="preview-icon">📚</div>
-                        <div class="preview-title">${escapeHtml(ppt.title)}</div>
-                    </div>
-                </div>
+                ${previewContent}
                 <div class="library-card-info">
                     <h3 class="library-card-title">${escapeHtml(ppt.title)}</h3>
                     <div class="library-card-meta">

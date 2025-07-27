@@ -934,6 +934,40 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     overflow: hidden;
 }
 
+/* 图书馆页面的书籍封面样式 */
+.library-card-preview.book-cover-preview {
+    padding: 0;
+    background: none;
+}
+
+.library-card-preview .book-cover-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+}
+
+.library-card-preview .fallback-cover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.library-card-preview .fallback-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.library-card-preview .fallback-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
 .preview-content {
     text-align: center;
     z-index: 2;

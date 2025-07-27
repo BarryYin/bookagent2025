@@ -68,62 +68,71 @@ class BookData(BaseModel):
     chapters: Optional[List[str]] = None
 
 # -----------------------------------------------------------------------
-# 1.5. 书籍封面搜索功能
+# 1.5. 书籍封面搜索功能 - 导入test_cover.py的函数
 # -----------------------------------------------------------------------
 
-async def search_book_cover(book_title: str, author: str = None) -> str:
+# 导入test_cover.py中的封面搜索函数
+try:
+    from test_cover import search_book_cover as test_cover_search_book_cover
+    from test_cover import search_douban_books, search_google_books, get_search_variations
+    from test_cover import normalize_text, calculate_similarity, is_better_match
+    from test_cover import download_image
+    print("✅ 成功导入test_cover.py中的封面搜索和下载函数")
+except ImportError as e:
+    print(f"⚠️ 导入test_cover.py失败: {e}")
+    # 如果导入失败，使用简化的备用函数
+    async def test_cover_search_book_cover(book_title: str, author: str = None) -> str:
+        """备用封面搜索函数"""
+        return get_default_book_cover(book_title)
+    
+    async def download_image(url: str, save_path: str) -> bool:
+        """备用下载函数"""
+        return False
+
+async def search_book_cover(book_title: str, author: str = None, download: bool = True) -> str:
     """
     搜索书籍封面图片
-    使用Google Books API或其他免费API搜索书籍封面
+    使用test_cover.py中的函数，优先使用豆瓣图书API，然后使用Google Books API作为备选
+    如果download=True，会下载图片到本地covers目录
     """
     try:
-        # 构建搜索查询
-        query = book_title
-        if author:
-            query += f" {author}"
+        # 使用test_cover.py中的函数
+        cover_url = await test_cover_search_book_cover(book_title, author)
         
-        # 使用Google Books API搜索
-        async with httpx.AsyncClient() as client:
-            url = "https://www.googleapis.com/books/v1/volumes"
-            params = {
-                "q": query,
-                "maxResults": 1,
-                "printType": "books",
-                "langRestrict": "zh"  # 优先中文书籍
-            }
-            
-            response = await client.get(url, params=params, timeout=10.0)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                if data.get("totalItems", 0) > 0:
-                    book = data["items"][0]
-                    volume_info = book.get("volumeInfo", {})
-                    image_links = volume_info.get("imageLinks", {})
-                    
-                    # 优先使用高质量图片
-                    cover_url = (
-                        image_links.get("extraLarge") or
-                        image_links.get("large") or
-                        image_links.get("medium") or
-                        image_links.get("small") or
-                        image_links.get("thumbnail")
-                    )
-                    
-                    if cover_url:
-                        # 将http替换为https以确保安全
-                        cover_url = cover_url.replace("http://", "https://")
-                        return cover_url
+        # 如果返回的是本地文件路径，直接返回
+        if cover_url.startswith("covers/"):
+            return cover_url
         
-        # 如果Google Books API没有结果，尝试其他方法
-        # 这里可以添加其他书籍API的搜索逻辑
+        # 如果找到了真实URL且需要下载
+        if download and cover_url.startswith("http"):
+            # 创建covers目录
+            import os
+            os.makedirs("covers", exist_ok=True)
+            
+            # 生成文件名
+            safe_title = "".join(c for c in book_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            safe_author = "".join(c for c in (author or "") if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            filename = f"{safe_title}_{safe_author}.jpg" if safe_author else f"{safe_title}.jpg"
+            filename = filename.replace(" ", "_")
+            
+            save_path = os.path.join("covers", filename)
+            
+            # 下载图片
+            print(f"📥 正在下载封面: {filename}")
+            success = await download_image(cover_url, save_path)
+            
+            if success:
+                print(f"✅ 封面下载成功: {save_path}")
+                return save_path
+            else:
+                print(f"❌ 封面下载失败，使用原始URL")
+                return cover_url
+        
+        return cover_url
         
     except Exception as e:
         print(f"搜索书籍封面失败: {e}")
-    
-    # 返回默认封面
-    return get_default_book_cover(book_title)
+        return get_default_book_cover(book_title)
 
 def get_default_book_cover(book_title: str) -> str:
     """
@@ -902,6 +911,15 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     parsed_book_data = parse_ai_response(book_data)
     book_title = extract_book_title(parsed_book_data)
     
+    # 获取书籍封面
+    cover_url = ""
+    # 首先从原始book_data中获取cover_url
+    if isinstance(book_data, dict):
+        cover_url = book_data.get('cover_url', '')
+    # 如果原始数据中没有，再从解析后的数据中获取
+    if not cover_url and isinstance(parsed_book_data, dict):
+        cover_url = parsed_book_data.get('cover_url', '')
+    
     # 解析slides数据
     parsed_slides = parse_ai_response(slides)
     processed_slides = process_slides_data(parsed_slides, book_title)
@@ -918,7 +936,48 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     slides_html = ""
     for i, slide in enumerate(processed_slides):
         active_class = "active" if i == 0 else ""
-        slides_html += f'''
+        
+        # 如果是封面页，显示封面
+        if i == 0:
+            if cover_url and (cover_url.startswith('http') or cover_url.startswith('covers/')):
+                # 有真实封面图片（URL或本地文件）
+                if cover_url.startswith('covers/'):
+                    # 本地文件，需要转换为静态文件URL
+                    static_url = f"/covers/{cover_url.replace('covers/', '')}"
+                else:
+                    # 远程URL
+                    static_url = cover_url
+                
+                slides_html += f'''
+        <div class="slide {active_class}" data-slide="{i}">
+            <div class="cover-container">
+                <div class="book-cover">
+                    <img src="{static_url}" alt="{book_title}" class="cover-image">
+                </div>
+                <div class="cover-text">
+                    <h1>{slide.get('title', book_title)}</h1>
+                    <h2>{slide.get('subtitle', '')}</h2>
+                </div>
+            </div>
+        </div>'''
+            else:
+                # 没有真实封面，显示默认封面
+                slides_html += f'''
+        <div class="slide {active_class}" data-slide="{i}">
+            <div class="cover-container">
+                <div class="book-cover">
+                    <div class="default-cover">
+                        <div class="default-cover-title">{book_title}</div>
+                    </div>
+                </div>
+                <div class="cover-text">
+                    <h1>{slide.get('title', book_title)}</h1>
+                    <h2>{slide.get('subtitle', '')}</h2>
+                </div>
+            </div>
+        </div>'''
+        else:
+            slides_html += f'''
         <div class="slide {active_class}" data-slide="{i}">
             <h1>{slide.get('title', f'第{i+1}页')}</h1>
             <h2>{slide.get('subtitle', '')}</h2>
@@ -993,6 +1052,86 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }}
+        
+        /* 封面页样式 */
+        .cover-container {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            height: 100%;
+        }}
+        
+        .book-cover {{
+            flex-shrink: 0;
+            width: 300px;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: perspective(1000px) rotateY(-15deg);
+            transition: transform 0.3s ease;
+        }}
+        
+        .book-cover:hover {{
+            transform: perspective(1000px) rotateY(-5deg) scale(1.05);
+        }}
+        
+        .cover-image {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }}
+        
+        .cover-text {{
+            flex: 1;
+            max-width: 500px;
+            text-align: left;
+        }}
+        
+        .cover-text h1 {{
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }}
+        
+        .cover-text h2 {{
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }}
+        
+        /* 默认封面样式（当没有真实封面时） */
+        .default-cover {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+        }}
+        
+        .default-cover::before {{
+            content: "📚";
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }}
+        
+        .default-cover-title {{
+            font-size: 1.5rem;
+            line-height: 1.3;
+            word-break: break-word;
         }}
         
         /* 引用页特殊样式 */
@@ -1777,13 +1916,21 @@ async def get_generated_ppts(limit: int = None):
                 book_data = data.get('book_data', {})
                 book_title = extract_book_title(book_data) if book_data else topic
                 
+                # 获取封面信息
+                cover_url = book_data.get("cover_url", get_default_book_cover(topic))
+                
+                # 转换本地封面路径为URL
+                if cover_url.startswith('covers/'):
+                    cover_url = f"/covers/{cover_url.replace('covers/', '')}"
+                
                 ppt_list.append({
                     'session_id': session_id,
                     'title': book_title,
                     'topic': topic,
                     'created_time': created_time,
                     'html_url': f'/outputs/{session_id}/presentation.html',
-                    'preview_url': f'/api/ppt-preview/{session_id}'
+                    'preview_url': f'/api/ppt-preview/{session_id}',
+                    'cover_url': cover_url
                 })
         except Exception as e:
             print(f"Error processing {data_file}: {e}")
@@ -1880,6 +2027,10 @@ async def get_generated_ppts(limit: int = 10):
                         book_data = data.get("book_data", {})
                         cover_url = book_data.get("cover_url", get_default_book_cover(data.get("topic", "未知主题")))
                         
+                        # 转换本地封面路径为URL
+                        if cover_url.startswith('covers/'):
+                            cover_url = f"/covers/{cover_url.replace('covers/', '')}"
+                        
                         ppt_info = {
                             "session_id": session_dir.name,
                             "title": data.get("topic", "未知主题"),
@@ -1952,6 +2103,57 @@ async def simple_switch_test(request: Request):
         "simple_switch_test.html", {
             "request": request,
             "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")})
+
+@app.get("/test-static-cover", response_class=HTMLResponse)
+async def test_static_cover():
+    """测试静态封面图片的页面"""
+    with open("test_static_cover.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+@app.get("/test-cover/{filename}")
+async def test_cover_direct(filename: str):
+    """直接测试封面文件访问"""
+    import os
+    import urllib.parse
+    from fastapi.responses import FileResponse
+    
+    # URL解码文件名
+    decoded_filename = urllib.parse.unquote(filename)
+    cover_path = os.path.join("covers", decoded_filename)
+    
+    print(f"测试路由 - 请求的文件: {filename}")
+    print(f"测试路由 - 解码后的文件名: {decoded_filename}")
+    print(f"测试路由 - 完整路径: {cover_path}")
+    print(f"测试路由 - 文件是否存在: {os.path.exists(cover_path)}")
+    
+    if os.path.exists(cover_path):
+        return FileResponse(cover_path, media_type="image/jpeg")
+    else:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=404, content={"error": f"Cover image not found: {decoded_filename}"})
+
+@app.get("/covers/{filename}")
+async def serve_cover_image(filename: str):
+    """服务covers目录中的图片文件"""
+    import os
+    import urllib.parse
+    from fastapi.responses import FileResponse
+    
+    # URL解码文件名
+    decoded_filename = urllib.parse.unquote(filename)
+    cover_path = os.path.join("covers", decoded_filename)
+    
+    print(f"请求的文件: {filename}")
+    print(f"解码后的文件名: {decoded_filename}")
+    print(f"完整路径: {cover_path}")
+    print(f"文件是否存在: {os.path.exists(cover_path)}")
+    
+    if os.path.exists(cover_path):
+        return FileResponse(cover_path, media_type="image/jpeg")
+    else:
+        # 如果文件不存在，返回404
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=404, content={"error": f"Cover image not found: {decoded_filename}"})
 
 # -----------------------------------------------------------------------
 # 4. 本地启动命令
