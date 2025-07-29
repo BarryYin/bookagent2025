@@ -237,6 +237,25 @@ def init_database():
         )
     ''')
     
+    # 创建PPT表，关联用户
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ppts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE NOT NULL,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            author TEXT,
+            cover_url TEXT,
+            category_id TEXT,
+            category_name TEXT,
+            category_color TEXT,
+            category_icon TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -456,6 +475,117 @@ class UserManager:
             conn.close()
         except Exception as e:
             print(f"清理过期sessions错误: {e}")
+    
+    def add_ppt(self, session_id: str, user_id: int, title: str, author: str = None, 
+                cover_url: str = None, category_id: str = None, category_name: str = None,
+                category_color: str = None, category_icon: str = None):
+        """添加PPT到数据库"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO ppts 
+                (session_id, user_id, title, author, cover_url, category_id, category_name, category_color, category_icon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (session_id, user_id, title, author, cover_url, category_id, category_name, category_color, category_icon))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"添加PPT错误: {e}")
+            return False
+    
+    def get_user_ppts(self, user_id: int, limit: int = 20, page: int = 1, 
+                      category_id: str = None, search: str = None):
+        """获取用户的PPT列表"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # 构建查询条件
+            where_conditions = ["user_id = ?"]
+            params = [user_id]
+            
+            if category_id:
+                where_conditions.append("category_id = ?")
+                params.append(category_id)
+            
+            if search:
+                where_conditions.append("(title LIKE ? OR author LIKE ?)")
+                search_param = f"%{search}%"
+                params.extend([search_param, search_param])
+            
+            where_clause = " AND ".join(where_conditions)
+            
+            # 获取总数
+            cursor.execute(f'''
+                SELECT COUNT(*) FROM ppts WHERE {where_clause}
+            ''', params)
+            total_count = cursor.fetchone()[0]
+            
+            # 获取分页数据
+            offset = (page - 1) * limit
+            cursor.execute(f'''
+                SELECT session_id, title, author, cover_url, category_id, category_name, 
+                       category_color, category_icon, created_at
+                FROM ppts 
+                WHERE {where_clause}
+                ORDER BY created_at DESC
+                LIMIT ? OFFSET ?
+            ''', params + [limit, offset])
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            ppts = []
+            for row in rows:
+                ppts.append({
+                    "session_id": row[0],
+                    "title": row[1],
+                    "author": row[2],
+                    "cover_url": row[3],
+                    "category_id": row[4],
+                    "category_name": row[5],
+                    "category_color": row[6],
+                    "category_icon": row[7],
+                    "created_at": row[8],
+                    "html_url": f"/outputs/{row[0]}/presentation.html",
+                    "preview_url": f"/ppt-preview/{row[0]}"
+                })
+            
+            total_pages = (total_count + limit - 1) // limit
+            
+            return {
+                "ppts": ppts,
+                "pagination": {
+                    "current_page": page,
+                    "total_pages": total_pages,
+                    "total_count": total_count,
+                    "per_page": limit
+                }
+            }
+        except Exception as e:
+            print(f"获取用户PPT列表错误: {e}")
+            return {"ppts": [], "pagination": {"current_page": 1, "total_pages": 0, "total_count": 0, "per_page": limit}}
+    
+    def delete_user_ppt(self, session_id: str, user_id: int):
+        """删除用户的PPT"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                DELETE FROM ppts WHERE session_id = ? AND user_id = ?
+            ''', (session_id, user_id))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"删除PPT错误: {e}")
+            return False
 
 # 全局用户管理器实例
 user_manager = UserManager()

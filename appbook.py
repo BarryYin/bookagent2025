@@ -2,6 +2,7 @@ import asyncio
 import json
 import httpx
 import re
+import os
 from datetime import datetime
 from typing import AsyncGenerator, List, Optional
 
@@ -716,6 +717,7 @@ async def llm_event_stream(
     topic: str,
     history: Optional[List[dict]] = None,
     model: str = QWEN_MODEL,
+    user_id: Optional[int] = None,
 ) -> AsyncGenerator[str, None]:
     """
     主流式生成器：依次执行4个步骤，显示详细的处理日志
@@ -881,6 +883,14 @@ async def llm_event_stream(
         # 最终完成信息
         yield f"data: {json.dumps({'log': '🎊 PPT生成完成！您可以在浏览器中查看效果'}, ensure_ascii=False)}\n\n"
         yield f"data: {json.dumps({'log': '✅ 准备发送DONE信号'}, ensure_ascii=False)}\n\n"
+        
+        # 如果有用户ID，保存PPT信息到数据库
+        if user_id:
+            try:
+                await save_ppt_to_database(session_id, user_id, topic)
+                yield f"data: {json.dumps({'log': '💾 PPT信息已保存到个人书架'}, ensure_ascii=False)}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'log': f'⚠️ 保存到书架失败: {str(e)}'}, ensure_ascii=False)}\n\n"
             
     except Exception as e:
         error_msg = f"❌ 生成过程中发生错误: {str(e)}"
@@ -893,6 +903,66 @@ async def llm_event_stream(
 # -----------------------------------------------------------------------
 # 5. 文件保存功能
 # -----------------------------------------------------------------------
+async def save_ppt_to_database(session_id: str, user_id: int, topic: str):
+    """保存PPT信息到数据库"""
+    try:
+        # 读取data.json文件获取详细信息
+        data_file = f"outputs/{session_id}/data.json"
+        if os.path.exists(data_file):
+            with open(data_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            book_data = data.get('book_data', {})
+            title = topic
+            author = "未知作者"
+            
+            # 提取作者信息
+            if isinstance(book_data, dict):
+                if 'author' in book_data:
+                    author = book_data['author']
+                elif 'raw_content' in book_data:
+                    content_str = str(book_data['raw_content'])
+                    author_match = re.search(r'"author":\s*"([^"]+)"', content_str)
+                    if author_match:
+                        author = author_match.group(1)
+            
+            # 提取分类信息
+            category_id = book_data.get('category_id', 'literature')
+            category_name = book_data.get('category_name', '文学类')
+            category_color = book_data.get('category_color', '#E74C3C')
+            category_icon = book_data.get('category_icon', '📖')
+            
+            # 获取封面URL
+            cover_url = None
+            if 'cover_url' in book_data:
+                cover_url = book_data['cover_url']
+                
+            # 如果封面URL是default_cover，生成默认封面
+            if cover_url == "default_cover":
+                cover_url = get_default_book_cover(title)
+            
+            # 保存到数据库
+            from models import user_manager
+            success = user_manager.add_ppt(
+                session_id=session_id,
+                user_id=user_id,
+                title=title,
+                author=author,
+                cover_url=cover_url,
+                category_id=category_id,
+                category_name=category_name,
+                category_color=category_color,
+                category_icon=category_icon
+            )
+            
+            if success:
+                print(f"✅ PPT已保存到用户数据库: {title}")
+            else:
+                print(f"❌ 保存PPT到数据库失败: {title}")
+                
+    except Exception as e:
+        print(f"保存PPT到数据库时出错: {e}")
+
 async def save_generated_content(session_id: str, content: dict):
     """
     保存生成的内容到文件系统
@@ -1819,13 +1889,29 @@ async def generate(
     Accepts a JSON body with "topic" and optional "history".
     Returns an SSE stream with 4-step processing.
     """
+    # 获取当前用户
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
     accumulated_response = ""
+    session_id = None
 
     async def event_generator():
-        nonlocal accumulated_response
+        nonlocal accumulated_response, session_id
         try:
-            async for chunk in llm_event_stream(chat_request.topic, chat_request.history):
+            async for chunk in llm_event_stream(chat_request.topic, chat_request.history, user_id=user.id):
                 accumulated_response += chunk
+                
+                # 检查是否包含session_id
+                if '"session_id"' in chunk:
+                    try:
+                        data = json.loads(chunk.replace('data: ', ''))
+                        if 'session_id' in data:
+                            session_id = data['session_id']
+                    except:
+                        pass
+                
                 if await request.is_disconnected():
                     break
                 yield chunk
@@ -2476,6 +2562,61 @@ async def login_page(request: Request):
 async def register_page(request: Request):
     """注册页面"""
     return templates.TemplateResponse("register.html", {"request": request})
+
+@app.get("/bookshelf", response_class=HTMLResponse)
+async def bookshelf_page(request: Request):
+    """个人书架页面"""
+    return templates.TemplateResponse(
+        "bookshelf.html", {
+            "request": request,
+            "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
+        }
+    )
+
+@app.get("/api/user-ppts")
+async def get_user_ppts(
+    request: Request,
+    limit: int = 20, 
+    page: int = 1, 
+    category_id: str = None,
+    search: str = None
+):
+    """获取当前用户的PPT列表"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        from models import user_manager
+        result = user_manager.get_user_ppts(
+            user_id=user.id,
+            limit=limit,
+            page=page,
+            category_id=category_id,
+            search=search
+        )
+        return result
+    except Exception as e:
+        print(f"获取用户PPT列表失败: {e}")
+        return {"error": str(e), "ppts": []}
+
+@app.delete("/api/user-ppts/{session_id}")
+async def delete_user_ppt(session_id: str, request: Request):
+    """删除用户的PPT"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        from models import user_manager
+        success = user_manager.delete_user_ppt(session_id, user.id)
+        if success:
+            return {"message": "PPT删除成功"}
+        else:
+            raise HTTPException(status_code=404, detail="PPT不存在或无权限删除")
+    except Exception as e:
+        print(f"删除PPT失败: {e}")
+        raise HTTPException(status_code=500, detail="删除失败")
 
 # -----------------------------------------------------------------------
 # 4. 本地启动命令

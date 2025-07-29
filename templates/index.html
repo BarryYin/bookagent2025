@@ -28,6 +28,13 @@
                 </svg>
                 图书馆
             </a>
+            <a href="/bookshelf" class="nav-link" id="bookshelf-link" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                个人书架
+            </a>
         </div>
         <div class="nav-right">
             <div id="user-section" class="user-section" style="display: none;">
@@ -283,21 +290,33 @@
             const userSection = document.getElementById('user-section');
             const authButtons = document.getElementById('auth-buttons');
             const usernameDisplay = document.getElementById('username-display');
+            const bookshelfLink = document.getElementById('bookshelf-link');
             
             if (userSection && authButtons && usernameDisplay) {
                 userSection.style.display = 'flex';
                 authButtons.style.display = 'none';
                 usernameDisplay.textContent = user.username;
             }
+            
+            // 显示个人书架链接
+            if (bookshelfLink) {
+                bookshelfLink.style.display = 'flex';
+            }
         }
 
         function showAuthButtons() {
             const userSection = document.getElementById('user-section');
             const authButtons = document.getElementById('auth-buttons');
+            const bookshelfLink = document.getElementById('bookshelf-link');
             
             if (userSection && authButtons) {
                 userSection.style.display = 'none';
                 authButtons.style.display = 'flex';
+            }
+            
+            // 隐藏个人书架链接
+            if (bookshelfLink) {
+                bookshelfLink.style.display = 'none';
             }
         }
 

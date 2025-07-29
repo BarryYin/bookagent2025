@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人书架 - FogSight</title>
+    <link rel="stylesheet" href="/static/style.css?v={{ time }}">
+    <link rel="icon" href="/static/favicon.png?v={{ time }}" type="image/png">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <a href="/" class="nav-link">
+                <img src="/static/logo.png?v={{ time }}" alt="FogSight" class="logo">
+            </a>
+            <a href="/library" class="nav-link">图书馆</a>
+            <a href="/bookshelf" class="nav-link active">个人书架</a>
+        </div>
+        <div class="nav-right">
+            <div class="user-section" style="display: none;">
+                <span class="username-display"></span>
+                <button class="logout-button" onclick="logout()">登出</button>
+            </div>
+            <div class="auth-buttons">
+                <a href="/login" class="auth-link login-link">登录</a>
+                <a href="/register" class="auth-link register-link">注册</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="library-page">
+        <div class="library-header">
+            <div class="header-content">
+                <a href="/" class="back-link">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    返回首页
+                </a>
+                <div class="library-title">
+                    <h1>我的书架</h1>
+                    <p>管理您生成的所有PPT</p>
+                </div>
+                <button class="refresh-btn" onclick="loadUserPPTs()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.914L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.914L3 16"/>
+                    </svg>
+                    刷新
+                </button>
+            </div>
+        </div>
+
+        <div class="library-main">
+            <!-- 统计信息 -->
+            <div class="library-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="total-ppts">0</div>
+                    <div class="stat-label">总PPT数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-categories">0</div>
+                    <div class="stat-label">分类数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="recent-ppts">0</div>
+                    <div class="stat-label">本月新增</div>
+                </div>
+            </div>
+
+            <!-- 筛选和搜索 -->
+            <div class="library-filters">
+                <div class="filter-group">
+                    <label for="category-filter">分类筛选</label>
+                    <select id="category-filter" class="filter-select" onchange="filterPPTs()">
+                        <option value="">全部分类</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="search-input">搜索</label>
+                    <input type="text" id="search-input" class="filter-input" placeholder="搜索PPT标题或作者..." onkeyup="searchPPTs()">
+                </div>
+                <div class="filter-group">
+                    <button class="clear-filters-btn" onclick="clearFilters()">清除筛选</button>
+                </div>
+            </div>
+
+            <!-- PPT列表 -->
+            <div class="ppt-library-grid" id="ppt-grid">
+                <!-- PPT卡片将通过JavaScript动态加载 -->
+            </div>
+
+            <!-- 分页 -->
+            <div class="pagination-container" id="pagination" style="display: none;">
+                <div class="pagination-info">
+                    <span id="pagination-text">显示 0-0 条，共 0 条</span>
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" id="prev-btn" onclick="changePage(-1)" disabled>上一页</button>
+                    <div class="page-numbers" id="page-numbers"></div>
+                    <button class="pagination-btn" id="next-btn" onclick="changePage(1)" disabled>下一页</button>
+                </div>
+            </div>
+
+            <!-- 空状态 -->
+            <div class="empty-library" id="empty-state" style="display: none;">
+                <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+                <h3>您的书架还是空的</h3>
+                <p>开始生成您的第一个PPT吧！</p>
+                <a href="/" class="create-first-btn">立即生成</a>
+            </div>
+
+            <!-- 加载状态 -->
+            <div class="loading-placeholder" id="loading-state">
+                <div class="loading-spinner"></div>
+                <p>正在加载您的PPT...</p>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentFilters = {
+            category_id: '',
+            search: ''
+        };
+
+        // 页面加载时检查认证状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            loadUserPPTs();
+        });
+
+        // 检查认证状态
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const data = await response.json();
+                    showUserSection(data.user);
+                } else {
+                    showAuthButtons();
+                    // 如果未登录，重定向到登录页面
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('检查认证状态失败:', error);
+                showAuthButtons();
+                window.location.href = '/login';
+            }
+        }
+
+        // 显示用户信息
+        function showUserSection(user) {
+            document.querySelector('.user-section').style.display = 'flex';
+            document.querySelector('.auth-buttons').style.display = 'none';
+            document.querySelector('.username-display').textContent = user.username;
+        }
+
+        // 显示认证按钮
+        function showAuthButtons() {
+            document.querySelector('.user-section').style.display = 'none';
+            document.querySelector('.auth-buttons').style.display = 'flex';
+        }
+
+        // 登出
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('登出失败:', error);
+            }
+        }
+
+        // 加载用户PPT列表
+        async function loadUserPPTs() {
+            const loadingState = document.getElementById('loading-state');
+            const pptGrid = document.getElementById('ppt-grid');
+            const emptyState = document.getElementById('empty-state');
+            const pagination = document.getElementById('pagination');
+
+            loadingState.style.display = 'flex';
+            pptGrid.style.display = 'none';
+            emptyState.style.display = 'none';
+            pagination.style.display = 'none';
+
+            try {
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    limit: 12,
+                    ...currentFilters
+                });
+
+                const response = await fetch(`/api/user-ppts?${params}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayPPTs(data.ppts, data.pagination);
+                    updateStats(data.ppts);
+                } else {
+                    throw new Error(data.error || '加载失败');
+                }
+            } catch (error) {
+                console.error('加载PPT失败:', error);
+                showError('加载失败，请重试');
+            } finally {
+                loadingState.style.display = 'none';
+            }
+        }
+
+        // 显示PPT列表
+        function displayPPTs(ppts, pagination) {
+            const pptGrid = document.getElementById('ppt-grid');
+            const emptyState = document.getElementById('empty-state');
+            const paginationContainer = document.getElementById('pagination');
+
+            if (ppts.length === 0) {
+                pptGrid.style.display = 'none';
+                emptyState.style.display = 'flex';
+                paginationContainer.style.display = 'none';
+                return;
+            }
+
+            pptGrid.style.display = 'grid';
+            emptyState.style.display = 'none';
+            paginationContainer.style.display = 'flex';
+
+            pptGrid.innerHTML = ppts.map(ppt => `
+                <div class="library-ppt-card">
+                    <div class="library-card-preview ${ppt.cover_url ? 'book-cover-preview' : ''}">
+                        ${ppt.cover_url ? 
+                            (ppt.cover_url.startsWith('gradient:') ? 
+                                `<div class="gradient-cover" style="background: ${ppt.cover_url.replace('gradient:', '')}">
+                                    <div class="gradient-cover-content">
+                                        <div class="gradient-cover-icon">📖</div>
+                                        <div class="gradient-cover-title">${ppt.title}</div>
+                                    </div>
+                                </div>` :
+                                `<img src="${ppt.cover_url}" alt="${ppt.title}" class="book-cover-image">`
+                            ) :
+                            `<div class="fallback-cover">
+                                <div class="fallback-icon">📖</div>
+                                <div class="fallback-title">${ppt.title}</div>
+                            </div>`
+                        }
+                    </div>
+                    <div class="library-card-info">
+                        <h3 class="library-card-title">${ppt.title}</h3>
+                        <div class="library-card-meta">
+                            <span class="author">${ppt.author || '未知作者'}</span>
+                            ${ppt.category_name ? 
+                                `<span class="category-badge" style="background-color: ${ppt.category_color}">
+                                    <span class="category-icon">${ppt.category_icon}</span>
+                                    <span class="category-name">${ppt.category_name}</span>
+                                </span>` : ''
+                            }
+                        </div>
+                    </div>
+                    <div class="library-card-actions">
+                        <a href="${ppt.html_url}" target="_blank" class="library-action-btn primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                            查看
+                        </a>
+                        <a href="${ppt.preview_url}" target="_blank" class="library-action-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            预览
+                        </a>
+                        <button class="library-action-btn delete-btn" onclick="deletePPT('${ppt.session_id}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3,6 5,6 21,6"/>
+                                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                            </svg>
+                            删除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            updatePagination(pagination);
+        }
+
+        // 更新统计信息
+        function updateStats(ppts) {
+            const categories = new Set(ppts.map(ppt => ppt.category_id).filter(Boolean));
+            const thisMonth = new Date().getMonth();
+            const recentPPTs = ppts.filter(ppt => {
+                const pptDate = new Date(ppt.created_at);
+                return pptDate.getMonth() === thisMonth;
+            }).length;
+
+            document.getElementById('total-ppts').textContent = ppts.length;
+            document.getElementById('total-categories').textContent = categories.size;
+            document.getElementById('recent-ppts').textContent = recentPPTs;
+        }
+
+        // 更新分页
+        function updatePagination(pagination) {
+            currentPage = pagination.current_page;
+            totalPages = pagination.total_pages;
+
+            document.getElementById('pagination-text').textContent = 
+                `显示 ${(currentPage - 1) * pagination.per_page + 1}-${Math.min(currentPage * pagination.per_page, pagination.total_count)} 条，共 ${pagination.total_count} 条`;
+
+            document.getElementById('prev-btn').disabled = currentPage <= 1;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages;
+
+            const pageNumbers = document.getElementById('page-numbers');
+            pageNumbers.innerHTML = '';
+
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-number ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                pageNumbers.appendChild(pageBtn);
+            }
+        }
+
+        // 切换页面
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                loadUserPPTs();
+            }
+        }
+
+        // 跳转到指定页面
+        function goToPage(page) {
+            currentPage = page;
+            loadUserPPTs();
+        }
+
+        // 筛选PPT
+        function filterPPTs() {
+            currentFilters.category_id = document.getElementById('category-filter').value;
+            currentPage = 1;
+            loadUserPPTs();
+        }
+
+        // 搜索PPT
+        function searchPPTs() {
+            currentFilters.search = document.getElementById('search-input').value;
+            currentPage = 1;
+            loadUserPPTs();
+        }
+
+        // 清除筛选
+        function clearFilters() {
+            document.getElementById('category-filter').value = '';
+            document.getElementById('search-input').value = '';
+            currentFilters = { category_id: '', search: '' };
+            currentPage = 1;
+            loadUserPPTs();
+        }
+
+        // 删除PPT
+        async function deletePPT(sessionId) {
+            if (!confirm('确定要删除这个PPT吗？此操作不可撤销。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/user-ppts/${sessionId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showSuccess('PPT删除成功');
+                    loadUserPPTs();
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.detail || '删除失败');
+                }
+            } catch (error) {
+                console.error('删除PPT失败:', error);
+                showError('删除失败，请重试');
+            }
+        }
+
+        // 显示成功消息
+        function showSuccess(message) {
+            // 可以添加一个简单的提示组件
+            alert(message);
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            // 可以添加一个简单的提示组件
+            alert(message);
+        }
+    </script>
+</body>
+</html> 
