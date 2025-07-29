@@ -2681,6 +2681,78 @@ async def get_popular_books_by_category(
         print(f"获取热门书籍失败: {e}")
         return {"books": []}
 
+@app.post("/api/add-book-to-bookshelf")
+async def add_book_to_bookshelf(request: Request):
+    """添加书籍到用户书架"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        data = await request.json()
+        title = data.get("title")
+        author = data.get("author")
+        cover_url = data.get("cover_url")
+        category_id = data.get("category_id")
+        category_name = data.get("category_name")
+        category_color = data.get("category_color")
+        category_icon = data.get("category_icon")
+        source_type = data.get("source_type", "library")
+        source_id = data.get("source_id")
+        
+        if not title:
+            raise HTTPException(status_code=400, detail="书籍标题不能为空")
+        
+        from models import user_manager
+        
+        # 检查书籍是否已在书架中
+        if user_manager.check_book_in_bookshelf(user.id, title, author):
+            return {"success": False, "message": "该书籍已在您的书架中"}
+        
+        # 添加书籍到书架
+        session_id = user_manager.add_book_to_bookshelf(
+            user_id=user.id,
+            title=title,
+            author=author,
+            cover_url=cover_url,
+            category_id=category_id,
+            category_name=category_name,
+            category_color=category_color,
+            category_icon=category_icon,
+            source_type=source_type,
+            source_id=source_id
+        )
+        
+        if session_id:
+            return {"success": True, "message": "书籍已添加到书架", "session_id": session_id}
+        else:
+            raise HTTPException(status_code=500, detail="添加书籍失败")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"添加书籍到书架失败: {e}")
+        raise HTTPException(status_code=500, detail="添加书籍失败")
+
+@app.get("/api/check-book-in-bookshelf")
+async def check_book_in_bookshelf(
+    request: Request,
+    title: str,
+    author: str = None
+):
+    """检查书籍是否已在用户书架中"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        from models import user_manager
+        is_in_bookshelf = user_manager.check_book_in_bookshelf(user.id, title, author)
+        return {"in_bookshelf": is_in_bookshelf}
+    except Exception as e:
+        print(f"检查书籍是否在书架中失败: {e}")
+        return {"in_bookshelf": False}
+
 # -----------------------------------------------------------------------
 # 4. 本地启动命令
 # -----------------------------------------------------------------------

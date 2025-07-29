@@ -1599,6 +1599,30 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     }
 }
 
+/* 书籍类型徽章样式 */
+.book-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.book-type-badge.generated {
+    background-color: #E8F5E8;
+    color: #27AE60;
+    border: 1px solid #A8E6A8;
+}
+
+.book-type-badge.added {
+    background-color: #FFF3E0;
+    color: #F57C00;
+    border: 1px solid #FFCC80;
+}
+
 /* 推荐页面样式 */
 /* 导航栏样式 */
 .navbar {

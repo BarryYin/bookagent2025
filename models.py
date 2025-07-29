@@ -250,6 +250,9 @@ def init_database():
             category_name TEXT,
             category_color TEXT,
             category_icon TEXT,
+            book_type TEXT DEFAULT 'generated',  -- 'generated' 或 'added'
+            source_type TEXT DEFAULT 'self',      -- 'self', 'library', 'recommendation'
+            source_id TEXT,                       -- 来源ID（如果是从图书馆或推荐添加的）
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
@@ -478,7 +481,8 @@ class UserManager:
     
     def add_ppt(self, session_id: str, user_id: int, title: str, author: str = None, 
                 cover_url: str = None, category_id: str = None, category_name: str = None,
-                category_color: str = None, category_icon: str = None):
+                category_color: str = None, category_icon: str = None, book_type: str = 'generated',
+                source_type: str = 'self', source_id: str = None):
         """添加PPT到数据库"""
         try:
             conn = sqlite3.connect(DATABASE_PATH)
@@ -486,9 +490,9 @@ class UserManager:
             
             cursor.execute('''
                 INSERT OR REPLACE INTO ppts 
-                (session_id, user_id, title, author, cover_url, category_id, category_name, category_color, category_icon)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (session_id, user_id, title, author, cover_url, category_id, category_name, category_color, category_icon))
+                (session_id, user_id, title, author, cover_url, category_id, category_name, category_color, category_icon, book_type, source_type, source_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (session_id, user_id, title, author, cover_url, category_id, category_name, category_color, category_icon, book_type, source_type, source_id))
             
             conn.commit()
             conn.close()
@@ -529,7 +533,7 @@ class UserManager:
             offset = (page - 1) * limit
             cursor.execute(f'''
                 SELECT session_id, title, author, cover_url, category_id, category_name, 
-                       category_color, category_icon, created_at
+                       category_color, category_icon, book_type, source_type, source_id, created_at
                 FROM ppts 
                 WHERE {where_clause}
                 ORDER BY created_at DESC
@@ -550,7 +554,10 @@ class UserManager:
                     "category_name": row[5],
                     "category_color": row[6],
                     "category_icon": row[7],
-                    "created_at": row[8],
+                    "book_type": row[8],
+                    "source_type": row[9],
+                    "source_id": row[10],
+                    "created_at": row[11],
                     "html_url": f"/outputs/{row[0]}/presentation.html",
                     "preview_url": f"/ppt-preview/{row[0]}"
                 })
@@ -737,6 +744,58 @@ class UserManager:
         # 由于我们没有单独的浏览次数字段，这里可以通过其他方式实现
         # 比如创建一个新的表来记录浏览次数，或者使用现有的created_at字段
         pass
+    
+    def add_book_to_bookshelf(self, user_id: int, title: str, author: str = None, 
+                             cover_url: str = None, category_id: str = None, 
+                             category_name: str = None, category_color: str = None, 
+                             category_icon: str = None, source_type: str = 'library', 
+                             source_id: str = None):
+        """添加书籍到用户书架"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # 生成唯一的session_id
+            session_id = str(uuid.uuid4())
+            
+            cursor.execute('''
+                INSERT INTO ppts 
+                (session_id, user_id, title, author, cover_url, category_id, category_name, 
+                 category_color, category_icon, book_type, source_type, source_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'added', ?, ?)
+            ''', (session_id, user_id, title, author, cover_url, category_id, category_name, 
+                  category_color, category_icon, source_type, source_id))
+            
+            conn.commit()
+            conn.close()
+            return session_id
+        except Exception as e:
+            print(f"添加书籍到书架错误: {e}")
+            return None
+    
+    def check_book_in_bookshelf(self, user_id: int, title: str, author: str = None) -> bool:
+        """检查书籍是否已在用户书架中"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            if author:
+                cursor.execute('''
+                    SELECT COUNT(*) FROM ppts 
+                    WHERE user_id = ? AND title = ? AND author = ?
+                ''', (user_id, title, author))
+            else:
+                cursor.execute('''
+                    SELECT COUNT(*) FROM ppts 
+                    WHERE user_id = ? AND title = ?
+                ''', (user_id, title))
+            
+            count = cursor.fetchone()[0]
+            conn.close()
+            return count > 0
+        except Exception as e:
+            print(f"检查书籍是否在书架中错误: {e}")
+            return False
 
 # 全局用户管理器实例
 user_manager = UserManager()

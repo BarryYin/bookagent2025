@@ -261,6 +261,9 @@
                                     <span class="category-name">${ppt.category_name}</span>
                                 </span>` : ''
                             }
+                            <span class="book-type-badge ${ppt.book_type === 'generated' ? 'generated' : 'added'}">
+                                ${ppt.book_type === 'generated' ? '🎨 生成的' : '📚 添加的'}
+                            </span>
                         </div>
                     </div>
                     <div class="library-card-actions">

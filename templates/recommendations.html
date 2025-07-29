@@ -212,6 +212,10 @@
                     if (recommendations.length > 0) {
                         renderRecommendations(recommendations);
                         loadCategoryRecommendations();
+                        // 延迟更新按钮状态，确保DOM已渲染
+                        setTimeout(() => {
+                            updateAllBookshelfButtons();
+                        }, 500);
                     } else {
                         loadingSpinner.style.display = 'none';
                         noRecommendations.style.display = 'block';
@@ -255,6 +259,9 @@
                             <button class="action-btn" onclick="viewBook('${book.session_id}')" title="查看详情">
                                 👁️
                             </button>
+                            <button class="action-btn add-to-bookshelf-btn" onclick="addToBookshelf('${book.title}', '${book.author || ''}', '${book.cover_url || ''}', '${book.category_id || ''}', '${book.category_name || ''}', '${book.category_color || ''}', '${book.category_icon || ''}', 'recommendation', '${book.session_id}')" title="添加到书架">
+                                📚
+                            </button>
                         </div>
                     </div>
                     <div class="library-card-preview ${book.cover_url ? 'book-cover-preview' : ''}">
@@ -292,6 +299,147 @@
             `).join('');
         }
 
+        // 添加书籍到书架
+        async function addToBookshelf(title, author, cover_url, category_id, category_name, category_color, category_icon, source_type, source_id) {
+            if (!currentUser) {
+                showAuthModal();
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/add-book-to-bookshelf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        author: author,
+                        cover_url: cover_url,
+                        category_id: category_id,
+                        category_name: category_name,
+                        category_color: category_color,
+                        category_icon: category_icon,
+                        source_type: source_type,
+                        source_id: source_id
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 显示成功消息
+                    showMessage('✅ ' + result.message, 'success');
+                    // 更新按钮状态
+                    updateAddToBookshelfButton(title, author, true);
+                } else {
+                    showMessage('❌ ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('添加书籍到书架失败:', error);
+                showMessage('❌ 添加失败，请重试', 'error');
+            }
+        }
+        
+        // 检查书籍是否已在书架中
+        async function checkBookInBookshelf(title, author) {
+            if (!currentUser) return false;
+            
+            try {
+                const response = await fetch(`/api/check-book-in-bookshelf?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author || '')}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    return result.in_bookshelf;
+                }
+            } catch (error) {
+                console.error('检查书籍是否在书架中失败:', error);
+            }
+            return false;
+        }
+
+        // 更新添加到书架按钮状态
+        function updateAddToBookshelfButton(title, author, added) {
+            const buttons = document.querySelectorAll('.add-to-bookshelf-btn');
+            buttons.forEach(btn => {
+                const onclick = btn.getAttribute('onclick');
+                if (onclick && onclick.includes(`'${title}'`) && onclick.includes(`'${author}'`)) {
+                    if (added) {
+                        btn.innerHTML = '✅';
+                        btn.title = '已添加到书架';
+                        btn.disabled = true;
+                        btn.style.opacity = '0.6';
+                        btn.style.cursor = 'not-allowed';
+                    } else {
+                        btn.innerHTML = '📚';
+                        btn.title = '添加到书架';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    }
+                }
+            });
+        }
+
+        // 检查并更新所有按钮状态
+        async function updateAllBookshelfButtons() {
+            if (!currentUser) return;
+            
+            const buttons = document.querySelectorAll('.add-to-bookshelf-btn');
+            for (let btn of buttons) {
+                const onclick = btn.getAttribute('onclick');
+                if (onclick) {
+                    // 从onclick中提取title和author
+                    const titleMatch = onclick.match(/'([^']+)'/);
+                    const authorMatch = onclick.match(/'([^']+)', '([^']+)'/);
+                    
+                    if (titleMatch) {
+                        const title = titleMatch[1];
+                        const author = authorMatch ? authorMatch[2] : '';
+                        
+                        const inBookshelf = await checkBookInBookshelf(title, author);
+                        updateAddToBookshelfButton(title, author, inBookshelf);
+                    }
+                }
+            }
+        }
+        
+        // 显示消息
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                animation: slideInRight 0.3s ease;
+            `;
+            
+            if (type === 'success') {
+                messageDiv.style.backgroundColor = '#27AE60';
+            } else if (type === 'error') {
+                messageDiv.style.backgroundColor = '#E74C3C';
+            } else {
+                messageDiv.style.backgroundColor = '#3498DB';
+            }
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
         // 加载用户偏好
         async function loadUserPreferences() {
             if (!currentUser) return;
@@ -440,9 +588,27 @@
                                 <span class="meta-text">热度 ${book.popularity_score || 0}</span>
                             </span>
                         </div>
+                        <div class="library-card-actions">
+                            <button class="library-action-btn primary" onclick="viewBook('${book.session_id}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15,3 21,3 21,9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                                查看PPT
+                            </button>
+                            <button class="library-action-btn add-to-bookshelf-btn" onclick="addToBookshelf('${book.title}', '${book.author || ''}', '${book.cover_url || ''}', '${book.category_id || ''}', '${book.category_name || ''}', '${book.category_color || ''}', '${book.category_icon || ''}', 'recommendations', '${book.session_id}')" title="添加到书架">
+                                📚
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
+            
+            // 延迟更新按钮状态
+            setTimeout(() => {
+                updateAllBookshelfButtons();
+            }, 100);
         }
 
         // 查看书籍详情
