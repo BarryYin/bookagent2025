@@ -52,6 +52,20 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     top: 2.5rem;
     right: 150px; /* 在语言切换器左边 */
     z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .nav-link {
@@ -70,6 +84,77 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
 
 .nav-link:hover {
     background: var(--border-color);
+    transform: translateY(-1px);
+}
+
+/* 用户认证相关样式 */
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--bubble-agent-bg);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.username-display {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.logout-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+}
+
+.auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.auth-link {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.login-link {
+    color: var(--text-primary);
+    background: var(--bubble-agent-bg);
+}
+
+.login-link:hover {
+    background: var(--border-color);
+    transform: translateY(-1px);
+}
+
+.register-link {
+    color: var(--text-on-accent);
+    background: var(--bubble-user-bg);
+}
+
+.register-link:hover {
+    background: #0056b3;
     transform: translateY(-1px);
 }
 

@@ -5,6 +5,14 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 import uuid
+import sqlite3
+import hashlib
+import secrets
+import time
+from datetime import datetime, timedelta
+from typing import Optional
+from pydantic import BaseModel, EmailStr
+import jwt
 
 # 基础数据模型
 @dataclass
@@ -164,3 +172,290 @@ class BookIntroductionResult:
     audio_files: List[str]
     metadata: Dict[str, Any]
     download_url: str
+
+# 数据库配置
+DATABASE_PATH = "users.db"
+
+class User(BaseModel):
+    id: Optional[int] = None
+    username: str
+    email: str
+    password_hash: str
+    created_at: Optional[str] = None
+    last_login: Optional[str] = None
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    created_at: str
+    last_login: Optional[str] = None
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+# JWT配置
+SECRET_KEY = "your-secret-key-change-this-in-production"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+def init_database():
+    """初始化数据库"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    # 创建用户表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP
+        )
+    ''')
+    
+    # 创建sessions表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            session_token TEXT UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+def hash_password(password: str) -> str:
+    """密码加密"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password: str, hashed: str) -> bool:
+    """验证密码"""
+    return hash_password(password) == hashed
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """创建JWT token"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_token(token: str) -> Optional[str]:
+    """验证JWT token"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        return username
+    except jwt.PyJWTError:
+        return None
+
+class UserManager:
+    def __init__(self):
+        init_database()
+    
+    def create_user(self, username: str, email: str, password: str) -> Optional[User]:
+        """创建新用户"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            password_hash = hash_password(password)
+            
+            cursor.execute('''
+                INSERT INTO users (username, email, password_hash)
+                VALUES (?, ?, ?)
+            ''', (username, email, password_hash))
+            
+            user_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            
+            return User(
+                id=user_id,
+                username=username,
+                email=email,
+                password_hash=password_hash,
+                created_at=datetime.now().isoformat()
+            )
+        except sqlite3.IntegrityError:
+            return None  # 用户名或邮箱已存在
+        except Exception as e:
+            print(f"创建用户错误: {e}")
+            return None
+    
+    def authenticate_user(self, username: str, password: str) -> Optional[User]:
+        """验证用户"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT id, username, email, password_hash, created_at, last_login
+                FROM users WHERE username = ?
+            ''', (username,))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row and verify_password(password, row[3]):
+                # 更新最后登录时间
+                self.update_last_login(row[0])
+                
+                return User(
+                    id=row[0],
+                    username=row[1],
+                    email=row[2],
+                    password_hash=row[3],
+                    created_at=row[4],
+                    last_login=row[5]
+                )
+            return None
+        except Exception as e:
+            print(f"验证用户错误: {e}")
+            return None
+    
+    def get_user_by_username(self, username: str) -> Optional[User]:
+        """根据用户名获取用户"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT id, username, email, password_hash, created_at, last_login
+                FROM users WHERE username = ?
+            ''', (username,))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row:
+                return User(
+                    id=row[0],
+                    username=row[1],
+                    email=row[2],
+                    password_hash=row[3],
+                    created_at=row[4],
+                    last_login=row[5]
+                )
+            return None
+        except Exception as e:
+            print(f"获取用户错误: {e}")
+            return None
+    
+    def update_last_login(self, user_id: int):
+        """更新用户最后登录时间"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                UPDATE users SET last_login = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ''', (user_id,))
+            
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"更新登录时间错误: {e}")
+    
+    def create_session(self, user_id: int) -> str:
+        """创建用户session"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            session_token = secrets.token_urlsafe(32)
+            expires_at = datetime.now() + timedelta(hours=24)
+            
+            cursor.execute('''
+                INSERT INTO sessions (user_id, session_token, expires_at)
+                VALUES (?, ?, ?)
+            ''', (user_id, session_token, expires_at))
+            
+            conn.commit()
+            conn.close()
+            
+            return session_token
+        except Exception as e:
+            print(f"创建session错误: {e}")
+            return None
+    
+    def get_user_by_session(self, session_token: str) -> Optional[User]:
+        """根据session token获取用户"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT u.id, u.username, u.email, u.password_hash, u.created_at, u.last_login
+                FROM users u
+                JOIN sessions s ON u.id = s.user_id
+                WHERE s.session_token = ? AND s.expires_at > CURRENT_TIMESTAMP
+            ''', (session_token,))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row:
+                return User(
+                    id=row[0],
+                    username=row[1],
+                    email=row[2],
+                    password_hash=row[3],
+                    created_at=row[4],
+                    last_login=row[5]
+                )
+            return None
+        except Exception as e:
+            print(f"获取session用户错误: {e}")
+            return None
+    
+    def delete_session(self, session_token: str):
+        """删除session"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM sessions WHERE session_token = ?', (session_token,))
+            
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"删除session错误: {e}")
+    
+    def cleanup_expired_sessions(self):
+        """清理过期的sessions"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP')
+            
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"清理过期sessions错误: {e}")
+
+# 全局用户管理器实例
+user_manager = UserManager()

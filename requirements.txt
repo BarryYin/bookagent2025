@@ -6,3 +6,5 @@ jinja2
 pytz
 google-genai
 requests
+PyJWT
+python-multipart

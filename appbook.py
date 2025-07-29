@@ -6,15 +6,19 @@ from datetime import datetime
 from typing import AsyncGenerator, List, Optional
 
 import pytz
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Request, HTTPException, Depends, status
+from fastapi.responses import StreamingResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI, OpenAIError
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from google import genai
+
+# 导入认证相关模块
+from models import UserManager, UserCreate, UserLogin, UserResponse, user_manager, verify_token
 
 # -----------------------------------------------------------------------
 # 0. 配置
@@ -2300,6 +2304,178 @@ async def get_books_by_category(category_id: str):
             "success": False,
             "error": str(e)
         }
+
+# -----------------------------------------------------------------------
+# 认证相关依赖和中间件
+# -----------------------------------------------------------------------
+
+security = HTTPBearer()
+
+async def get_current_user(request: Request):
+    """获取当前用户"""
+    # 首先尝试从cookie获取session token
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        user = user_manager.get_user_by_session(session_token)
+        if user:
+            return user
+    
+    # 如果没有session，尝试从Authorization header获取JWT token
+    try:
+        credentials: HTTPAuthorizationCredentials = Depends(security)
+        token = credentials.credentials
+        username = verify_token(token)
+        if username:
+            user = user_manager.get_user_by_username(username)
+            if user:
+                return user
+    except:
+        pass
+    
+    return None
+
+async def require_auth(request: Request):
+    """要求认证的依赖"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="需要登录",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+# -----------------------------------------------------------------------
+# 认证相关路由
+# -----------------------------------------------------------------------
+
+@app.post("/api/register")
+async def register(user_data: UserCreate):
+    """用户注册"""
+    # 验证输入
+    if len(user_data.username) < 3:
+        raise HTTPException(status_code=400, detail="用户名至少需要3个字符")
+    
+    if len(user_data.password) < 6:
+        raise HTTPException(status_code=400, detail="密码至少需要6个字符")
+    
+    # 创建用户
+    user = user_manager.create_user(
+        username=user_data.username,
+        email=user_data.email,
+        password=user_data.password
+    )
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="用户名或邮箱已存在")
+    
+    # 创建session
+    session_token = user_manager.create_session(user.id)
+    
+    response = {
+        "success": True,
+        "message": "注册成功",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "created_at": user.created_at,
+            "last_login": user.last_login
+        }
+    }
+    
+    # 设置cookie
+    from fastapi.responses import JSONResponse
+    json_response = JSONResponse(content=response)
+    json_response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        max_age=86400,  # 24小时
+        samesite="lax"
+    )
+    
+    return json_response
+
+@app.post("/api/login")
+async def login(user_data: UserLogin):
+    """用户登录"""
+    user = user_manager.authenticate_user(user_data.username, user_data.password)
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    
+    # 创建session
+    session_token = user_manager.create_session(user.id)
+    
+    response = {
+        "success": True,
+        "message": "登录成功",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "created_at": user.created_at,
+            "last_login": user.last_login
+        }
+    }
+    
+    # 设置cookie
+    from fastapi.responses import JSONResponse
+    json_response = JSONResponse(content=response)
+    json_response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        max_age=86400,  # 24小时
+        samesite="lax"
+    )
+    
+    return json_response
+
+@app.post("/api/logout")
+async def logout(request: Request):
+    """用户登出"""
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        user_manager.delete_session(session_token)
+    
+    response = {"success": True, "message": "登出成功"}
+    
+    # 清除cookie
+    from fastapi.responses import JSONResponse
+    json_response = JSONResponse(content=response)
+    json_response.delete_cookie(key="session_token")
+    
+    return json_response
+
+@app.get("/api/user")
+async def get_current_user_info(request: Request):
+    """获取当前用户信息"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="未登录")
+    
+    return {
+        "success": True,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "created_at": user.created_at,
+            "last_login": user.last_login
+        }
+    }
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """登录页面"""
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """注册页面"""
+    return templates.TemplateResponse("register.html", {"request": request})
 
 # -----------------------------------------------------------------------
 # 4. 本地启动命令
