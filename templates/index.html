@@ -35,6 +35,12 @@
                 </svg>
                 个人书架
             </a>
+            <a href="/recommendations" class="nav-link" id="recommendations-link" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                推荐
+            </a>
         </div>
         <div class="nav-right">
             <div id="user-section" class="user-section" style="display: none;">
@@ -291,6 +297,7 @@
             const authButtons = document.getElementById('auth-buttons');
             const usernameDisplay = document.getElementById('username-display');
             const bookshelfLink = document.getElementById('bookshelf-link');
+            const recommendationsLink = document.getElementById('recommendations-link');
             
             if (userSection && authButtons && usernameDisplay) {
                 userSection.style.display = 'flex';
@@ -298,9 +305,12 @@
                 usernameDisplay.textContent = user.username;
             }
             
-            // 显示个人书架链接
+            // 显示个人书架和推荐链接
             if (bookshelfLink) {
                 bookshelfLink.style.display = 'flex';
+            }
+            if (recommendationsLink) {
+                recommendationsLink.style.display = 'flex';
             }
         }
 
@@ -308,15 +318,19 @@
             const userSection = document.getElementById('user-section');
             const authButtons = document.getElementById('auth-buttons');
             const bookshelfLink = document.getElementById('bookshelf-link');
+            const recommendationsLink = document.getElementById('recommendations-link');
             
             if (userSection && authButtons) {
                 userSection.style.display = 'none';
                 authButtons.style.display = 'flex';
             }
             
-            // 隐藏个人书架链接
+            // 隐藏个人书架和推荐链接
             if (bookshelfLink) {
                 bookshelfLink.style.display = 'none';
+            }
+            if (recommendationsLink) {
+                recommendationsLink.style.display = 'none';
             }
         }
 

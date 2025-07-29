@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个性化推荐 - FogSight</title>
+    <link rel="stylesheet" href="/static/style.css?v={{ time }}">
+    <link rel="icon" href="/static/favicon.png?v={{ time }}" type="image/png">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="/static/logo.png?v={{ time }}" alt="FogSight" class="logo-img">
+                <span class="logo-text">FogSight</span>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">首页</a>
+                <a href="/library" class="nav-link">图书馆</a>
+                <a href="/bookshelf" class="nav-link" id="bookshelf-link" style="display: none;">个人书架</a>
+                <a href="/recommendations" class="nav-link active">推荐</a>
+                <div class="auth-buttons" id="auth-buttons">
+                    <button class="btn btn-primary" onclick="showAuthModal()">登录</button>
+                </div>
+                <div class="user-menu" id="user-menu" style="display: none;">
+                    <span class="username" id="username"></span>
+                    <button class="btn btn-secondary" onclick="logout()">登出</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="main-content">
+        <div class="container">
+            <!-- 页面标题 -->
+            <div class="page-header">
+                <h1 class="page-title">🎯 个性化推荐</h1>
+                <p class="page-subtitle">基于您的阅读偏好，为您推荐最合适的书籍</p>
+            </div>
+
+            <!-- 用户偏好分析 -->
+            <div class="preferences-section" id="preferences-section" style="display: none;">
+                <h2 class="section-title">📊 您的阅读偏好</h2>
+                <div class="preferences-chart" id="preferences-chart">
+                    <!-- 偏好图表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+
+            <!-- 推荐书籍 -->
+            <div class="recommendations-section">
+                <h2 class="section-title">📚 为您推荐</h2>
+                <div class="recommendations-grid" id="recommendations-grid">
+                    <!-- 推荐书籍将通过JavaScript动态加载 -->
+                </div>
+                <div class="loading-spinner" id="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>正在为您生成个性化推荐...</p>
+                </div>
+                <div class="no-recommendations" id="no-recommendations" style="display: none;">
+                    <div class="empty-state">
+                        <div class="empty-icon">📖</div>
+                        <h3>暂无推荐</h3>
+                        <p>开始生成您的第一本书，我们将为您提供个性化推荐</p>
+                        <a href="/" class="btn btn-primary">去生成书籍</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类推荐 -->
+            <div class="category-recommendations" id="category-recommendations" style="display: none;">
+                <h2 class="section-title">🏷️ 按分类推荐</h2>
+                <div class="category-tabs" id="category-tabs">
+                    <!-- 分类标签将通过JavaScript动态生成 -->
+                </div>
+                <div class="category-books" id="category-books">
+                    <!-- 分类书籍将通过JavaScript动态加载 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 认证模态框 -->
+    <div class="auth-modal" id="auth-modal">
+        <div class="auth-modal-content">
+            <div class="auth-modal-header">
+                <h3>登录/注册</h3>
+                <button class="close-btn" onclick="hideAuthModal()">&times;</button>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">登录</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">注册</button>
+            </div>
+            <div class="auth-form" id="login-form">
+                <input type="text" id="login-username" placeholder="用户名" required>
+                <input type="password" id="login-password" placeholder="密码" required>
+                <button class="btn btn-primary" onclick="login()">登录</button>
+            </div>
+            <div class="auth-form" id="register-form" style="display: none;">
+                <input type="text" id="register-username" placeholder="用户名" required>
+                <input type="email" id="register-email" placeholder="邮箱" required>
+                <input type="password" id="register-password" placeholder="密码" required>
+                <button class="btn btn-primary" onclick="register()">注册</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let userPreferences = {};
+        let recommendations = [];
+        let categoryBooks = {};
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 立即检查用户状态，避免显示加载动画
+            checkUserAuth();
+        });
+
+        // 检查用户认证状态
+        async function checkUserAuth() {
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const noRecommendations = document.getElementById('no-recommendations');
+            
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    showUserMenu();
+                    loadUserPreferences();
+                    loadRecommendations(); // 用户登录后加载推荐
+                } else {
+                    showAuthButtons();
+                    // 用户未登录，立即显示登录提示
+                    loadingSpinner.style.display = 'none';
+                    noRecommendations.style.display = 'block';
+                    const emptyState = noRecommendations.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.innerHTML = `
+                            <div class="empty-icon">🔐</div>
+                            <h3>请先登录</h3>
+                            <p>登录后即可查看个性化推荐</p>
+                            <button class="btn btn-primary" onclick="showAuthModal()">立即登录</button>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('检查认证状态失败:', error);
+                showAuthButtons();
+                // 用户未登录，立即显示登录提示
+                loadingSpinner.style.display = 'none';
+                noRecommendations.style.display = 'block';
+                const emptyState = noRecommendations.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.innerHTML = `
+                        <div class="empty-icon">🔐</div>
+                        <h3>请先登录</h3>
+                        <p>登录后即可查看个性化推荐</p>
+                        <button class="btn btn-primary" onclick="showAuthModal()">立即登录</button>
+                    `;
+                }
+            }
+        }
+
+        // 显示用户菜单
+        function showUserMenu() {
+            document.getElementById('auth-buttons').style.display = 'none';
+            document.getElementById('user-menu').style.display = 'flex';
+            document.getElementById('username').textContent = currentUser.username;
+            document.getElementById('bookshelf-link').style.display = 'inline';
+        }
+
+        // 显示认证按钮
+        function showAuthButtons() {
+            document.getElementById('auth-buttons').style.display = 'flex';
+            document.getElementById('user-menu').style.display = 'none';
+            document.getElementById('bookshelf-link').style.display = 'none';
+        }
+
+        // 加载推荐
+        async function loadRecommendations() {
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const noRecommendations = document.getElementById('no-recommendations');
+            const recommendationsGrid = document.getElementById('recommendations-grid');
+
+            // 如果用户未登录，显示登录提示
+            if (!currentUser) {
+                loadingSpinner.style.display = 'none';
+                noRecommendations.style.display = 'block';
+                // 修改空状态的内容为登录提示
+                const emptyState = noRecommendations.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.innerHTML = `
+                        <div class="empty-icon">🔐</div>
+                        <h3>请先登录</h3>
+                        <p>登录后即可查看个性化推荐</p>
+                        <button class="btn btn-primary" onclick="showAuthModal()">立即登录</button>
+                    `;
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/recommendations?limit=12');
+                if (response.ok) {
+                    const data = await response.json();
+                    recommendations = data.recommendations || [];
+                    
+                    if (recommendations.length > 0) {
+                        renderRecommendations(recommendations);
+                        loadCategoryRecommendations();
+                    } else {
+                        loadingSpinner.style.display = 'none';
+                        noRecommendations.style.display = 'block';
+                        // 恢复原始的空状态内容
+                        const emptyState = noRecommendations.querySelector('.empty-state');
+                        if (emptyState) {
+                            emptyState.innerHTML = `
+                                <div class="empty-icon">📖</div>
+                                <h3>暂无推荐</h3>
+                                <p>开始生成您的第一本书，我们将为您提供个性化推荐</p>
+                                <a href="/" class="btn btn-primary">去生成书籍</a>
+                            `;
+                        }
+                    }
+                } else {
+                    throw new Error('获取推荐失败');
+                }
+            } catch (error) {
+                console.error('加载推荐失败:', error);
+                loadingSpinner.style.display = 'none';
+                noRecommendations.style.display = 'block';
+            }
+        }
+
+        // 渲染推荐书籍
+        function renderRecommendations(books) {
+            const grid = document.getElementById('recommendations-grid');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            
+            loadingSpinner.style.display = 'none';
+            
+            grid.innerHTML = books.map(book => `
+                <div class="library-card recommendation-card" data-session-id="${book.session_id}">
+                    <div class="library-card-header">
+                        <div class="library-card-category">
+                            <span class="category-badge" style="background-color: ${book.category_color || '#E74C3C'}">
+                                ${book.category_icon || '📖'} ${book.category_name || '未分类'}
+                            </span>
+                        </div>
+                        <div class="library-card-actions">
+                            <button class="action-btn" onclick="viewBook('${book.session_id}')" title="查看详情">
+                                👁️
+                            </button>
+                        </div>
+                    </div>
+                    <div class="library-card-preview ${book.cover_url ? 'book-cover-preview' : ''}">
+                        ${book.cover_url ? 
+                            (book.cover_url.startsWith('gradient:') ? 
+                                `<div class="gradient-cover" style="background: ${book.cover_url.replace('gradient:', '')}">
+                                    <div class="gradient-cover-content">
+                                        <div class="gradient-cover-icon">📖</div>
+                                        <div class="gradient-cover-title">${book.title}</div>
+                                    </div>
+                                </div>` :
+                                `<img src="${book.cover_url}" alt="${book.title}" class="book-cover-image">`
+                            ) :
+                            `<div class="fallback-cover">
+                                <div class="fallback-icon">📖</div>
+                                <div class="fallback-title">${book.title}</div>
+                            </div>`
+                        }
+                    </div>
+                    <div class="library-card-content">
+                        <h3 class="library-card-title">${book.title}</h3>
+                        <p class="library-card-author">${book.author || '未知作者'}</p>
+                        <div class="library-card-meta">
+                            <span class="meta-item">
+                                <span class="meta-icon">🔥</span>
+                                <span class="meta-text">热门推荐</span>
+                            </span>
+                            <span class="meta-item">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">${formatDate(book.created_at)}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 加载用户偏好
+        async function loadUserPreferences() {
+            if (!currentUser) return;
+            
+            try {
+                const response = await fetch('/api/user-preferences');
+                if (response.ok) {
+                    const data = await response.json();
+                    userPreferences = data.preferences || {};
+                    renderUserPreferences();
+                }
+            } catch (error) {
+                console.error('加载用户偏好失败:', error);
+            }
+        }
+
+        // 渲染用户偏好
+        function renderUserPreferences() {
+            const preferencesSection = document.getElementById('preferences-section');
+            const preferencesChart = document.getElementById('preferences-chart');
+            
+            if (Object.keys(userPreferences).length === 0) {
+                preferencesSection.style.display = 'none';
+                return;
+            }
+            
+            preferencesSection.style.display = 'block';
+            
+            const totalBooks = Object.values(userPreferences).reduce((sum, count) => sum + count, 0);
+            
+            preferencesChart.innerHTML = Object.entries(userPreferences).map(([category, count]) => {
+                const percentage = ((count / totalBooks) * 100).toFixed(1);
+                return `
+                    <div class="preference-item">
+                        <div class="preference-category">${category}</div>
+                        <div class="preference-bar">
+                            <div class="preference-fill" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="preference-stats">
+                            <span class="preference-count">${count} 本</span>
+                            <span class="preference-percentage">${percentage}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 加载分类推荐
+        async function loadCategoryRecommendations() {
+            if (!currentUser) return;
+            
+            const categories = [...new Set(recommendations.map(book => book.category_name))];
+            const categoryRecommendations = document.getElementById('category-recommendations');
+            const categoryTabs = document.getElementById('category-tabs');
+            
+            if (categories.length <= 1) {
+                categoryRecommendations.style.display = 'none';
+                return;
+            }
+            
+            categoryRecommendations.style.display = 'block';
+            
+            // 生成分类标签
+            categoryTabs.innerHTML = categories.map((category, index) => `
+                <button class="category-tab ${index === 0 ? 'active' : ''}" 
+                        onclick="switchCategoryTab('${category}')">
+                    ${category}
+                </button>
+            `).join('');
+            
+            // 加载第一个分类的书籍
+            if (categories.length > 0) {
+                await loadCategoryBooks(categories[0]);
+            }
+        }
+
+        // 切换分类标签
+        async function switchCategoryTab(category) {
+            // 更新标签状态
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 加载该分类的书籍
+            await loadCategoryBooks(category);
+        }
+
+        // 加载分类书籍
+        async function loadCategoryBooks(category) {
+            if (categoryBooks[category]) {
+                renderCategoryBooks(categoryBooks[category]);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/popular-books/${encodeURIComponent(category)}?limit=8`);
+                if (response.ok) {
+                    const data = await response.json();
+                    categoryBooks[category] = data.books || [];
+                    renderCategoryBooks(categoryBooks[category]);
+                }
+            } catch (error) {
+                console.error('加载分类书籍失败:', error);
+            }
+        }
+
+        // 渲染分类书籍
+        function renderCategoryBooks(books) {
+            const categoryBooksContainer = document.getElementById('category-books');
+            
+            if (books.length === 0) {
+                categoryBooksContainer.innerHTML = `
+                    <div class="empty-category">
+                        <p>该分类暂无更多推荐</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            categoryBooksContainer.innerHTML = books.map(book => `
+                <div class="library-card category-book-card" data-session-id="${book.session_id}">
+                    <div class="library-card-preview ${book.cover_url ? 'book-cover-preview' : ''}">
+                        ${book.cover_url ? 
+                            (book.cover_url.startsWith('gradient:') ? 
+                                `<div class="gradient-cover" style="background: ${book.cover_url.replace('gradient:', '')}">
+                                    <div class="gradient-cover-content">
+                                        <div class="gradient-cover-icon">📖</div>
+                                        <div class="gradient-cover-title">${book.title}</div>
+                                    </div>
+                                </div>` :
+                                `<img src="${book.cover_url}" alt="${book.title}" class="book-cover-image">`
+                            ) :
+                            `<div class="fallback-cover">
+                                <div class="fallback-icon">📖</div>
+                                <div class="fallback-title">${book.title}</div>
+                            </div>`
+                        }
+                    </div>
+                    <div class="library-card-content">
+                        <h3 class="library-card-title">${book.title}</h3>
+                        <p class="library-card-author">${book.author || '未知作者'}</p>
+                        <div class="library-card-meta">
+                            <span class="meta-item">
+                                <span class="meta-icon">🔥</span>
+                                <span class="meta-text">热度 ${book.popularity_score || 0}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 查看书籍详情
+        function viewBook(sessionId) {
+            window.open(`/outputs/${sessionId}/presentation.html`, '_blank');
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '未知时间';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        // 认证相关函数
+        function showAuthModal() {
+            document.getElementById('auth-modal').style.display = 'flex';
+        }
+
+        function hideAuthModal() {
+            document.getElementById('auth-modal').style.display = 'none';
+        }
+
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const tabs = document.querySelectorAll('.auth-tab');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'login') {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+            } else {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                if (response.ok) {
+                    hideAuthModal();
+                    checkUserAuth(); // 这会重新加载推荐
+                } else {
+                    alert('登录失败，请检查用户名和密码');
+                }
+            } catch (error) {
+                alert('登录失败: ' + error.message);
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, email, password})
+                });
+                
+                if (response.ok) {
+                    alert('注册成功！请登录');
+                    switchAuthTab('login');
+                } else {
+                    alert('注册失败，请检查输入信息');
+                }
+            } catch (error) {
+                alert('注册失败: ' + error.message);
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', {method: 'POST'});
+                currentUser = null;
+                showAuthButtons();
+                location.reload();
+            } catch (error) {
+                console.error('登出失败:', error);
+            }
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('auth-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideAuthModal();
+            }
+        });
+
+        // ESC键关闭模态框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideAuthModal();
+            }
+        });
+    </script>
+</body>
+</html> 

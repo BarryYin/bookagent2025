@@ -2573,6 +2573,16 @@ async def bookshelf_page(request: Request):
         }
     )
 
+@app.get("/recommendations", response_class=HTMLResponse)
+async def recommendations_page(request: Request):
+    """推荐页面"""
+    return templates.TemplateResponse(
+        "recommendations.html", {
+            "request": request,
+            "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
+        }
+    )
+
 @app.get("/api/user-ppts")
 async def get_user_ppts(
     request: Request,
@@ -2617,6 +2627,59 @@ async def delete_user_ppt(session_id: str, request: Request):
     except Exception as e:
         print(f"删除PPT失败: {e}")
         raise HTTPException(status_code=500, detail="删除失败")
+
+@app.get("/api/recommendations")
+async def get_recommendations(request: Request, limit: int = 10):
+    """获取用户推荐书籍"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        from models import user_manager
+        recommendations = user_manager.get_recommendations_for_user(user.id, limit)
+        return {"recommendations": recommendations}
+    except Exception as e:
+        print(f"获取推荐失败: {e}")
+        return {"recommendations": []}
+
+@app.get("/api/user-preferences")
+async def get_user_preferences(request: Request):
+    """获取用户偏好"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        from models import user_manager
+        preferences = user_manager.get_user_preferences(user.id)
+        return {"preferences": preferences}
+    except Exception as e:
+        print(f"获取用户偏好失败: {e}")
+        return {"preferences": {}}
+
+@app.get("/api/popular-books/{category_name}")
+async def get_popular_books_by_category(
+    category_name: str, 
+    request: Request, 
+    limit: int = 10
+):
+    """获取指定分类的热门书籍"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        from models import user_manager
+        books = user_manager.get_popular_books_by_category(
+            category_name, 
+            exclude_user_id=user.id, 
+            limit=limit
+        )
+        return {"books": books}
+    except Exception as e:
+        print(f"获取热门书籍失败: {e}")
+        return {"books": []}
 
 # -----------------------------------------------------------------------
 # 4. 本地启动命令

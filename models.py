@@ -587,5 +587,156 @@ class UserManager:
             print(f"删除PPT错误: {e}")
             return False
 
+    def get_user_preferences(self, user_id: int) -> dict:
+        """获取用户偏好（基于个人书架中的书籍分类）"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT category_name, COUNT(*) as count 
+                FROM ppts 
+                WHERE user_id = ? 
+                GROUP BY category_name 
+                ORDER BY count DESC
+            """, (user_id,))
+            
+            preferences = {}
+            for row in cursor.fetchall():
+                category_name, count = row
+                preferences[category_name] = count
+            
+            conn.close()
+            return preferences
+        except Exception as e:
+            print(f"获取用户偏好时出错: {e}")
+            return {}
+
+    def get_popular_books_by_category(self, category_name: str, exclude_user_id: int = None, limit: int = 10) -> list:
+        """获取指定分类的热门书籍（按浏览次数排序）"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # 构建查询条件
+            where_clause = "WHERE category_name = ?"
+            params = [category_name]
+            
+            if exclude_user_id is not None:
+                where_clause += " AND user_id != ?"
+                params.append(exclude_user_id)
+            
+            query = f"""
+                SELECT session_id, title, author, cover_url, category_name, 
+                       category_color, category_icon, created_at,
+                       (SELECT COUNT(*) FROM ppts p2 WHERE p2.category_name = ppts.category_name) as category_count
+                FROM ppts 
+                {where_clause}
+                ORDER BY category_count DESC, created_at DESC
+                LIMIT ?
+            """
+            params.append(limit)
+            
+            cursor.execute(query, params)
+            
+            books = []
+            for row in cursor.fetchall():
+                books.append({
+                    'session_id': row[0],
+                    'title': row[1],
+                    'author': row[2],
+                    'cover_url': row[3],
+                    'category_name': row[4],
+                    'category_color': row[5],
+                    'category_icon': row[6],
+                    'created_at': row[7],
+                    'popularity_score': row[8]
+                })
+            
+            conn.close()
+            return books
+        except Exception as e:
+            print(f"获取热门书籍时出错: {e}")
+            return []
+
+    def get_recommendations_for_user(self, user_id: int, limit: int = 10) -> list:
+        """为用户生成推荐书籍"""
+        try:
+            # 获取用户偏好
+            preferences = self.get_user_preferences(user_id)
+            
+            if not preferences:
+                # 如果用户没有偏好，返回所有分类的热门书籍
+                conn = sqlite3.connect(DATABASE_PATH)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT DISTINCT category_name 
+                    FROM ppts 
+                    WHERE user_id != ?
+                    ORDER BY category_name
+                """, (user_id,))
+                
+                categories = [row[0] for row in cursor.fetchall()]
+                recommendations = []
+                
+                for category in categories:
+                    books = self.get_popular_books_by_category(category, user_id, limit // len(categories))
+                    recommendations.extend(books)
+                
+                conn.close()
+                return recommendations[:limit]
+            
+            # 根据用户偏好生成推荐
+            recommendations = []
+            total_weight = sum(preferences.values())
+            
+            for category, count in preferences.items():
+                # 计算该分类的推荐数量（基于用户偏好权重）
+                category_limit = max(1, int((count / total_weight) * limit))
+                
+                books = self.get_popular_books_by_category(category, user_id, category_limit)
+                recommendations.extend(books)
+            
+            # 如果推荐数量不足，补充其他分类的热门书籍
+            if len(recommendations) < limit:
+                remaining_limit = limit - len(recommendations)
+                
+                # 获取用户没有的书籍分类
+                conn = sqlite3.connect(DATABASE_PATH)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT DISTINCT category_name 
+                    FROM ppts 
+                    WHERE user_id != ? 
+                    AND category_name NOT IN (
+                        SELECT DISTINCT category_name 
+                        FROM ppts 
+                        WHERE user_id = ?
+                    )
+                """, (user_id, user_id))
+                
+                other_categories = [row[0] for row in cursor.fetchall()]
+                
+                for category in other_categories:
+                    if len(recommendations) >= limit:
+                        break
+                    
+                    books = self.get_popular_books_by_category(category, user_id, remaining_limit)
+                    recommendations.extend(books)
+                    remaining_limit = limit - len(recommendations)
+                
+                conn.close()
+            
+            return recommendations[:limit]
+            
+        except Exception as e:
+            print(f"生成推荐时出错: {e}")
+            return []
+
+    def record_book_view(self, session_id: str):
+        """记录书籍浏览次数（这里我们使用创建时间作为热度指标）"""
+        # 由于我们没有单独的浏览次数字段，这里可以通过其他方式实现
+        # 比如创建一个新的表来记录浏览次数，或者使用现有的created_at字段
+        pass
+
 # 全局用户管理器实例
 user_manager = UserManager()
