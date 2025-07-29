@@ -242,7 +242,67 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     }
 
-    function handleFormSubmit(e) {
+    async function checkUserAuth() {
+        try {
+            const response = await fetch('/api/user');
+            return response.ok;
+        } catch (error) {
+            console.error('检查用户认证状态失败:', error);
+            return false;
+        }
+    }
+
+    function showAuthModal() {
+        // 防止重复显示模态框
+        const existingModal = document.querySelector('.auth-modal-overlay');
+        if (existingModal) {
+            return;
+        }
+
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'auth-modal-overlay';
+        modal.innerHTML = `
+            <div class="auth-modal-content">
+                <div class="auth-modal-header">
+                    <h3>需要登录</h3>
+                    <button class="auth-modal-close" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+                </div>
+                <div class="auth-modal-body">
+                    <p>请先注册或登录后再使用生成功能</p>
+                    <div class="auth-modal-buttons">
+                        <a href="/register" class="auth-modal-btn register-btn">立即注册</a>
+                        <a href="/login" class="auth-modal-btn login-btn">立即登录</a>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 点击遮罩层关闭模态框
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+
+        // 按ESC键关闭模态框
+        const handleEscKey = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', handleEscKey);
+            }
+        };
+        document.addEventListener('keydown', handleEscKey);
+
+        // 模态框关闭时移除事件监听器
+        modal.addEventListener('remove', () => {
+            document.removeEventListener('keydown', handleEscKey);
+        });
+    }
+
+    async function handleFormSubmit(e) {
         console.log('表单提交开始', e);
         e.preventDefault();
         console.log('preventDefault已调用');
@@ -260,6 +320,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!topic) {
             console.log('主题为空，返回');
+            return;
+        }
+
+        // 检查用户是否已登录
+        const isAuthenticated = await checkUserAuth();
+        if (!isAuthenticated) {
+            console.log('用户未登录，显示认证模态框');
+            showAuthModal();
             return;
         }
 
