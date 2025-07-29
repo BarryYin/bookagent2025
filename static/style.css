@@ -1143,3 +1143,213 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
+
+/* 分类标签样式 */
+.category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+    margin-left: 8px;
+    transition: all 0.2s ease;
+}
+
+.category-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.category-icon {
+    font-size: 0.8rem;
+}
+
+.category-name {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* 首页展示卡片的分类标签 */
+.showcase-card-meta .category-badge {
+    margin-top: 4px;
+    margin-left: 0;
+}
+
+/* 图书馆页面的分类标签 */
+.ppt-card-meta .category-badge {
+    margin-top: 4px;
+    margin-left: 0;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .category-badge {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+    
+    .category-icon {
+        font-size: 0.75rem;
+    }
+    
+    .category-name {
+        font-size: 0.65rem;
+    }
+}
+
+/* 筛选和分页样式 */
+.library-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    flex-wrap: wrap;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 150px;
+}
+
+.filter-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.filter-select,
+.filter-input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    background: white;
+    transition: border-color 0.2s;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+    outline: none;
+    border-color: var(--bubble-user-bg);
+}
+
+.clear-filters-btn {
+    padding: 0.5rem 1rem;
+    background: var(--bubble-agent-bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.clear-filters-btn:hover {
+    background: var(--border-color);
+}
+
+.pagination-container {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.pagination-info {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagination-btn {
+    padding: 0.5rem 1rem;
+    background: var(--bubble-agent-bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: var(--border-color);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.page-number {
+    padding: 0.5rem 0.75rem;
+    background: var(--bubble-agent-bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 2rem;
+    text-align: center;
+}
+
+.page-number:hover {
+    background: var(--border-color);
+}
+
+.page-number.active {
+    background: var(--bubble-user-bg);
+    color: white;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .library-filters {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .filter-group {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .pagination-controls {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .page-numbers {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+        margin: 0.5rem 0;
+    }
+}

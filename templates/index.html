@@ -204,7 +204,7 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v={{ time }}&force=1"></script>
+    <script src="/static/script.js?v={{ time }}"></script>
     <script src="/static/fix_ppt_gallery.js?v={{ time }}"></script>
 
     <script>
@@ -231,111 +231,6 @@
                 console.error('加载所有PPT失败:', error);
             }
         };
-
-        // 测试日志显示功能
-        window.testLogDisplay = function () {
-            console.log('测试日志显示功能');
-
-            // 测试appendAgentStatus函数
-            try {
-                const templates = {
-                    status: document.getElementById('agent-status-template')
-                };
-
-                if (!templates.status) {
-                    console.error('找不到agent-status-template');
-                    return;
-                }
-
-                console.log('模板找到，开始测试');
-
-                // 模拟appendAgentStatus函数
-                const node = templates.status.content.cloneNode(true);
-                const element = node.firstElementChild;
-                element.innerHTML = element.innerHTML.replace('${text}', '测试日志消息');
-
-                const chatLog = document.getElementById('chat-log');
-                if (chatLog) {
-                    chatLog.appendChild(element);
-                    console.log('测试消息已添加到聊天日志');
-                } else {
-                    console.error('找不到chat-log元素');
-                }
-
-            } catch (error) {
-                console.error('测试日志显示失败:', error);
-            }
-        };
-
-        // 直接在HTML中定义测试函数
-        window.testAPIDirectly = async function () {
-            console.log('直接测试API...');
-            const pptGrid = document.getElementById('ppt-grid');
-
-            try {
-                console.log('发送请求到:', '/api/generated-ppts?limit=3');
-                const response = await fetch('/api/generated-ppts?limit=3');
-                console.log('API响应状态:', response.status);
-                console.log('API响应对象:', response);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('API返回数据:', data);
-
-                pptGrid.innerHTML = `
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; background: #e6ffe6; border-radius: 8px;">
-                        <h3>✅ API测试成功！</h3>
-                        <p>找到 ${data.ppts ? data.ppts.length : 0} 个PPT</p>
-                        <div style="text-align: left; background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow: auto; margin: 1rem 0;">
-                            <strong>PPT列表:</strong><br>
-                            ${data.ppts ? data.ppts.map(ppt => `• ${ppt.title} (${ppt.created_time})`).join('<br>') : '无'}
-                        </div>
-                        <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">刷新页面</button>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('API测试失败:', error);
-                pptGrid.innerHTML = `
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; background: #ffe6e6; border-radius: 8px;">
-                        <h3>❌ API测试失败</h3>
-                        <p style="color: red; margin: 1rem 0;"><strong>错误:</strong> ${error.message}</p>
-                        <p style="font-size: 0.9rem; color: #666;">
-                            请检查：<br>
-                            1. 服务器是否运行在正确端口<br>
-                            2. 是否运行的是 appbook.py<br>
-                            3. 浏览器控制台是否有其他错误
-                        </p>
-                        <button onclick="testAPIDirectly()" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">重试</button>
-                    </div>
-                `;
-            }
-        };
-
-        // 页面加载完成后的调试信息
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('=== PPT画廊调试信息 ===');
-            console.log('当前URL:', window.location.href);
-            console.log('script.js是否加载:', typeof initPPTGallery !== 'undefined');
-            console.log('ppt-grid元素:', document.getElementById('ppt-grid'));
-
-            // 5秒后如果还在显示loading，就显示错误信息
-            setTimeout(() => {
-                const pptGrid = document.getElementById('ppt-grid');
-                if (pptGrid && pptGrid.innerHTML.includes('loading-spinner')) {
-                    console.log('5秒后仍在加载，可能有问题');
-                    pptGrid.innerHTML = `
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
-                            <h3>⚠️ 加载超时</h3>
-                            <p>PPT列表加载时间过长，可能存在问题</p>
-                            <button onclick="testAPIDirectly()" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">手动测试API</button>
-                        </div>
-                    `;
-                }
-            }, 5000);
-        });
     </script>
 
     <div id="overlay" class="overlay" style="display: none;"></div>

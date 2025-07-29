@@ -2,7 +2,11 @@
   "topic": "人间值得",
   "book_data": {
     "raw_content": "```json\n{\n  \"book_title\": \"人间值得\",\n  \"author\": \"中村恒子, 奥田弘美\",\n  \"content_summary\": [\n    \"《人间值得》记录了90岁心理医生中村恒子医生的人生经历和行医感悟。\",\n    \"书中分享了作者在困境中如何保持积极心态，以及如何接纳不完美的人生。\",\n    \"通过讲述大量的咨询案例，作者帮助读者认识到烦恼是人生的常态，并学会与烦恼共处。\",\n    \"本书鼓励读者放下执念，活在当下，享受生活中的美好。\",\n    \"强调通过调整心态，可以发现生活中的美好和意义，从而感受到人间值得。\"\n  ],\n  \"core_viewpoints\": [\n    \"人生不如意事十之八九，烦恼是常态，无需过度纠结。\",\n    \"接受不完美的自己和人生，不必苛求完美。\",\n    \"专注于当下能做的事情，活在当下。\",\n    \"与人和善，建立良好的人际关系，感受支持和温暖。\",\n    \"培养兴趣爱好，寻找生活中的乐趣，提升幸福感。\"\n  ],\n  \"target_audience\": [\n    \"感到焦虑、迷茫、生活压力大的年轻人。\",\n    \"想要改善人际关系，提升幸福感的人群。\",\n    \"对心理学、人生哲学感兴趣的读者。\",\n    \"希望学习如何应对困境、保持积极心态的人。\"\n  ],\n  \"value_and_significance\": [\n    \"帮助读者缓解焦虑情绪，找到内心的平静。\",\n    \"提供了面对人生困境的积极应对方法。\",\n    \"鼓励读者接纳不完美的人生，活在当下。\",\n    \"通过真实案例，让读者感受到人性的温暖和力量。\",\n    \"传递积极乐观的人生态度，鼓励读者发现生活中的美好。\"\n  ],\n  \"ppt_suitable_chapters_themes\": [\n    \"与烦恼共处：接纳不完美的人生\",\n    \"专注当下：活在当下，享受生活\",\n    \"建立良好的人际关系：与人和善，互助互爱\",\n    \"培养兴趣爱好：寻找生活中的乐趣\",\n    \"放下执念：减少不必要的烦恼\",\n    \"保持积极心态：从不同角度看问题\",\n    \"从工作中寻找意义：享受工作带来的成就感\",\n    \"如何应对压力：找到适合自己的放松方式\"\n  ]\n}\n```",
-    "cover_url": "https://books.google.com/books/content?id=PGFiEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+    "cover_url": "https://books.google.com/books/content?id=PGFiEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api",
+    "category_id": "literature",
+    "category_name": "文学类",
+    "category_color": "#E74C3C",
+    "category_icon": "📖"
   },
   "slides": [
     {

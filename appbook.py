@@ -95,6 +95,25 @@ except ImportError as e:
         """备用下载函数"""
         return False
 
+# 导入分类管理器
+try:
+    from book_category_manager import add_book_to_category, get_all_books_with_categories, get_books_by_category_id, get_categories_summary
+    print("✅ 成功导入分类管理器")
+except ImportError as e:
+    print(f"⚠️ 导入分类管理器失败: {e}")
+    # 备用函数
+    def add_book_to_category(title: str, author: str, category_info: dict, ppt_path: str):
+        pass
+    
+    def get_all_books_with_categories():
+        return []
+    
+    def get_books_by_category_id(category_id: str):
+        return []
+    
+    def get_categories_summary():
+        return {}
+
 async def search_book_cover(book_title: str, author: str = None, download: bool = True) -> str:
     """
     搜索书籍封面图片
@@ -209,6 +228,56 @@ async def step1_extract_book_data(topic: str) -> dict:
             book_data = json.loads(result)
         except:
             book_data = {"raw_content": result}
+        
+        # 简单的LLM分类
+        try:
+            category_prompt = f"""请将《{topic}》这本书分类到以下5个分类之一，只输出分类名称：
+
+文学类、效率提升类、虚构类、自传类、教材类
+
+只输出分类名称，不要其他内容。"""
+            
+            if USE_QWEN:
+                category_response = await client.chat.completions.create(
+                    model=QWEN_MODEL,
+                    messages=[{"role": "user", "content": category_prompt}],
+                    temperature=0.3
+                )
+                category = category_response.choices[0].message.content.strip()
+            else:
+                category_response = await client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": category_prompt}],
+                    temperature=0.3
+                )
+                category = category_response.choices[0].message.content.strip()
+            
+            # 分类映射
+            category_mapping = {
+                '文学类': {'id': 'literature', 'name': '文学类', 'color': '#E74C3C', 'icon': '📖'},
+                '效率提升类': {'id': 'efficiency', 'name': '效率提升类', 'color': '#27AE60', 'icon': '⚡'},
+                '虚构类': {'id': 'fiction', 'name': '虚构类', 'color': '#9B59B6', 'icon': '🔮'},
+                '自传类': {'id': 'biography', 'name': '自传类', 'color': '#F39C12', 'icon': '👤'},
+                '教材类': {'id': 'textbook', 'name': '教材类', 'color': '#34495E', 'icon': '📚'}
+            }
+            
+            category_info = category_mapping.get(category, category_mapping['文学类'])
+            book_data['category_id'] = category_info['id']
+            book_data['category_name'] = category_info['name']
+            book_data['category_color'] = category_info['color']
+            book_data['category_icon'] = category_info['icon']
+            book_data['category_confidence'] = 1.0
+            
+            print(f"📚 书籍《{topic}》分类为: {category_info['name']}")
+            
+        except Exception as e:
+            print(f"分类失败: {e}")
+            # 默认分类
+            book_data['category_id'] = 'literature'
+            book_data['category_name'] = '文学类'
+            book_data['category_color'] = '#E74C3C'
+            book_data['category_icon'] = '📖'
+            book_data['category_confidence'] = 0.0
         
         # 搜索书籍封面
         try:
@@ -866,6 +935,38 @@ async def save_generated_content(session_id: str, content: dict):
 ## 会话ID
 {session_id}
 """)
+    
+    # 添加到分类数据库
+    try:
+        book_data = content.get('book_data', {})
+        topic = content.get('topic', '')
+        
+        # 提取作者信息
+        author = "未知作者"
+        if isinstance(book_data, dict):
+            # 尝试从不同字段提取作者
+            if 'author' in book_data:
+                author = book_data['author']
+            elif 'raw_content' in book_data:
+                content_str = str(book_data['raw_content'])
+                author_match = re.search(r'"author":\s*"([^"]+)"', content_str)
+                if author_match:
+                    author = author_match.group(1)
+        
+        # 提取分类信息
+        category_info = {
+            'category_id': book_data.get('category_id', 'literature'),
+            'category_name': book_data.get('category_name', '文学类'),
+            'category_color': book_data.get('category_color', '#E74C3C'),
+            'category_icon': book_data.get('category_icon', '📖')
+        }
+        
+        # 添加到分类数据库
+        add_book_to_category(topic, author, category_info, session_id)
+        print(f"✅ 已添加到分类数据库: 《{topic}》- {category_info['category_name']}")
+        
+    except Exception as e:
+        print(f"⚠️ 添加到分类数据库失败: {e}")
     
     print(f"内容已保存到: {output_dir}/")
     return output_dir
@@ -1882,66 +1983,7 @@ async def regenerate_ppt(session_id: str):
         "regenerated_at": datetime.now(shanghai_tz).isoformat()
     }
 
-@app.get("/api/generated-ppts")
-async def get_generated_ppts(limit: int = None):
-    """
-    获取已生成的PPT列表
-    limit: 限制返回的数量，默认返回所有
-    """
-    import os
-    import glob
-    
-    ppt_list = []
-    output_dirs = glob.glob('outputs/*/data.json')
-    
-    for data_file in output_dirs:
-        try:
-            session_id = os.path.basename(os.path.dirname(data_file))
-            
-            # 读取数据文件
-            with open(data_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            # 检查HTML文件是否存在
-            html_file = os.path.join(os.path.dirname(data_file), 'presentation.html')
-            if os.path.exists(html_file):
-                # 获取文件修改时间
-                mtime = os.path.getmtime(html_file)
-                created_time = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
-                
-                # 提取书籍标题
-                topic = data.get('topic', '未知书籍')
-                book_data = data.get('book_data', {})
-                book_title = extract_book_title(book_data) if book_data else topic
-                
-                # 获取封面信息
-                cover_url = book_data.get("cover_url", get_default_book_cover(topic))
-                
-                # 转换本地封面路径为URL
-                if cover_url.startswith('covers/'):
-                    cover_url = f"/covers/{cover_url.replace('covers/', '')}"
-                
-                ppt_list.append({
-                    'session_id': session_id,
-                    'title': book_title,
-                    'topic': topic,
-                    'created_time': created_time,
-                    'html_url': f'/outputs/{session_id}/presentation.html',
-                    'preview_url': f'/api/ppt-preview/{session_id}',
-                    'cover_url': cover_url
-                })
-        except Exception as e:
-            print(f"Error processing {data_file}: {e}")
-            continue
-    
-    # 按创建时间倒序排列
-    ppt_list.sort(key=lambda x: x['created_time'], reverse=True)
-    
-    # 如果指定了限制数量，则只返回前N个
-    if limit is not None and limit > 0:
-        ppt_list = ppt_list[:limit]
-    
-    return {"ppts": ppt_list}
+
 
 @app.get("/api/ppt-preview/{session_id}")
 async def get_ppt_preview(session_id: str):
@@ -1990,7 +2032,12 @@ async def get_ppt_preview(session_id: str):
         raise HTTPException(status_code=500, detail=f"获取预览失败: {str(e)}")
 
 @app.get("/api/generated-ppts")
-async def get_generated_ppts(limit: int = 10):
+async def get_generated_ppts(
+    limit: int = 10, 
+    page: int = 1, 
+    category_id: str = None,
+    search: str = None
+):
     """获取已生成的PPT列表"""
     import os
     import json
@@ -2029,13 +2076,23 @@ async def get_generated_ppts(limit: int = 10):
                         if cover_url.startswith('covers/'):
                             cover_url = f"/covers/{cover_url.replace('covers/', '')}"
                         
+                        # 获取分类信息
+                        ppt_category_id = book_data.get("category_id", "literature")
+                        category_name = book_data.get("category_name", "文学类")
+                        category_color = book_data.get("category_color", "#E74C3C")
+                        category_icon = book_data.get("category_icon", "📖")
+                        
                         ppt_info = {
                             "session_id": session_dir.name,
                             "title": data.get("topic", "未知主题"),
                             "created_time": created_time,
-                            "html_path": f"/outputs/{session_dir.name}/presentation.html",
+                            "html_url": f"/outputs/{session_dir.name}/presentation.html",
                             "preview_url": f"/ppt-preview/{session_dir.name}",
-                            "cover_url": cover_url
+                            "cover_url": cover_url,
+                            "category_id": ppt_category_id,
+                            "category_name": category_name,
+                            "category_color": category_color,
+                            "category_icon": category_icon
                         }
                         
                         ppt_list.append(ppt_info)
@@ -2044,13 +2101,35 @@ async def get_generated_ppts(limit: int = 10):
                         print(f"读取PPT数据失败: {session_dir.name}, 错误: {e}")
                         continue
         
+        # 筛选功能
+        if category_id:
+            ppt_list = [ppt for ppt in ppt_list if ppt.get("category_id") == category_id]
+        
+        if search:
+            search_lower = search.lower()
+            ppt_list = [ppt for ppt in ppt_list if 
+                       search_lower in ppt.get("title", "").lower() or 
+                       search_lower in ppt.get("topic", "").lower()]
+        
         # 按创建时间排序，最新的在前
         ppt_list.sort(key=lambda x: x["created_time"], reverse=True)
         
-        # 限制返回数量
-        ppt_list = ppt_list[:limit]
+        # 分页功能
+        total_count = len(ppt_list)
+        total_pages = (total_count + limit - 1) // limit
+        start_index = (page - 1) * limit
+        end_index = start_index + limit
+        paged_ppt_list = ppt_list[start_index:end_index]
         
-        return {"ppts": ppt_list}
+        return {
+            "ppts": paged_ppt_list,
+            "pagination": {
+                "current_page": page,
+                "total_pages": total_pages,
+                "total_count": total_count,
+                "per_page": limit
+            }
+        }
         
     except Exception as e:
         print(f"获取PPT列表失败: {e}")
@@ -2094,6 +2173,11 @@ async def read_index(request: Request):
         "index.html", {
             "request": request,
             "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")})
+
+@app.get("/debug", response_class=HTMLResponse)
+async def debug_page():
+    with open("test_frontend_debug.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 @app.get("/simple_switch_test.html", response_class=HTMLResponse)
 async def simple_switch_test(request: Request):
@@ -2152,6 +2236,70 @@ async def serve_cover_image(filename: str):
         # 如果文件不存在，返回404
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=404, content={"error": f"Cover image not found: {decoded_filename}"})
+
+# -----------------------------------------------------------------------
+# 分类管理API端点
+# -----------------------------------------------------------------------
+
+@app.get("/api/categories")
+async def get_categories():
+    """
+    获取所有分类统计信息
+    """
+    try:
+        categories = get_categories_summary()
+        return {
+            "success": True,
+            "categories": categories
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/api/books")
+async def get_books(category_id: str = None, search: str = None):
+    """
+    获取书籍列表，支持按分类筛选和搜索
+    """
+    try:
+        if category_id:
+            books = get_books_by_category_id(category_id)
+        elif search:
+            books = search_books_by_keyword(search)
+        else:
+            books = get_all_books_with_categories()
+        
+        return {
+            "success": True,
+            "books": books,
+            "total": len(books)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/api/categories/{category_id}/books")
+async def get_books_by_category(category_id: str):
+    """
+    获取指定分类的书籍
+    """
+    try:
+        books = get_books_by_category_id(category_id)
+        return {
+            "success": True,
+            "category_id": category_id,
+            "books": books,
+            "total": len(books)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 # -----------------------------------------------------------------------
 # 4. 本地启动命令

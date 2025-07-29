@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端调试测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>前端调试测试</h1>
+    
+    <div class="test-section">
+        <h2>1. API测试</h2>
+        <button onclick="testAPI()">测试API</button>
+        <div id="api-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 首页PPT展示测试</h2>
+        <button onclick="testHomePage()">测试首页</button>
+        <div id="home-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 图书馆页面测试</h2>
+        <button onclick="testLibraryPage()">测试图书馆</button>
+        <div id="library-result" class="result"></div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch('/api/generated-ppts?limit=3');
+                const data = await response.json();
+                
+                if (data.ppts && data.ppts.length > 0) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ API正常，返回 ${data.ppts.length} 个PPT<br>
+                            第一个PPT: ${data.ppts[0].title}<br>
+                            分类: ${data.ppts[0].category_name || 'N/A'}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ API返回空数据</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ API错误: ${error.message}</div>`;
+            }
+        }
+        
+        async function testHomePage() {
+            const resultDiv = document.getElementById('home-result');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch('/');
+                const html = await response.text();
+                
+                if (html.includes('ppt-showcase-grid')) {
+                    resultDiv.innerHTML = '<div class="success">✅ 首页HTML正常，包含PPT展示区域</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ 首页HTML缺少PPT展示区域</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 首页访问错误: ${error.message}</div>`;
+            }
+        }
+        
+        async function testLibraryPage() {
+            const resultDiv = document.getElementById('library-result');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                const response = await fetch('/library');
+                const html = await response.text();
+                
+                if (html.includes('ppt-library-grid')) {
+                    resultDiv.innerHTML = '<div class="success">✅ 图书馆页面HTML正常，包含PPT网格</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ 图书馆页面HTML缺少PPT网格</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 图书馆页面访问错误: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html> 

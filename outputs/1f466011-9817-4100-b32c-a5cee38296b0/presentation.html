@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未知书籍 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* 开场页特殊样式 */
+        .slide[data-slide="0"] {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+        }
+        
+        .slide[data-slide="0"] h1 {
+            font-size: 5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 封面页样式 */
+        .cover-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .book-cover {
+            flex-shrink: 0;
+            width: 300px;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: perspective(1000px) rotateY(-15deg);
+            transition: transform 0.3s ease;
+        }
+        
+        .book-cover:hover {
+            transform: perspective(1000px) rotateY(-5deg) scale(1.05);
+        }
+        
+        .cover-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .cover-text {
+            flex: 1;
+            max-width: 500px;
+            text-align: left;
+        }
+        
+        .cover-text h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .cover-text h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        /* 默认封面样式（当没有真实封面时） */
+        .default-cover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        
+        .default-cover::before {
+            content: "📚";
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .default-cover-title {
+            font-size: 1.5rem;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+        
+        /* 引用页特殊样式 */
+        .slide[data-slide="3"] p {
+            font-size: 2rem;
+            font-style: italic;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 4px solid #667eea;
+        }
+        
+        /* 总结页特殊样式 */
+        .slide[data-slide="6"] {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 500;
+            color: #86868B;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .navigation button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .navigation button:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.2);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 800px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #1D1D1F;
+            z-index: 1000;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+        
+        .back-home-button {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-home-button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: translateY(-2px);
+        }
+        
+        .back-home-button svg {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <div class="cover-container">
+                <div class="book-cover">
+                    <div class="default-cover">
+                        <div class="default-cover-title">未知书籍</div>
+                    </div>
+                </div>
+                <div class="cover-text">
+                    <h1>时间管理大师</h1>
+                    <h2>掌控时间，掌控人生</h2>
+                </div>
+            </div>
+        </div>
+        <div class="slide " data-slide="1">
+            <h1>作者介绍</h1>
+            <h2>吉姆·兰德尔</h2>
+            <p>行为科学专家，专注研究个人效率与习惯养成。通过科学方法帮助人们实现高效生活。</p>
+        </div>
+        <div class="slide " data-slide="2">
+            <h1>80/20法则</h1>
+            <h2>聚焦关键少数</h2>
+            <p>将80%的精力投入到最重要的20%任务上，实现最大产出。</p>
+        </div>
+        <div class="slide " data-slide="3">
+            <h1>时间块管理</h1>
+            <h2>专注力革命</h2>
+            <p>研究表明，使用时间块的人工作效率提升42%。</p>
+        </div>
+        <div class="slide " data-slide="4">
+            <h1>优先级矩阵</h1>
+            <h2>四象限决策法</h2>
+            <p>按重要性和紧急性分类任务，明确行动方向。</p>
+        </div>
+        <div class="slide " data-slide="5">
+            <h1>书中金句</h1>
+            <h2></h2>
+            <p>“时间不是我们管理的资源，而是我们投资的资产。”</p>
+        </div>
+        <div class="slide " data-slide="6">
+            <h1>习惯养成系统</h1>
+            <h2>持续改进的力量</h2>
+            <p>通过小步骤建立可持续的时间管理习惯。</p>
+        </div>
+        <div class="slide " data-slide="7">
+            <h1>核心价值</h1>
+            <h2>为什么这本书值得读？</h2>
+            <p>提供科学方法论，助你在快节奏中找到平衡，提升长期竞争力。</p>
+        </div>
+        <div class="slide " data-slide="8">
+            <h1>立即行动</h1>
+            <h2>开启高效人生</h2>
+            <p>现在就掌握时间管理的艺术，成为真正的「时间管理大师」。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">9</span>
+    </div>
+    
+    <button class="back-home-button" onclick="goBackHome()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/>
+            <path d="M12 19l-7-7 7-7"/>
+        </svg>
+        返回首页
+    </button>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        但为什么有些人能在同样的24小时里完成更多？今天我们带来一本改变无数人效率轨迹的书——《时间管理大师》。它不是一本普通的指南，而是一套科学、系统的方法论。我们将重新定义你与时间的关系，让你掌控时间，进而掌控人生。
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "但为什么有些人能在同样的24小时里完成更多？今天我们带来一本改变无数人效率轨迹的书——《时间管理大师》。它不是一本普通的指南，而是一套科学、系统的方法论。我们将重新定义你与时间的关系，让你掌控时间，进而掌控人生。",
+        "他专注于研究个人效率与习惯养成，用科学的方法帮助人们实现高效生活。他的理念不是让我们变得更忙，而是更聪明地工作。这本书汇集了他多年的研究成果和实践经验，为每一位读者提供切实可行的时间管理方案。",
+        "这就是80/20法则的核心意义——将80%的精力投入到最重要的20%任务上。这不仅是效率的提升，更是思维方式的转变。通过聚焦关键少数，你可以实现指数级的产出增长。",
+        "时间块管理法是一种专注力革命。它将一天划分为专注的工作块，避免干扰和碎片化操作。这不仅提高了效率，也减少了心理疲劳。当你进入一个专注状态，创造力和执行力都会达到巅峰。",
+        "这是因为我们没有正确区分任务的优先级。优先级矩阵——也就是四象限决策法，可以帮助你按重要性和紧急性分类任务。明确哪些该立即处理，哪些可以委托，哪些需要延后，甚至忽略。",
+        "在这本书中，作者写道：“时间不是我们管理的资源，而是我们投资的资产。”这句话道出了时间管理的本质。我们不是在节约时间，而是在投资它，让它为我们创造更大的价值。",
+        "书中提出的习惯养成系统，通过小步骤建立可持续的时间管理习惯。每一个微小的改进，都会随着时间积累成巨大的飞跃。这不仅是方法，更是一种生活方式的选择。",
+        "因为它提供了一套科学的时间管理方法论，不仅帮你应对快节奏的工作，更帮助你在生活中找到平衡点。无论是职场人士、学生、创业者，还是普通读者，都能从中获得提升长期竞争力的钥匙。",
+        "不要再等待完美的时机，因为你永远不会有它。掌握时间管理的艺术，成为真正的「时间管理大师」。从这一刻开始，你将重新定义自己与时间的关系，掌控你的人生。",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 返回首页函数
+        function goBackHome() {
+            // 返回到主应用页面
+            window.location.href = '/';
+        }
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>

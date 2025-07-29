@@ -83,11 +83,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!grid) return;
 
         try {
-            const response = await fetch('/api/generated-ppts?limit=3');
+            // 获取更多PPT以便选择多样化的内容
+            const response = await fetch('/api/generated-ppts?limit=20');
             const data = await response.json();
 
             if (data.ppts && data.ppts.length > 0) {
-                renderShowcasePPTs(data.ppts);
+                // 选择多样化的PPT显示
+                const diversePPTs = selectDiversePPTs(data.ppts, 3);
+                renderShowcasePPTs(diversePPTs);
             } else {
                 grid.innerHTML = `
                     <div class="empty-showcase" style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
@@ -107,6 +110,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
+    }
+
+    // 选择多样化的PPT
+    function selectDiversePPTs(ppts, count) {
+        if (ppts.length <= count) return ppts;
+        
+        // 按分类分组
+        const categories = {};
+        ppts.forEach(ppt => {
+            const category = ppt.category_name || '文学类';
+            if (!categories[category]) {
+                categories[category] = [];
+            }
+            categories[category].push(ppt);
+        });
+        
+        // 从每个分类中选择一个，优先选择最新的
+        const selected = [];
+        const categoryNames = Object.keys(categories);
+        
+        // 先选择不同分类的PPT
+        for (let i = 0; i < Math.min(categoryNames.length, count); i++) {
+            const category = categoryNames[i];
+            if (categories[category].length > 0) {
+                selected.push(categories[category][0]); // 选择最新的
+            }
+        }
+        
+        // 如果还不够，从剩余中选择最新的
+        if (selected.length < count) {
+            const remaining = ppts.filter(ppt => !selected.includes(ppt));
+            selected.push(...remaining.slice(0, count - selected.length));
+        }
+        
+        return selected.slice(0, count);
     }
 
     // 渲染展示PPT
@@ -167,11 +205,25 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
+        // 添加分类标签
+        let categoryBadge = '';
+        if (ppt.category_name && ppt.category_icon) {
+            categoryBadge = `
+                <div class="category-badge" style="background-color: ${ppt.category_color || '#E74C3C'};">
+                    <span class="category-icon">${ppt.category_icon}</span>
+                    <span class="category-name">${ppt.category_name}</span>
+                </div>
+            `;
+        }
+
         card.innerHTML = `
             ${previewContent}
             <div class="showcase-card-info">
                 <h3 class="showcase-card-title">${escapeHtml(ppt.title)}</h3>
-                <div class="showcase-card-meta">${ppt.created_time}</div>
+                <div class="showcase-card-meta">
+                    ${ppt.created_time}
+                    ${categoryBadge}
+                </div>
             </div>
         `;
 
@@ -693,13 +745,26 @@ async function initPPTGallery() {
     }
 }
 
-async function loadPPTGallery() {
+// 全局变量用于分页和筛选
+let currentPage = 1;
+let currentCategory = '';
+let currentSearch = '';
+let currentLimit = 12;
+
+async function loadPPTGallery(page = 1, category = '', search = '') {
     console.log('开始加载PPT画廊...');
 
     try {
-        // 首页只显示最新的3条PPT
+        // 构建查询参数
+        const params = new URLSearchParams({
+            limit: currentLimit,
+            page: page,
+            ...(category && { category_id: category }),
+            ...(search && { search: search })
+        });
+
         console.log('发送API请求...');
-        const response = await fetch('/api/generated-ppts?limit=3');
+        const response = await fetch(`/api/generated-ppts?${params}`);
         console.log('API响应状态:', response.status);
 
         if (!response.ok) {
@@ -712,6 +777,9 @@ async function loadPPTGallery() {
         if (data.ppts && data.ppts.length > 0) {
             console.log(`找到 ${data.ppts.length} 个PPT`);
             renderPPTCards(data.ppts);
+            if (data.pagination) {
+                renderPagination(data.pagination);
+            }
         } else {
             console.log('没有找到PPT');
             renderEmptyGallery();
@@ -754,12 +822,24 @@ function createPPTCard(ppt) {
     const card = document.createElement('div');
     card.className = 'ppt-card';
 
-    card.innerHTML = `
+        // 添加分类标签
+        let categoryBadge = '';
+        if (ppt.category_name && ppt.category_icon) {
+            categoryBadge = `
+                <div class="category-badge" style="background-color: ${ppt.category_color || '#E74C3C'};">
+                    <span class="category-icon">${ppt.category_icon}</span>
+                    <span class="category-name">${ppt.category_name}</span>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
             <div class="ppt-card-header">
                 <h3 class="ppt-card-title">${escapeHtml(ppt.title)}</h3>
                 <div class="ppt-card-meta">
                     <span>${ppt.created_time}</span>
                     <span>${ppt.session_id.substring(0, 8)}...</span>
+                    ${categoryBadge}
                 </div>
             </div>
             <div class="ppt-card-preview" id="preview-${ppt.session_id}">
