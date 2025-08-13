@@ -32,7 +32,7 @@ BASE_URL = credentials.get("BASE_URL", "")
 
 # 配置Qwen模型客户端
 QWEN_BASE_URL = "https://api-inference.modelscope.cn/v1/"
-QWEN_API_KEY = "ms-076e7668-1000-4ce8-be4e-f475ddfeead7"  # ModelScope Token
+QWEN_API_KEY = "ms-9ff035d4-50cb-4adf-afe0-89788293e19e"  # ModelScope Token
 QWEN_MODEL = "Qwen/Qwen3-Coder-480B-A35B-Instruct"
 
 if API_KEY.startswith("sk-"):
@@ -2761,4 +2761,4 @@ async def check_book_in_bookshelf(
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=8001, reload=False)

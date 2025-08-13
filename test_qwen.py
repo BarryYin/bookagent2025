@@ -1,8 +1,13 @@
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("httpx").setLevel(logging.DEBUG)
+logging.getLogger("urllib3").setLevel(logging.DEBUG)
+
 from openai import OpenAI
 
 client = OpenAI(
-    base_url='https://api-inference.modelscope.cn/v1/',
-    api_key='ms-076e7668-1000-4ce8-be4e-f475ddfeead7', # ModelScope Token
+    base_url='https://api-inference.modelscope.cn/v1/',  # 去掉末尾斜杠，便于路径拼接
+    api_key='ms-9ff035d4-50cb-4adf-afe0-89788293e19e', # ModelScope Token
 )
 
 response = client.chat.completions.create(
