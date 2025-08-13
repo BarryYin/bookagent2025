@@ -10,9 +10,20 @@ document.addEventListener('DOMContentLoaded', () => {
         githubrepo: { zh: "Github 开源仓库", en: "Fogsight Github Repo" },
         officialWebsite: { zh: "通向 AGI 之路社区", en: "WaytoAGI Open Source Community" },
         groupChat: { zh: "联系我们/加入交流群", en: "Contact Us" },
+        agentRecommendation: { zh: "引导推荐", en: "Guided Recommendation" },
+        agentExploration: { zh: "书籍探索", en: "Book Exploration" },
+        agentInterview: { zh: "读后感访谈", en: "Reading Interview" },
         placeholders: {
-            zh: ["微积分的几何原理", "冒泡排序", "热寂", "黑洞是如何形成的"],
-            en: ["What is Heat Death?", "How are black holes formed?", "What is Bubble Sort?"]
+            zh: {
+                recommendation: ["推荐一些适合我的书", "我想读一些科幻小说", "有什么励志类的书籍"],
+                exploration: ["微积分的几何原理", "冒泡排序", "热寂", "黑洞是如何形成的"],
+                interview: ["我刚读完《三体》", "分享我对《活着》的感受", "讨论《百年孤独》的主题"]
+            },
+            en: {
+                recommendation: ["Recommend some books for me", "I want to read sci-fi novels", "Any inspirational books?"],
+                exploration: ["What is Heat Death?", "How are black holes formed?", "What is Bubble Sort?"],
+                interview: ["I just finished 'The Three-Body Problem'", "Share my thoughts on 'To Live'", "Discuss themes in 'One Hundred Years of Solitude'"]
+            }
         },
         newChat: { zh: "新对话", en: "New Chat" },
         newChatTitle: { zh: "新对话", en: "New Chat" },
@@ -387,7 +398,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${config.apiBaseUrl}/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic: topic, history: conversationHistory })
+                body: JSON.stringify({ 
+                    topic: topic, 
+                    history: conversationHistory,
+                    agent_type: currentAgent  // 添加当前智能体类型
+                })
             });
 
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -707,17 +722,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const scrollToBottom = () => chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: 'smooth' });
 
     function setNextPlaceholder() {
-        const placeholderTexts = translations.placeholders[currentLang];
-        const newSpan = document.createElement('span');
-        newSpan.textContent = placeholderTexts[placeholderIndex];
-        placeholderContainer.innerHTML = '';
-        placeholderContainer.appendChild(newSpan);
-        placeholderIndex = (placeholderIndex + 1) % placeholderTexts.length;
+        const placeholderTexts = translations.placeholders[currentLang][currentAgent];
+        if (placeholderTexts && placeholderTexts.length > 0) {
+            const newSpan = document.createElement('span');
+            newSpan.textContent = placeholderTexts[placeholderIndex];
+            placeholderContainer.innerHTML = '';
+            placeholderContainer.appendChild(newSpan);
+            placeholderIndex = (placeholderIndex + 1) % placeholderTexts.length;
+        }
     }
 
     function startPlaceholderAnimation() {
         if (placeholderInterval) clearInterval(placeholderInterval);
-        const placeholderTexts = translations.placeholders[currentLang];
+        const placeholderTexts = translations.placeholders[currentLang][currentAgent];
         if (placeholderTexts && placeholderTexts.length > 0) {
             placeholderIndex = 0;
             setNextPlaceholder();
@@ -745,8 +762,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let placeholderIndex = 0;
+    let currentAgent = 'exploration'; // 默认智能体：书籍探索
 
     function init() {
+        // 智能体按钮事件监听
+        const agentButtons = document.querySelectorAll('.agent-button');
+        agentButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const agentType = button.dataset.agent;
+                switchAgent(agentType);
+            });
+        });
+
         initialInput.addEventListener('input', () => {
             placeholderContainer.classList.toggle('hidden', initialInput.value.length > 0);
         });
@@ -783,6 +810,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const savedLang = localStorage.getItem('preferredLanguage');
         setLanguage(['zh', 'en'].includes(savedLang) ? savedLang : config.defaultLang);
+    }
+
+    function switchAgent(agentType) {
+        currentAgent = agentType;
+        
+        // 更新按钮状态
+        const agentButtons = document.querySelectorAll('.agent-button');
+        agentButtons.forEach(button => {
+            if (button.dataset.agent === agentType) {
+                button.classList.add('active');
+            } else {
+                button.classList.remove('active');
+            }
+        });
+
+        // 根据智能体类型更新页面状态
+        if (agentType === 'recommendation') {
+            // 引导推荐：显示功能开发中提示
+            showComingSoonModal();
+        } else if (agentType === 'interview') {
+            // 读后感访谈：显示功能开发中提示
+            showComingSoonModal();
+        } else if (agentType === 'exploration') {
+            // 书籍探索：当前功能，不需要特殊处理
+        }
+        
+        // 更新输入框占位符
+        updatePlaceholderForAgent(agentType);
+    }
+
+    function updatePlaceholderForAgent(agentType) {        
+        placeholderIndex = 0; // 重置索引
+        
+        // 如果输入框为空，立即更新占位符
+        if (initialInput.value.length === 0) {
+            setNextPlaceholder();
+        }
+    }
+
+    function showComingSoonModal() {
+        featureModal.classList.add('visible');
     }
 
     init();

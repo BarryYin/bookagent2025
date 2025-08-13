@@ -154,6 +154,7 @@ class BookIntroductionRequest:
     additional_info: Optional[str] = None
     style_preference: str = "professional"
     language: str = "zh"
+    agent_type: str = "exploration"  # 新增：智能体类型 (recommendation, exploration, interview)
 
 @dataclass
 class GenerationProgress:

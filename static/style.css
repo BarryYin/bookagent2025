@@ -313,15 +313,117 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     font-size: 2.2rem; 
     font-weight: 100; 
     line-height: 1.3; 
-    margin: 0 0 1rem 0; 
+    margin: 0 0 2rem 0; 
     color: #333; 
 }
-.initial-form { position: relative; }
 
-.initial-form input { width: 100%; height: 60px; padding: 0 60px 0 25px; border: 1px solid #DFDFDF; border-radius: var(--radius-sm); background-color: #fff; font-size: 1.1rem; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
-#initial-input::placeholder { font-weight: 300; }
-.initial-form button { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background: transparent; border: none; border-radius: 10px; color: var(--text-secondary); cursor: pointer; display: grid; place-items: center; transition: background-color 0.2s, color 0.2s; }
-.initial-form button:hover { background-color: var(--bubble-agent-bg); color: var(--text-primary); }
+/* === 智能体选择器 === */
+.agent-selector {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.agent-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    user-select: none;
+    position: relative;
+}
+
+.agent-button:hover {
+    color: #0A84FF;
+    transform: scale(1.05);
+}
+
+.agent-button.active {
+    color: #0A84FF;
+    font-weight: 500;
+}
+
+.agent-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    background: #0A84FF;
+    border-radius: 1px;
+}
+
+.agent-button svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+
+.agent-button.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.initial-form { position: relative; margin-top: 1rem; max-width: 800px; width: 100%; }
+
+.initial-form input { 
+    width: 100%; 
+    height: 80px; 
+    padding: 0 80px 0 35px; 
+    border: 2px solid #E8E8EA; 
+    border-radius: 40px; 
+    background-color: #fff; 
+    font-size: 1.3rem; 
+    box-sizing: border-box; 
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.initial-form input:focus {
+    border-color: #0A84FF;
+    box-shadow: 0 8px 32px rgba(10, 132, 255, 0.15);
+    outline: none;
+}
+
+#initial-input::placeholder { font-weight: 300; color: #999; }
+
+.initial-form button { 
+    position: absolute; 
+    right: 8px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    width: 64px; 
+    height: 64px; 
+    background: linear-gradient(135deg, #0A84FF 0%, #007AFF 100%); 
+    border: none; 
+    border-radius: 50%; 
+    color: white; 
+    cursor: pointer; 
+    display: grid; 
+    place-items: center; 
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(10, 132, 255, 0.3);
+}
+
+.initial-form button:hover { 
+    background: linear-gradient(135deg, #0066CC 0%, #005BB5 100%); 
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 6px 20px rgba(10, 132, 255, 0.4);
+}
 
 
 .initial-footer { margin-top: 2.5rem; display: flex; align-items: center; gap: 1rem; font-size: 1rem; font-weight: 500; }
@@ -332,49 +434,53 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
 /* PPT展示区域样式 */
 .ppt-showcase {
     width: 100%;
-    max-width: 900px;
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 2rem 2rem 2rem; /* 增加顶部padding */
-    flex-shrink: 0; /* 防止被压缩 */
+    padding: 3rem 2rem 2rem;
+    flex-shrink: 0;
 }
 
 .ppt-showcase-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
-    max-width: 800px;
+    max-width: 950px;
     margin: 0 auto;
-    padding: 0.5rem 0;
+    padding: 1rem 0;
 }
 
 .showcase-ppt-card {
     background: #fff;
-    border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     border: none;
     animation: slideInUp 0.6s ease-out forwards;
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
     position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 260px;
 }
 
 .showcase-ppt-card:hover {
-    transform: translateY(-12px) scale(1.02);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    transform: translateY(-6px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
 .showcase-card-preview {
-    height: 140px;
+    height: 170px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     position: relative;
     overflow: hidden;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+    flex-shrink: 0;
 }
 
 .showcase-card-preview::before {
@@ -426,56 +532,62 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
 }
 
 .showcase-card-info {
-    padding: 1rem;
-    background: linear-gradient(to bottom, #fff 0%, #fafafa 100%);
+    padding: 1.2rem 1rem;
+    background: #fff;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .showcase-card-title {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 0.5rem 0;
+    color: #1a1a1a;
+    margin: 0 0 0.6rem 0;
     line-height: 1.3;
-    letter-spacing: 0.2px;
+    letter-spacing: -0.01em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .showcase-card-meta {
     font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-bottom: 0;
+    color: #666;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 0.3rem;
+    margin-top: auto;
 }
 
-.showcase-card-meta::before {
-    content: '✨';
-    font-size: 0.9rem;
-}
-
-/* 移除按钮，添加悬停提示 */
-.showcase-ppt-card::after {
-    content: '点击查看PPT';
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 0.4rem 0.8rem;
-    border-radius: 15px;
+.showcase-card-meta .card-date {
+    color: #999;
     font-size: 0.75rem;
-    font-weight: 500;
-    opacity: 0;
-    transition: all 0.3s ease;
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 10;
+    font-weight: 400;
 }
 
-.showcase-ppt-card:hover::after {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-3px);
+.showcase-card-meta .card-category {
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+/* 卡片动画 */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* 响应式设计 */
@@ -485,12 +597,16 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     }
     
     .ppt-showcase-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: 1fr;
         gap: 1rem;
     }
     
+    .showcase-ppt-card {
+        height: 220px;
+    }
+    
     .showcase-card-preview {
-        height: 120px;
+        height: 140px;
     }
     
     .showcase-preview-icon {
@@ -511,8 +627,12 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
         grid-template-columns: 1fr;
     }
     
+    .showcase-ppt-card {
+        height: 200px;
+    }
+    
     .showcase-card-preview {
-        height: 100px;
+        height: 120px;
     }
     
     .showcase-preview-icon {
@@ -571,9 +691,9 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
 .action-button.open-new-window { background: rgba(10, 132, 255, 0.15); color: #0A84FF; }
 
 /* === 动画占位符 === */
-.animated-placeholder { position: absolute; top: 0; left: 25px; height: 60px; width: calc(100% - 85px); display: flex; align-items: center; overflow: hidden; pointer-events: none; }
+.animated-placeholder { position: absolute; top: 0; left: 35px; height: 80px; width: calc(100% - 115px); display: flex; align-items: center; overflow: hidden; pointer-events: none; }
 .animated-placeholder.hidden { display: none; }
-.animated-placeholder span { position: absolute; font-size: 1.1rem; font-weight: 300; color: var(--text-secondary); animation: scroll-up 4s ease-in-out forwards; }
+.animated-placeholder span { position: absolute; font-size: 1.3rem; font-weight: 300; color: #999; animation: scroll-up 4s ease-in-out forwards; }
 @keyframes scroll-up {
     0% { opacity: 0; transform: translateY(60%); }
     15% { opacity: 1; transform: translateY(0%); }

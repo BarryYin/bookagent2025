@@ -66,6 +66,30 @@
         <div class="initial-content">
             <div class="hero-group">
                 <h1 data-translate-key="heroTitle">今天读点啥</h1>
+                
+                <!-- 智能体选择按钮 -->
+                <div class="agent-selector">
+                    <button type="button" class="agent-button" data-agent="recommendation" data-translate-key="agentRecommendation">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span>引导推荐</span>
+                    </button>
+                    <button type="button" class="agent-button active" data-agent="exploration" data-translate-key="agentExploration">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <span>书籍探索</span>
+                    </button>
+                    <button type="button" class="agent-button" data-agent="interview" data-translate-key="agentInterview">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <span>读后感访谈</span>
+                    </button>
+                </div>
+                
                 <form id="initial-form" class="initial-form">
                     <div id="animated-placeholder" class="animated-placeholder"></div>
                     <input type="text" id="initial-input" required>

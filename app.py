@@ -159,6 +159,7 @@ async def generate_book_introduction_stream(
 async def llm_event_stream(
     topic: str,
     history: Optional[List[dict]] = None,
+    agent_type: str = "exploration",  # 新增智能体类型参数
     model: str = None, # Will use MODEL from config if not specified
 ) -> AsyncGenerator[str, None]:
     """动画生成的流式处理函数"""
@@ -167,8 +168,30 @@ async def llm_event_stream(
     if model is None:
         model = MODEL
     
-    # The system prompt is now more focused
-    system_prompt = f"""请你生成一个非常精美的动态动画,讲讲 {topic}
+    # 根据智能体类型生成不同的系统提示
+    if agent_type == "exploration":
+        # 书籍探索智能体（当前功能）
+        system_prompt = f"""请你生成一个非常精美的动态动画,讲讲 {topic}
+要动态的,要像一个完整的,正在播放的视频。包含一个完整的过程，能把知识点讲清楚。
+页面极为精美，好看，有设计感，同时能够很好的传达知识。知识和图像要准确
+附带一些旁白式的文字解说,从头到尾讲清楚一个小的知识点
+不需要任何互动按钮,直接开始播放
+使用和谐好看，广泛采用的浅色配色方案，使用很多的，丰富的视觉元素。双语字幕
+**请保证任何一个元素都在一个2k分辨率的容器中被摆在了正确的位置，避免穿模，字幕遮挡，图形位置错误等等问题影响正确的视觉传达**
+html+css+js+svg，放进一个html里"""
+    elif agent_type == "recommendation":
+        # 引导推荐智能体（待开发）
+        system_prompt = f"""作为图书推荐智能体，我需要根据用户的需求：{topic}，提供个性化的图书推荐。
+请分析用户的阅读偏好，推荐适合的书籍，并提供详细的推荐理由。
+目前此功能正在开发中，请返回一个友好的提示信息。"""
+    elif agent_type == "interview":
+        # 读后感访谈智能体（待开发）
+        system_prompt = f"""作为读后感访谈智能体，我需要与用户进行深度的读书交流：{topic}。
+请设计互动性的问题，引导用户分享阅读感受，进行深度的文学讨论。
+目前此功能正在开发中，请返回一个友好的提示信息。"""
+    else:
+        # 默认为书籍探索
+        system_prompt = f"""请你生成一个非常精美的动态动画,讲讲 {topic}
 要动态的,要像一个完整的,正在播放的视频。包含一个完整的过程，能把知识点讲清楚。
 页面极为精美，好看，有设计感，同时能够很好的传达知识。知识和图像要准确
 附带一些旁白式的文字解说,从头到尾讲清楚一个小的知识点
@@ -269,10 +292,11 @@ async def generate_animation(
     body = await request.json()
     topic = body.get("topic", "")
     history = body.get("history", [])
+    agent_type = body.get("agent_type", "exploration")  # 获取智能体类型，默认为书籍探索
     
     async def event_generator():
         try:
-            async for chunk in llm_event_stream(topic, history):
+            async for chunk in llm_event_stream(topic, history, agent_type):
                 if await request.is_disconnected():
                     break
                 yield chunk
