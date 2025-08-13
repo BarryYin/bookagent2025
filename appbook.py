@@ -1359,7 +1359,7 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             transform: translateX(-50%);
             display: flex;
             align-items: center;
-            z-index: 1000;
+            z-index: 1001;
         }}
         
         .navigation button {{
