@@ -88,6 +88,13 @@
                         </svg>
                         <span>读后感访谈</span>
                     </button>
+                    <a href="/enhanced-generator" class="agent-button enhanced-generator-btn" style="text-decoration: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <span>🚀 增强生成器</span>
+                    </a>
                 </div>
                 
                 <form id="initial-form" class="initial-form">
@@ -315,6 +322,37 @@
                 showAuthButtons();
             }
         }
+
+        // 增强生成器认证检查
+        function checkEnhancedGeneratorAuth(event) {
+            event.preventDefault();
+            
+            fetch('/api/user')
+                .then(response => {
+                    if (response.status === 401) {
+                        alert('请先登录后再使用增强生成器');
+                        window.location.href = '/login';
+                    } else if (response.ok) {
+                        window.location.href = '/enhanced-generator';
+                    } else {
+                        alert('验证失败，请重试');
+                    }
+                })
+                .catch(error => {
+                    console.error('认证检查失败:', error);
+                    alert('请先登录后再使用增强生成器');
+                    window.location.href = '/login';
+                });
+        }
+
+        // 页面加载时绑定事件
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绑定增强生成器按钮点击事件
+            const enhancedGeneratorBtn = document.querySelector('.enhanced-generator-btn');
+            if (enhancedGeneratorBtn) {
+                enhancedGeneratorBtn.addEventListener('click', checkEnhancedGeneratorAuth);
+            }
+        });
 
         function showUserSection(user) {
             const userSection = document.getElementById('user-section');

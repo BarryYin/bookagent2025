@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未知书籍 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* 开场页特殊样式 */
+        .slide[data-slide="0"] {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+        }
+        
+        .slide[data-slide="0"] h1 {
+            font-size: 5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 封面页样式 */
+        .cover-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .book-cover {
+            flex-shrink: 0;
+            width: 300px;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: perspective(1000px) rotateY(-15deg);
+            transition: transform 0.3s ease;
+        }
+        
+        .book-cover:hover {
+            transform: perspective(1000px) rotateY(-5deg) scale(1.05);
+        }
+        
+        .cover-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .cover-text {
+            flex: 1;
+            max-width: 500px;
+            text-align: left;
+        }
+        
+        .cover-text h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .cover-text h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        /* 默认封面样式（当没有真实封面时） */
+        .default-cover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        
+        .default-cover::before {
+            content: "📚";
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .default-cover-title {
+            font-size: 1.5rem;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+        
+        /* 引用页特殊样式 */
+        .slide[data-slide="3"] p {
+            font-size: 2rem;
+            font-style: italic;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 4px solid #667eea;
+        }
+        
+        /* 总结页特殊样式 */
+        .slide[data-slide="6"] {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 500;
+            color: #86868B;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1001;
+        }
+        
+        .navigation button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .navigation button:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.2);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 800px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #1D1D1F;
+            z-index: 1000;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+        
+        .back-home-button {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-home-button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: translateY(-2px);
+        }
+        
+        .back-home-button svg {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0" data-speech="我们每天都在努力工作，拼命省钱，却发现自己依然存不下钱。为什么？因为我们的理财方式从一开始就是错的。大多数人以为理财就是节衣缩食，但实际上，这种思维正在悄悄吞噬我们的未来。我们一边渴望财务自由，一边却对金钱缺乏基本认知。这就像在黑暗中摸索出路——你越用力，反而越迷失。">
+            <div class="cover-container">
+                <div class="book-cover">
+                    <div class="default-cover">
+                        <div class="default-cover-title">未知书籍</div>
+                    </div>
+                </div>
+                <div class="cover-text">
+                    <h1 data-speech="为什么你总是存不下钱？">为什么你总是存不下钱？</h1>
+                    <h2 data-speech="你的理财方式，可能从一开始就错了">你的理财方式，可能从一开始就错了</h2>
+                </div>
+            </div>
+        </div>
+        <div class="slide " data-slide="1" data-speech="传统教育体系几乎从不涉及财商启蒙，所以我们本能地把金钱和罪恶挂钩。但《小狗钱钱》这本书告诉我们一个真相：金钱本身是中性的，它不是敌人，而是实现梦想的工具。关键在于你怎么使用它。当你开始正视金钱的力量，你就真正拥有了掌控人生的能力。">
+            <h1 data-speech="金钱不是敌人，而是实现梦想的工具">金钱不是敌人，而是实现梦想的工具</h1>
+            <h2 data-speech="从“怕花钱”到“会赚钱”的思维转变">从“怕花钱”到“会赚钱”的思维转变</h2>
+            <p data-speech="传统教育从不教我们如何赚钱，于是我们本能地将金钱与罪恶挂钩。但《小狗钱钱》告诉我们：金钱是中性的，关键在于你怎么使用它。只有正视金钱的力量，才能真正掌控自己的人生。">传统教育从不教我们如何赚钱，于是我们本能地将金钱与罪恶挂钩。但《小狗钱钱》告诉我们：金钱是中性的，关键在于你怎么使用它。只有正视金钱的力量，才能真正掌控自己的人生。</p>
+        </div>
+        <div class="slide " data-slide="2" data-speech="因为大多数人的愿望只停留在脑海里，从来没有真正落地。《小狗钱钱》教你用‘梦想清单’把它们可视化。通过写下目标、设定优先级、拆解执行路径，你会发现，梦想不再是遥不可及的愿望，而是一个个可以实现的小计划。关键是：写下来，才能看得见；看得见，才有动力去追求。">
+            <h1 data-speech="从模糊愿望到清晰目标：梦想清单的力量">从模糊愿望到清晰目标：梦想清单的力量</h1>
+            <h2 data-speech="写下来，才能看得见">写下来，才能看得见</h2>
+            <p data-speech="大多数人的愿望都停留在脑海里，而《小狗钱钱》教你用“梦想清单”把它们可视化。通过明确目标、设定优先级、拆解执行路径，你将发现：梦想不是遥不可及，而是可以一步步实现的计划。">大多数人的愿望都停留在脑海里，而《小狗钱钱》教你用“梦想清单”把它们可视化。通过明确目标、设定优先级、拆解执行路径，你将发现：梦想不是遥不可及，而是可以一步步实现的计划。</p>
+        </div>
+        <div class="slide " data-slide="3" data-speech="《小狗钱钱》已被翻译成20多种语言，成为全球财商教育的经典教材。书中提出的‘鹅与金蛋’、‘收入公式’等模型，已经成为理财启蒙的核心方法论。这不是一本简单的童话书，而是成年人世界中被严重忽视的财富底层逻辑。它的价值不仅在于传授知识，更在于重塑认知。">
+            <h1 data-speech="全球畅销百万册的财商启蒙经典">全球畅销百万册的财商启蒙经典</h1>
+            <h2 data-speech="为什么这本书改变了无数家庭的金钱命运？">为什么这本书改变了无数家庭的金钱命运？</h2>
+            <p data-speech="《小狗钱钱》在全球被翻译成20多种语言，影响数百万家庭的财富启蒙。书中提出的“鹅与金蛋”、“收入公式”等模型，已成为理财教育的经典方法论。这不是童话，而是成年人世界的财富底层逻辑。">《小狗钱钱》在全球被翻译成20多种语言，影响数百万家庭的财富启蒙。书中提出的“鹅与金蛋”、“收入公式”等模型，已成为理财教育的经典方法论。这不是童话，而是成年人世界的财富底层逻辑。</p>
+        </div>
+        <div class="slide " data-slide="4" data-speech="《小狗钱钱》提出了一个非常经典的‘鹅与金蛋’模型。第一步，每月固定存下10%的收入作为‘鹅’的本金；第二步，让这只‘鹅’持续生出‘金蛋’，也就是投资收益；第三步，永远不要提前‘杀鹅’，保持复利增长。这是资产增值的核心逻辑，也是普通人通往财务自由的关键路径。">
+            <h1 data-speech="三步打造你的“鹅与金蛋”系统">三步打造你的“鹅与金蛋”系统</h1>
+            <h2 data-speech="资产增值的底层逻辑">资产增值的底层逻辑</h2>
+            <p data-speech="['第一步：每月固定存下10%收入作为‘鹅’的本金', '第二步：让‘鹅’生出‘金蛋’（投资收益）', '第三步：绝不提前‘杀鹅’，持续复利增长']">['第一步：每月固定存下10%收入作为‘鹅’的本金', '第二步：让‘鹅’生出‘金蛋’（投资收益）', '第三步：绝不提前‘杀鹅’，持续复利增长']</p>
+        </div>
+        <div class="slide " data-slide="5" data-speech="《小狗钱钱》不仅是一本儿童读物，更是一本亲子共读的理想手册。通过这本书，父母可以学会如何向孩子解释储蓄、投资和消费的概念。一家人共同阅读、讨论并实践，可以在潜移默化中培养孩子的财商意识，让他们从小拥有正确的金钱心智。这才是真正意义上的认知变现。">
+            <h1 data-speech="从“怕谈钱”到“会教钱”：亲子财商教育指南">从“怕谈钱”到“会教钱”：亲子财商教育指南</h1>
+            <h2 data-speech="让下一代从小拥有正确的金钱心智">让下一代从小拥有正确的金钱心智</h2>
+            <p data-speech="这本书不仅适合孩子阅读，更是家长与孩子沟通金钱话题的绝佳桥梁。通过共读与实践，家庭可以共同建立健康的金钱观，让孩子从小学会储蓄、投资与消费的智慧。">这本书不仅适合孩子阅读，更是家长与孩子沟通金钱话题的绝佳桥梁。通过共读与实践，家庭可以共同建立健康的金钱观，让孩子从小学会储蓄、投资与消费的智慧。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">6</span>
+    </div>
+    
+    <button class="back-home-button" onclick="goBackHome()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/>
+            <path d="M12 19l-7-7 7-7"/>
+        </svg>
+        返回首页
+    </button>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        我们每天都在努力工作，拼命省钱，却发现自己依然存不下钱。为什么？因为我们的理财方式从一开始就是错的。大多数人以为理财就是节衣缩食，但实际上，这种思维正在悄悄吞噬我们的未来。我们一边渴望财务自由，一边却对金钱缺乏基本认知。这就像在黑暗中摸索出路——你越用力，反而越迷失。
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "我们每天都在努力工作，拼命省钱，却发现自己依然存不下钱。为什么？因为我们的理财方式从一开始就是错的。大多数人以为理财就是节衣缩食，但实际上，这种思维正在悄悄吞噬我们的未来。我们一边渴望财务自由，一边却对金钱缺乏基本认知。这就像在黑暗中摸索出路——你越用力，反而越迷失。",
+        "传统教育体系几乎从不涉及财商启蒙，所以我们本能地把金钱和罪恶挂钩。但《小狗钱钱》这本书告诉我们一个真相：金钱本身是中性的，它不是敌人，而是实现梦想的工具。关键在于你怎么使用它。当你开始正视金钱的力量，你就真正拥有了掌控人生的能力。",
+        "因为大多数人的愿望只停留在脑海里，从来没有真正落地。《小狗钱钱》教你用‘梦想清单’把它们可视化。通过写下目标、设定优先级、拆解执行路径，你会发现，梦想不再是遥不可及的愿望，而是一个个可以实现的小计划。关键是：写下来，才能看得见；看得见，才有动力去追求。",
+        "《小狗钱钱》已被翻译成20多种语言，成为全球财商教育的经典教材。书中提出的‘鹅与金蛋’、‘收入公式’等模型，已经成为理财启蒙的核心方法论。这不是一本简单的童话书，而是成年人世界中被严重忽视的财富底层逻辑。它的价值不仅在于传授知识，更在于重塑认知。",
+        "《小狗钱钱》提出了一个非常经典的‘鹅与金蛋’模型。第一步，每月固定存下10%的收入作为‘鹅’的本金；第二步，让这只‘鹅’持续生出‘金蛋’，也就是投资收益；第三步，永远不要提前‘杀鹅’，保持复利增长。这是资产增值的核心逻辑，也是普通人通往财务自由的关键路径。",
+        "《小狗钱钱》不仅是一本儿童读物，更是一本亲子共读的理想手册。通过这本书，父母可以学会如何向孩子解释储蓄、投资和消费的概念。一家人共同阅读、讨论并实践，可以在潜移默化中培养孩子的财商意识，让他们从小拥有正确的金钱心智。这才是真正意义上的认知变现。",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 返回首页函数
+        function goBackHome() {
+            // 返回到主应用页面
+            window.location.href = '/';
+        }
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>

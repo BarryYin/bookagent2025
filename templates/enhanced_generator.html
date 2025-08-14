@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能书籍介绍生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .generation-wizard {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .wizard-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .wizard-tab {
+            flex: 1;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .wizard-tab.active {
+            color: #007bff;
+            background: white;
+        }
+
+        .wizard-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #007bff;
+        }
+
+        .wizard-content {
+            padding: 2rem;
+        }
+
+        .wizard-step {
+            display: none;
+        }
+
+        .wizard-step.active {
+            display: block;
+        }
+
+        /* 步骤1：书籍信息 */
+        .book-info-form {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* 步骤2：方法论选择 */
+        .methodology-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .methodology-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .methodology-card:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,123,255,0.15);
+        }
+
+        .methodology-card.selected {
+            border-color: #007bff;
+            background: #f8f9ff;
+        }
+
+        .methodology-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .methodology-icon {
+            font-size: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+        }
+
+        .methodology-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .methodology-description {
+            color: #6c757d;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .methodology-features {
+            list-style: none;
+        }
+
+        .methodology-features li {
+            padding: 0.25rem 0;
+            color: #495057;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .methodology-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        /* 步骤3：风格配置 */
+        .style-config {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .style-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .style-section h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+            font-size: 1.2rem;
+        }
+
+        .style-options {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .style-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .style-option:hover {
+            border-color: #007bff;
+        }
+
+        .style-option.selected {
+            border-color: #007bff;
+            background: #f8f9ff;
+        }
+
+        .style-option-icon {
+            font-size: 1.5rem;
+        }
+
+        .style-option-info h4 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            color: #2c3e50;
+        }
+
+        .style-option-info p {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        /* 按钮样式 */
+        .wizard-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #007bff;
+            border: 2px solid #007bff;
+        }
+
+        .btn-outline:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 进度指示器 */
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .progress-step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #6c757d;
+            position: relative;
+        }
+
+        .progress-step.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .progress-step.completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .progress-line {
+            width: 60px;
+            height: 2px;
+            background: #e9ecef;
+        }
+
+        .progress-line.completed {
+            background: #28a745;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .methodology-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .style-config {
+                grid-template-columns: 1fr;
+            }
+
+            .wizard-actions {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .wizard-tabs {
+                flex-direction: column;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .wizard-step.active {
+            animation: fadeInUp 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 智能书籍介绍生成器</h1>
+            <p>融合多种专业介绍方法论，打造个性化的书籍演示内容</p>
+        </div>
+
+        <div class="generation-wizard">
+            <!-- 进度指示器 -->
+            <div class="progress-indicator">
+                <div class="progress-step active" data-step="1">1</div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="2">2</div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="3">3</div>
+            </div>
+
+            <!-- 标签页 -->
+            <div class="wizard-tabs">
+                <button class="wizard-tab active" data-step="1">📚 书籍信息</button>
+                <button class="wizard-tab" data-step="2">🎭 介绍方法论</button>
+                <button class="wizard-tab" data-step="3">🎨 风格配置</button>
+            </div>
+
+            <div class="wizard-content">
+                <!-- 步骤1：书籍信息 -->
+                <div class="wizard-step active" data-step="1">
+                    <h2 style="margin-bottom: 1.5rem; color: #2c3e50;">📚 输入书籍基本信息</h2>
+                    <form class="book-info-form" id="bookInfoForm">
+                        <div class="form-group">
+                            <label for="bookTitle">书籍名称 *</label>
+                            <input type="text" id="bookTitle" required placeholder="例如：百年孤独">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bookAuthor">作者</label>
+                            <input type="text" id="bookAuthor" placeholder="例如：加西亚·马尔克斯">
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label for="bookCategory">书籍分类</label>
+                                <select id="bookCategory">
+                                    <option value="">请选择分类</option>
+                                    <option value="文学类">文学类</option>
+                                    <option value="小说">小说</option>
+                                    <option value="散文">散文</option>
+                                    <option value="诗歌">诗歌</option>
+                                    <option value="传记">传记</option>
+                                    <option value="自传">自传</option>
+                                    <option value="回忆录">回忆录</option>
+                                    <option value="科幻">科幻</option>
+                                    <option value="奇幻">奇幻</option>
+                                    <option value="悬疑">悬疑</option>
+                                    <option value="管理">管理</option>
+                                    <option value="效率">效率</option>
+                                    <option value="商业">商业</option>
+                                    <option value="职场">职场</option>
+                                    <option value="自我提升">自我提升</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bookLanguage">原始语言</label>
+                                <select id="bookLanguage">
+                                    <option value="中文">中文</option>
+                                    <option value="英文">英文</option>
+                                    <option value="法文">法文</option>
+                                    <option value="德文">德文</option>
+                                    <option value="日文">日文</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bookDescription">书籍简介或核心内容</label>
+                            <textarea id="bookDescription" placeholder="请简要描述书籍的主要内容、主题或特色..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="userIntent">您希望突出什么特点？</label>
+                            <textarea id="userIntent" placeholder="例如：希望突出书中的人生哲理、情感共鸣、实用价值等..."></textarea>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 步骤2：方法论选择 -->
+                <div class="wizard-step" data-step="2">
+                    <h2 style="margin-bottom: 1.5rem; color: #2c3e50;">🎭 选择介绍方法论</h2>
+                    <p style="margin-bottom: 2rem; color: #6c757d; line-height: 1.6;">
+                        根据您的书籍类型，我们推荐以下介绍方法论。每种方法论都有独特的风格和适用场景。
+                    </p>
+                    
+                    <div class="methodology-grid" id="methodologyGrid">
+                        <!-- 方法论卡片将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 步骤3：风格配置 -->
+                <div class="wizard-step" data-step="3">
+                    <h2 style="margin-bottom: 1.5rem; color: #2c3e50;">🎨 个性化风格配置</h2>
+                    
+                    <div class="style-config">
+                        <!-- 语音风格 -->
+                        <div class="style-section">
+                            <h3>🎙️ 语音风格</h3>
+                            <div class="style-options" id="voiceOptions">
+                                <!-- 语音选项将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 视频风格 -->
+                        <div class="style-section">
+                            <h3>🎬 视频风格</h3>
+                            <div class="style-options" id="videoOptions">
+                                <!-- 视频选项将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="wizard-actions">
+                    <button class="btn btn-outline" id="prevBtn" onclick="previousStep()" style="display: none;">
+                        ← 上一步
+                    </button>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-secondary" onclick="saveAsDraft()">💾 保存草稿</button>
+                        <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">
+                            下一步 →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentStep = 1;
+        let maxSteps = 3;
+        let selectedMethodology = null;
+        let selectedVoiceStyle = null;
+        let selectedVideoStyle = null;
+
+        // 方法论数据
+        const methodologies = {
+            "dongyu_literature": {
+                "name": "董宇辉式文学作品介绍",
+                "description": "深度情感共鸣，古今中外引用，精神财富挖掘",
+                "icon": "📚",
+                "color": "#8B5A3C",
+                "suitable_categories": ["文学类", "小说", "散文", "诗歌"],
+                "features": [
+                    "情感共鸣开场",
+                    "个人经历植入", 
+                    "古今中外引用",
+                    "哲学思辨深度",
+                    "精神价值升华"
+                ]
+            },
+            "dongyu_autobiography": {
+                "name": "董宇辉式自传体介绍",
+                "description": "人生轨迹重构，关键选择分析，成长智慧提取",
+                "icon": "🎯",
+                "color": "#2E7D32",
+                "suitable_categories": ["传记", "自传", "回忆录", "人物传记"],
+                "features": [
+                    "反差感制造",
+                    "人生轨迹重构",
+                    "关键选择分析",
+                    "成长智慧提取",
+                    "励志价值传递"
+                ]
+            },
+            "dongyu_fiction": {
+                "name": "董宇辉式虚构类介绍",
+                "description": "想象力激发，世界观构建，现实思考引导",
+                "icon": "🌟",
+                "color": "#7B1FA2",
+                "suitable_categories": ["科幻", "奇幻", "悬疑", "恐怖", "玄幻"],
+                "features": [
+                    "想象情境开场",
+                    "世界观构建",
+                    "规则体系解析",
+                    "现实对比思考",
+                    "思维边界拓展"
+                ]
+            },
+            "luozhenyu_efficiency": {
+                "name": "罗振宇式效率提升介绍",
+                "description": "认知升级路径，时代焦虑解析，实用方法论传递",
+                "icon": "⚡",
+                "color": "#FF6F00",
+                "suitable_categories": ["管理", "效率", "商业", "职场", "自我提升"],
+                "features": [
+                    "差距焦虑制造",
+                    "认知升级路径",
+                    "方法论拆解",
+                    "底层逻辑揭示",
+                    "行动指南提供"
+                ]
+            }
+        };
+
+        // 语音风格数据
+        const voiceStyles = {
+            "dongyu_style": {
+                "name": "董宇辉风格",
+                "description": "温和亲切，富有感染力，语调起伏自然",
+                "icon": "🎭"
+            },
+            "luozhenyu_style": {
+                "name": "罗振宇风格", 
+                "description": "激昂有力，节奏明快，逻辑清晰",
+                "icon": "⚡"
+            },
+            "professional_style": {
+                "name": "专业播音",
+                "description": "标准普通话，清晰准确，适合正式场合",
+                "icon": "🎙️"
+            }
+        };
+
+        // 视频风格数据
+        const videoStyles = {
+            "classic_ppt": {
+                "name": "经典PPT风格",
+                "description": "简洁大方，适合商务和教育场景",
+                "icon": "📊"
+            },
+            "modern_presentation": {
+                "name": "现代演示风格",
+                "description": "时尚动感，视觉冲击力强",
+                "icon": "✨"
+            },
+            "storytelling": {
+                "name": "故事叙述风格",
+                "description": "温馨感人，适合情感类内容",
+                "icon": "📖"
+            }
+        };
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            initializeMethodologies();
+            initializeStyleOptions();
+            updateProgressIndicator();
+        });
+
+        // 检查用户认证状态
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.status === 401) {
+                    // 用户未登录，重定向到登录页面
+                    alert('请先登录后再使用增强生成器');
+                    window.location.href = '/login';
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('检查认证状态失败:', error);
+                alert('请先登录后再使用增强生成器');
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        // 初始化方法论
+        function initializeMethodologies() {
+            const grid = document.getElementById('methodologyGrid');
+            grid.innerHTML = '';
+
+            Object.keys(methodologies).forEach(key => {
+                const methodology = methodologies[key];
+                const card = document.createElement('div');
+                card.className = 'methodology-card';
+                card.onclick = () => selectMethodology(key);
+
+                card.innerHTML = `
+                    <div class="methodology-header">
+                        <div class="methodology-icon" style="background-color: ${methodology.color}20; color: ${methodology.color};">
+                            ${methodology.icon}
+                        </div>
+                        <div>
+                            <div class="methodology-title">${methodology.name}</div>
+                        </div>
+                    </div>
+                    <div class="methodology-description">${methodology.description}</div>
+                    <ul class="methodology-features">
+                        ${methodology.features.map(feature => `<li>${feature}</li>`).join('')}
+                    </ul>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // 初始化风格选项
+        function initializeStyleOptions() {
+            // 语音风格
+            const voiceContainer = document.getElementById('voiceOptions');
+            Object.keys(voiceStyles).forEach(key => {
+                const style = voiceStyles[key];
+                const option = createStyleOption(key, style, 'voice');
+                voiceContainer.appendChild(option);
+            });
+
+            // 视频风格
+            const videoContainer = document.getElementById('videoOptions');
+            Object.keys(videoStyles).forEach(key => {
+                const style = videoStyles[key];
+                const option = createStyleOption(key, style, 'video');
+                videoContainer.appendChild(option);
+            });
+        }
+
+        // 创建风格选项
+        function createStyleOption(key, style, type) {
+            const option = document.createElement('div');
+            option.className = 'style-option';
+            option.onclick = () => selectStyle(key, type);
+
+            option.innerHTML = `
+                <div class="style-option-icon">${style.icon}</div>
+                <div class="style-option-info">
+                    <h4>${style.name}</h4>
+                    <p>${style.description}</p>
+                </div>
+            `;
+
+            return option;
+        }
+
+        // 选择方法论
+        function selectMethodology(key) {
+            // 移除之前的选择
+            document.querySelectorAll('.methodology-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // 添加当前选择
+            event.currentTarget.classList.add('selected');
+            selectedMethodology = key;
+        }
+
+        // 选择风格
+        function selectStyle(key, type) {
+            const container = type === 'voice' ? '#voiceOptions' : '#videoOptions';
+            
+            // 移除之前的选择
+            document.querySelectorAll(`${container} .style-option`).forEach(option => {
+                option.classList.remove('selected');
+            });
+
+            // 添加当前选择
+            event.currentTarget.classList.add('selected');
+            
+            if (type === 'voice') {
+                selectedVoiceStyle = key;
+            } else {
+                selectedVideoStyle = key;
+            }
+        }
+
+        // 下一步
+        function nextStep() {
+            if (currentStep < maxSteps) {
+                if (validateCurrentStep()) {
+                    currentStep++;
+                    updateWizard();
+                }
+            } else {
+                // 最后一步，开始生成
+                startGeneration();
+            }
+        }
+
+        // 上一步
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateWizard();
+            }
+        }
+
+        // 验证当前步骤
+        function validateCurrentStep() {
+            switch (currentStep) {
+                case 1:
+                    const title = document.getElementById('bookTitle').value.trim();
+                    if (!title) {
+                        alert('请输入书籍名称');
+                        return false;
+                    }
+                    return true;
+                case 2:
+                    if (!selectedMethodology) {
+                        alert('请选择一种介绍方法论');
+                        return false;
+                    }
+                    return true;
+                case 3:
+                    return true; // 风格配置是可选的
+                default:
+                    return true;
+            }
+        }
+
+        // 更新向导界面
+        function updateWizard() {
+            // 更新标签页
+            document.querySelectorAll('.wizard-tab').forEach((tab, index) => {
+                tab.classList.toggle('active', index + 1 === currentStep);
+            });
+
+            // 更新步骤内容
+            document.querySelectorAll('.wizard-step').forEach((step, index) => {
+                step.classList.toggle('active', index + 1 === currentStep);
+            });
+
+            // 更新按钮
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            prevBtn.style.display = currentStep > 1 ? 'block' : 'none';
+            
+            if (currentStep === maxSteps) {
+                nextBtn.innerHTML = '🚀 开始生成';
+                nextBtn.classList.remove('btn-primary');
+                nextBtn.classList.add('btn-primary');
+            } else {
+                nextBtn.innerHTML = '下一步 →';
+            }
+
+            updateProgressIndicator();
+        }
+
+        // 更新进度指示器
+        function updateProgressIndicator() {
+            document.querySelectorAll('.progress-step').forEach((step, index) => {
+                const stepNumber = index + 1;
+                step.classList.toggle('active', stepNumber === currentStep);
+                step.classList.toggle('completed', stepNumber < currentStep);
+            });
+
+            document.querySelectorAll('.progress-line').forEach((line, index) => {
+                line.classList.toggle('completed', index + 1 < currentStep);
+            });
+        }
+
+        // 标签页点击
+        document.querySelectorAll('.wizard-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const targetStep = parseInt(this.dataset.step);
+                if (targetStep <= currentStep || validateStepsUpTo(targetStep - 1)) {
+                    currentStep = targetStep;
+                    updateWizard();
+                }
+            });
+        });
+
+        // 验证到指定步骤的所有步骤
+        function validateStepsUpTo(step) {
+            for (let i = 1; i <= step; i++) {
+                const originalStep = currentStep;
+                currentStep = i;
+                if (!validateCurrentStep()) {
+                    currentStep = originalStep;
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 保存草稿
+        function saveAsDraft() {
+            const draft = {
+                bookInfo: {
+                    title: document.getElementById('bookTitle').value,
+                    author: document.getElementById('bookAuthor').value,
+                    category: document.getElementById('bookCategory').value,
+                    language: document.getElementById('bookLanguage').value,
+                    description: document.getElementById('bookDescription').value,
+                    userIntent: document.getElementById('userIntent').value
+                },
+                selectedMethodology: selectedMethodology,
+                selectedVoiceStyle: selectedVoiceStyle,
+                selectedVideoStyle: selectedVideoStyle,
+                timestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('fogsight_draft', JSON.stringify(draft));
+            alert('草稿已保存！');
+        }
+
+        // 开始生成
+        function startGeneration() {
+            const bookInfo = {
+                title: document.getElementById('bookTitle').value,
+                author: document.getElementById('bookAuthor').value,
+                category: document.getElementById('bookCategory').value,
+                language: document.getElementById('bookLanguage').value,
+                description: document.getElementById('bookDescription').value,
+                user_intent: document.getElementById('userIntent').value
+            };
+
+            const config = {
+                methodology: selectedMethodology,
+                voice_style: selectedVoiceStyle,
+                video_style: selectedVideoStyle
+            };
+
+            // 这里将与后端API集成
+            console.log('开始生成，配置如下：', { bookInfo, config });
+            
+            // 创建生成请求数据
+            const requestData = {
+                title: bookInfo.title,
+                author: bookInfo.author,
+                category: bookInfo.category,
+                language: bookInfo.language,
+                description: bookInfo.description,
+                user_intent: bookInfo.user_intent,
+                methodology: selectedMethodology || 'dongyu_literature',
+                voice_style: selectedVoiceStyle || 'professional_style',
+                video_style: selectedVideoStyle || 'classic_ppt',
+                agent_type: 'exploration'
+            };
+            
+            // 显示生成进度界面
+            showGenerationProgress();
+            
+            // 发起生成请求
+            generateWithEnhancedAPI(requestData);
+        }
+
+        // 根据书籍分类推荐方法论
+        document.getElementById('bookCategory').addEventListener('change', function() {
+            const category = this.value;
+            if (!category) return;
+
+            // 高亮推荐的方法论
+            document.querySelectorAll('.methodology-card').forEach(card => {
+                card.style.opacity = '0.5';
+            });
+
+            Object.keys(methodologies).forEach(key => {
+                const methodology = methodologies[key];
+                if (methodology.suitable_categories.some(cat => 
+                    cat.toLowerCase().includes(category.toLowerCase()) || 
+                    category.toLowerCase().includes(cat.toLowerCase())
+                )) {
+                    const card = document.querySelector(`.methodology-card:nth-child(${Object.keys(methodologies).indexOf(key) + 1})`);
+                    if (card) {
+                        card.style.opacity = '1';
+                        card.style.border = '2px solid #28a745';
+                    }
+                }
+            });
+
+            // 3秒后恢复正常
+            setTimeout(() => {
+                document.querySelectorAll('.methodology-card').forEach(card => {
+                    card.style.opacity = '1';
+                    card.style.border = '2px solid #e9ecef';
+                });
+            }, 3000);
+        });
+
+        // 加载草稿
+        function loadDraft() {
+            const draft = localStorage.getItem('fogsight_draft');
+            if (draft) {
+                const data = JSON.parse(draft);
+                
+                // 填充书籍信息
+                if (data.bookInfo) {
+                    Object.keys(data.bookInfo).forEach(key => {
+                        const element = document.getElementById('book' + key.charAt(0).toUpperCase() + key.slice(1));
+                        if (element) {
+                            element.value = data.bookInfo[key] || '';
+                        }
+                    });
+                }
+
+                // 恢复选择
+                selectedMethodology = data.selectedMethodology;
+                selectedVoiceStyle = data.selectedVoiceStyle;
+                selectedVideoStyle = data.selectedVideoStyle;
+
+                alert('草稿已加载！');
+            }
+        }
+
+        // 页面加载时尝试加载草稿
+        setTimeout(() => {
+            if (localStorage.getItem('fogsight_draft') && 
+                confirm('检测到已保存的草稿，是否加载？')) {
+                loadDraft();
+            }
+        }, 1000);
+
+        // 使用增强API生成
+        async function generateWithEnhancedAPI(requestData) {
+            try {
+                // 确保用户已登录
+                const isAuthenticated = await checkAuthStatus();
+                if (!isAuthenticated) {
+                    return;
+                }
+
+                const response = await fetch('/api/enhanced-generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include', // 包含cookies以进行认证
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.status === 401) {
+                    alert('认证失败，请重新登录');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                handleGenerationProgress(data);
+                            } catch (e) {
+                                console.error('解析数据失败:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('生成失败:', error);
+                showGenerationError(error.message);
+            }
+        }
+
+        // 显示生成进度
+        function showGenerationProgress() {
+            // 隐藏配置界面
+            document.querySelector('.generation-wizard').style.display = 'none';
+            
+            // 创建进度界面
+            const progressHTML = `
+                <div class="generation-progress">
+                    <div class="progress-header">
+                        <h2>🚀 正在生成您的书籍介绍...</h2>
+                        <p>根据您选择的方法论和配置，我们正在为您打造专业的内容</p>
+                    </div>
+                    
+                    <div class="progress-steps">
+                        <div class="progress-step active" id="step-1">
+                            <div class="step-icon">📚</div>
+                            <div class="step-info">
+                                <h4>分析书籍信息</h4>
+                                <p>正在处理书籍内容和背景信息...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-step" id="step-2">
+                            <div class="step-icon">🎭</div>
+                            <div class="step-info">
+                                <h4>应用介绍方法论</h4>
+                                <p>根据选定的方法论构建介绍结构...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-step" id="step-3">
+                            <div class="step-icon">🎨</div>
+                            <div class="step-info">
+                                <h4>生成演示内容</h4>
+                                <p>创建幻灯片和演讲稿...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-step" id="step-4">
+                            <div class="step-icon">✨</div>
+                            <div class="step-info">
+                                <h4>完成制作</h4>
+                                <p>应用风格配置，生成最终作品...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-log" id="progressLog">
+                        <!-- 进度日志将在这里显示 -->
+                    </div>
+                </div>
+            `;
+            
+            document.querySelector('.container').innerHTML = progressHTML;
+            
+            // 添加进度样式
+            addProgressStyles();
+        }
+
+        // 处理生成进度
+        function handleGenerationProgress(data) {
+            const progressLog = document.getElementById('progressLog');
+            
+            if (data.status) {
+                // 添加状态消息
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `
+                    <span class="log-time">${new Date().toLocaleTimeString()}</span>
+                    <span class="log-message">${data.status}</span>
+                `;
+                progressLog.appendChild(logEntry);
+                progressLog.scrollTop = progressLog.scrollHeight;
+            }
+            
+            if (data.step) {
+                // 更新步骤状态
+                updateProgressStep(data.step);
+            }
+            
+            if (data.session_id) {
+                // 生成完成，跳转到结果页面
+                setTimeout(() => {
+                    window.location.href = `/ppt-preview/${data.session_id}`;
+                }, 2000);
+            }
+            
+            if (data.error) {
+                showGenerationError(data.error);
+            }
+        }
+
+        // 更新进度步骤
+        function updateProgressStep(stepNumber) {
+            // 移除所有步骤的active类
+            document.querySelectorAll('.progress-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            // 为当前步骤及之前的步骤添加completed类
+            for (let i = 1; i <= stepNumber; i++) {
+                const step = document.getElementById(`step-${i}`);
+                if (step) {
+                    step.classList.add('completed');
+                }
+            }
+            
+            // 为当前步骤添加active类
+            const currentStep = document.getElementById(`step-${stepNumber}`);
+            if (currentStep) {
+                currentStep.classList.add('active');
+            }
+        }
+
+        // 显示生成错误
+        function showGenerationError(message) {
+            const errorHTML = `
+                <div class="generation-error">
+                    <div class="error-icon">❌</div>
+                    <h2>生成失败</h2>
+                    <p>${message}</p>
+                    <div class="error-actions">
+                        <button class="btn btn-primary" onclick="location.reload()">重新开始</button>
+                        <button class="btn btn-outline" onclick="window.location.href='/'">返回首页</button>
+                    </div>
+                </div>
+            `;
+            
+            document.querySelector('.container').innerHTML = errorHTML;
+        }
+
+        // 添加进度样式
+        function addProgressStyles() {
+            const styles = `
+                <style>
+                .generation-progress {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 2rem;
+                    text-align: center;
+                }
+                
+                .progress-header h2 {
+                    color: #2c3e50;
+                    margin-bottom: 0.5rem;
+                }
+                
+                .progress-header p {
+                    color: #6c757d;
+                    margin-bottom: 3rem;
+                }
+                
+                .progress-steps {
+                    display: grid;
+                    gap: 2rem;
+                    margin-bottom: 3rem;
+                }
+                
+                .progress-step {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    background: #f8f9fa;
+                    text-align: left;
+                    transition: all 0.3s ease;
+                }
+                
+                .progress-step.active {
+                    background: #e3f2fd;
+                    border: 2px solid #2196f3;
+                }
+                
+                .progress-step.completed {
+                    background: #e8f5e8;
+                    border: 2px solid #4caf50;
+                }
+                
+                .step-icon {
+                    font-size: 2rem;
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                
+                .step-info h4 {
+                    margin: 0 0 0.25rem 0;
+                    color: #2c3e50;
+                }
+                
+                .step-info p {
+                    margin: 0;
+                    color: #6c757d;
+                    font-size: 0.9rem;
+                }
+                
+                .progress-log {
+                    max-height: 200px;
+                    overflow-y: auto;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 1rem;
+                    text-align: left;
+                }
+                
+                .log-entry {
+                    display: flex;
+                    gap: 1rem;
+                    padding: 0.25rem 0;
+                    border-bottom: 1px solid #e9ecef;
+                }
+                
+                .log-time {
+                    color: #6c757d;
+                    font-size: 0.8rem;
+                    min-width: 80px;
+                }
+                
+                .log-message {
+                    color: #2c3e50;
+                    font-size: 0.9rem;
+                }
+                
+                .generation-error {
+                    text-align: center;
+                    padding: 3rem;
+                    max-width: 500px;
+                    margin: 0 auto;
+                }
+                
+                .error-icon {
+                    font-size: 4rem;
+                    margin-bottom: 1rem;
+                }
+                
+                .error-actions {
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                    margin-top: 2rem;
+                }
+                
+                @keyframes pulse {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                    100% { opacity: 1; }
+                }
+                
+                .progress-step.active .step-icon {
+                    animation: pulse 2s infinite;
+                }
+                </style>
+            `;
+            
+            document.head.insertAdjacentHTML('beforeend', styles);
+        }
+    </script>
+</body>
+</html>

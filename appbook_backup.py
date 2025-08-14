@@ -218,54 +218,11 @@ def get_default_book_cover(book_title: str) -> str:
 # 2. 核心处理函数：分为4个步骤
 # -----------------------------------------------------------------------
 
-async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literature") -> dict:
+async def step1_extract_book_data(topic: str) -> dict:
     """
-    第1步：提取书本基本数据（支持方法论）
+    第1步：提取书本基本数据
     """
-    
-    # 根据方法论调整分析角度
-    methodology_context = ""
-    if "dongyu" in methodology:
-        if "literature" in methodology:
-            methodology_context = """
-特别关注：
-- 作品的情感深度和人性内涵
-- 可以引发个人经历共鸣的要素
-- 古今中外的对比和引用素材
-- 哲学思辨和精神价值
-- 适合情感表达的细节和场景
-"""
-        elif "autobiography" in methodology:
-            methodology_context = """
-特别关注：
-- 人物的关键人生选择和转折点
-- 成功与失败的对比反差
-- 成长过程中的智慧和教训
-- 可学习的人生态度和品格
-- 励志价值和激励意义
-"""
-        elif "fiction" in methodology:
-            methodology_context = """
-特别关注：
-- 想象世界的构建和规则
-- 现实与虚构的对比关系
-- 思维边界的拓展价值
-- 引发思考的哲学问题
-- 创意和想象力的体现
-"""
-    elif "luozhenyu" in methodology:
-        methodology_context = """
-特别关注：
-- 认知升级的具体方法论
-- 时代变化和竞争压力
-- 实用的效率提升技巧
-- 底层逻辑和系统思维
-- 可执行的行动指南
-"""
-    
     system_prompt = f"""你是一位专业的图书分析师。请对《{topic}》这本书进行基本数据提取和分析。
-
-{methodology_context}
 
 请提取以下信息：
 1. 书名和作者
@@ -275,7 +232,7 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
 5. 书籍的价值和意义
 6. 适合制作PPT的关键章节或主题（5-8个）
 
-请以JSON格式返回结果，确保分析角度符合上述方法论要求。
+请以JSON格式返回结果。
 """
 
     try:
@@ -349,7 +306,7 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
             book_data['category_icon'] = '📖'
             book_data['category_confidence'] = 0.0
         
-        # 搜索书籍封面（暂时简化，避免阻塞）
+        # 搜索书籍封面
         try:
             # 从解析的数据中提取书名和作者
             if isinstance(book_data, dict) and 'raw_content' not in book_data:
@@ -366,12 +323,12 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
                     if author_match:
                         author = author_match.group(1)
             
-            # 暂时使用默认封面（避免网络调用阻塞）
-            print(f"📸 暂时使用默认封面: {book_title}")
-            book_data['cover_url'] = get_default_book_cover(book_title)
+            # 搜索封面
+            cover_url = await search_book_cover(book_title, author)
+            book_data['cover_url'] = cover_url
             
         except Exception as cover_error:
-            print(f"封面处理失败: {cover_error}")
+            print(f"搜索封面失败: {cover_error}")
             book_data['cover_url'] = get_default_book_cover(topic)
         
         return book_data
@@ -396,122 +353,40 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
         fallback_data['cover_url'] = get_default_book_cover(topic)
         return fallback_data
 
-async def step2_create_ppt_slides(book_data: dict, methodology: str = "dongyu_literature", video_style: str = "classic_ppt") -> list:
+async def step2_create_ppt_slides(book_data: dict) -> list:
     """
-    第2步：创建PPT画面结构（支持方法论和视频风格）
+    第2步：创建PPT画面结构（苹果发布会风格）
     """
-    
-    # 根据方法论调整PPT结构
-    methodology_structure = ""
-    if "dongyu_literature" in methodology:
-        methodology_structure = """
-## 董宇辉式文学作品PPT结构：
-1. **情感开场页** - 情感提问 + 金句引入
-2. **个人经历页** - 自身故事分享，建立连接
-3. **故事重构页** - 英雄之旅 + 时代背景
-4. **细节放大页** - 经典场景 + 象征意义
-5. **古今对比页** - 古典名句 + 现代思考
-6. **作者深挖页** - 创作动机 + 人生体验
-7. **现实关照页** - 当下对比 + 价值引导
-8. **收获升华页** - 精神财富 + 人生指导
+    system_prompt = f"""基于以下书籍数据，设计苹果发布会风格的PPT画面结构：
 
-设计特点：
-- 温暖的色调，营造情感氛围
-- 大量引用和对比
-- 注重情感共鸣
-- 故事化表达"""
-    elif "dongyu_autobiography" in methodology:
-        methodology_structure = """
-## 董宇辉式自传体PPT结构：
-1. **反差开场页** - 成就 vs 出身的对比
-2. **人生轨迹页** - 关键转折点时间轴
-3. **选择分析页** - 重大决定的背景和代价
-4. **困难克服页** - 挫折中的坚持和成长
-5. **智慧提炼页** - 人生经验的深度思考
-6. **价值传递页** - 对读者的启发意义
+{json.dumps(book_data, ensure_ascii=False, indent=2)}
 
-设计特点：
-- 对比强烈的视觉元素
-- 时间轴式布局
-- 励志感的色彩搭配"""
-    elif "luozhenyu_efficiency" in methodology:
-        methodology_structure = """
-## 罗振宇式效率提升PPT结构：
-1. **焦虑制造页** - 差距对比 + 时代紧迫感
-2. **认知升级页** - 底层逻辑揭示
-3. **方法拆解页** - 系统化的解决方案
-4. **数据支撑页** - 权威背书 + 效果证明
-5. **行动指南页** - 具体可执行的步骤
-6. **认知变现页** - 学以致用的价值体现
+请为这本书设计6-10页苹果风格PPT的画面结构，每页包含：
 
-设计特点：
-- 强对比色彩（橙色、黑色）
-- 数据可视化
-- 逻辑清晰的布局
-- 紧迫感的视觉表达"""
-    else:
-        methodology_structure = """
-## 通用PPT结构：
+## 苹果发布会PPT页面类型：
 1. **开场页** - 书名大标题，简洁背景
 2. **作者介绍页** - 作者信息，优雅布局
 3. **核心观点页** - 单一重点，大字体展示
 4. **数据展示页** - 关键数字，视觉化呈现
 5. **引用页** - 书中金句，艺术化排版
-6. **总结页** - 核心价值，call-to-action"""
-    
-    # 根据视频风格调整视觉元素
-    style_config = ""
-    if video_style == "storytelling":
-        style_config = """
-视觉风格配置：
-- 温暖的色调（暖橙、米白、深棕）
-- 手绘风格的插图元素
-- 圆润的边角设计
-- 温馨的字体选择
-- 渐变背景
-"""
-    elif video_style == "modern_presentation":
-        style_config = """
-视觉风格配置：
-- 现代感强的配色（深蓝、亮橙、纯白）
-- 几何图形装饰
-- 无衬线字体
-- 动感的布局
-- 渐变和阴影效果
-"""
-    else:  # classic_ppt
-        style_config = """
-视觉风格配置：
-- 商务感配色（深蓝、灰白、金色）
-- 简洁的线条设计
-- 经典的字体搭配
-- 对称的布局
-- 专业的表格和图表
-"""
-
-    system_prompt = f"""基于以下书籍数据，设计符合指定方法论的PPT画面结构：
-
-{json.dumps(book_data, ensure_ascii=False, indent=2)}
-
-{methodology_structure}
-
-{style_config}
+6. **总结页** - 核心价值，call-to-action
 
 每页PPT请包含以下结构：
 - slide_number: 页面编号
-- slide_type: 页面类型
-- title: 主标题
+- slide_type: 页面类型 (opening/author/concept/data/quote/summary)
+- title: 主标题（3-8个字）
 - subtitle: 副标题（可选）
 - main_content: 核心内容
 - visual_elements: 视觉元素配置
 - animation_entrance: 入场动画类型
 - key_message: 核心信息
 
-重要要求：
-1. 必须严格按照指定方法论的结构来组织内容
-2. 内容表达方式要体现方法论特色
-3. 视觉风格要符合配置要求
-4. 确保每页内容有深度和感染力
+设计原则：
+- 每页只传达一个核心概念
+- 使用大量留白
+- 字体层级清晰
+- 颜色搭配和谐
+- 符合苹果美学
 
 请以JSON数组格式返回。
 """
@@ -548,81 +423,21 @@ async def step2_create_ppt_slides(book_data: dict, methodology: str = "dongyu_li
             print(f"Step2 未知错误，使用备用数据: {e}")
             return get_fallback_slides_data(book_title)
 
-async def step3_create_narration(slides: list, book_data: dict, methodology: str = "dongyu_literature") -> list:
+async def step3_create_narration(slides: list, book_data: dict) -> list:
     """
-    第3步：为每页PPT创建解说词（支持方法论风格）
+    第3步：为每页PPT创建解说词（苹果发布会风格）
     """
-    
-    # 根据方法论调整解说风格
-    narration_style = ""
-    if "dongyu_literature" in methodology:
-        narration_style = """
-## 董宇辉式文学作品解说风格：
-1. **情感共鸣式开场**：
-   - "你有没有过这样的经历..."
-   - "当我第一次读到这段文字的时候..."
-   - "在那个特殊的时刻..."
+    system_prompt = f"""基于以下PPT画面结构和书籍数据，为每页PPT创建苹果发布会风格的解说词：
 
-2. **表达方式**：
-   - 温暖亲切的语调
-   - 结合自身经历和感受
-   - 大量的比喻和类比
-   - 古典文学的引用和对比
-   - 哲思与生活的结合
+书籍数据：
+{json.dumps(book_data, ensure_ascii=False, indent=2)}
 
-3. **结构模式**：
-   - 个人体验 → 文学升华 → 人生感悟
-   - 古今对比 → 深度思考 → 价值启发
+PPT画面结构：
+{json.dumps(slides, ensure_ascii=False, indent=2)}
 
-4. **语言特色**：
-   - "我想起了..."、"就像..."、"正如...所说"
-   - 充满诗意的表达
-   - 温暖的人文关怀
-   - 深度的文化内涵"""
-    elif "dongyu_autobiography" in methodology:
-        narration_style = """
-## 董宇辉式自传体解说风格：
-1. **反差对比式开场**：
-   - "谁能想到..."
-   - "在成功的背后..."
-   - "从...到...的转变"
+请为每页PPT创建苹果发布会风格的解说词：
 
-2. **表达方式**：
-   - 真诚坦率的分享
-   - 成长经历的深度挖掘
-   - 选择背后的思考过程
-   - 失败与成功的对比
-
-3. **结构模式**：
-   - 现状展示 → 回溯经历 → 启发思考
-   - 困难描述 → 克服过程 → 价值传递"""
-    elif "luozhenyu_efficiency" in methodology:
-        narration_style = """
-## 罗振宇式效率提升解说风格：
-1. **焦虑制造式开场**：
-   - "你知道吗，现在的时代..."
-   - "有一个残酷的事实..."
-   - "我们面临着前所未有的挑战..."
-
-2. **表达方式**：
-   - 紧迫感的营造
-   - 数据和案例的堆叠
-   - 逻辑清晰的论证
-   - 权威专家的背书
-   - 立竿见影的解决方案
-
-3. **结构模式**：
-   - 问题暴露 → 原因分析 → 方法提供
-   - 差距对比 → 认知升级 → 行动指南
-
-4. **语言特色**：
-   - "关键是..."、"核心在于..."、"本质上..."
-   - 强烈的时间紧迫感
-   - 明确的行动指导
-   - 可量化的成果预期"""
-    else:
-        narration_style = """
-## 通用解说风格：
+## 苹果发布会解说风格特点：
 1. **开场方式**：
    - 简洁有力的开场
    - 直接切入主题
@@ -632,17 +447,11 @@ async def step3_create_narration(slides: list, book_data: dict, methodology: str
    - 简洁明了，避免冗长
    - 使用数据和事实说话
    - 情感化的语言
-   - 适当的停顿和强调"""
+   - 适当的停顿和强调
 
-    system_prompt = f"""基于以下PPT画面结构和书籍数据，为每页PPT创建指定方法论风格的解说词：
-
-书籍数据：
-{json.dumps(book_data, ensure_ascii=False, indent=2)}
-
-PPT画面结构：
-{json.dumps(slides, ensure_ascii=False, indent=2)}
-
-{narration_style}
+3. **结构模式**：
+   - 问题设定 → 解决方案 → 价值体现
+   - 现状描述 → 改进展示 → 结果呈现
 
 每页解说词包含：
 - slide_number: 页面编号
@@ -652,14 +461,13 @@ PPT画面结构：
 - transition: 过渡语（连接下一页）
 - timing: 时间控制信息
 - tone: 语调风格
-- voice_emotion: 语音情感标记（用于语音合成）
 
 解说词要求：
-- 严格按照指定方法论的表达风格
-- 语言要体现方法论的独特特色
-- 结合书籍内容，保持风格一致性
+- 模仿苹果发布会的表达风格
+- 语言简洁有力，富有感染力
+- 结合书籍内容，但保持通俗易懂
 - 适合现场演讲的节奏
-- 包含适当的情感渲染和语音提示
+- 包含适当的情感渲染
 
 请以JSON数组格式返回。
 """
@@ -696,190 +504,11 @@ PPT画面结构：
             print(f"Step3 未知错误，使用备用数据: {e}")
             return get_fallback_narrations_data(book_title)
 
-async def step4_generate_html(slides: list, narrations: list, book_data: dict, methodology: str = "dongyu_literature", enable_voice: bool = False) -> str:
+async def step4_generate_html(slides: list, narrations: list, book_data: dict) -> str:
     """
-    第4步：将画面和解说词转换为HTML格式（支持语音和方法论风格）
+    第4步：将画面和解说词转换为HTML格式（苹果发布会风格）
     """
-    
-    # 根据方法论调整视觉风格
-    style_config = ""
-    if "dongyu_literature" in methodology:
-        style_config = """
-/* 董宇辉式文学风格 */
-:root {
-    --primary-color: #8B4513; /* 温暖的棕色 */
-    --secondary-color: #F5E6D3; /* 米白色 */
-    --accent-color: #D2691E; /* 橙棕色 */
-    --text-color: #2F1B14; /* 深棕色 */
-    --bg-gradient: linear-gradient(135deg, #F5E6D3 0%, #E6D2B3 100%);
-}
-.slide {
-    font-family: 'Georgia', '宋体', serif;
-    background: var(--bg-gradient);
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(139, 69, 19, 0.2);
-}
-.slide h1 { 
-    font-family: '华文行楷', 'Georgia', serif;
-    color: var(--primary-color);
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-}
-"""
-    elif "dongyu_autobiography" in methodology:
-        style_config = """
-/* 董宇辉式自传体风格 */
-:root {
-    --primary-color: #1E3A8A; /* 深蓝色 */
-    --secondary-color: #F1F5F9; /* 浅灰蓝 */
-    --accent-color: #3B82F6; /* 亮蓝色 */
-    --text-color: #1E293B; /* 深灰 */
-    --bg-gradient: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
-}
-.slide {
-    font-family: 'Arial', '微软雅黑', sans-serif;
-    background: var(--bg-gradient);
-    border-left: 5px solid var(--accent-color);
-}
-"""
-    elif "luozhenyu_efficiency" in methodology:
-        style_config = """
-/* 罗振宇式效率风格 */
-:root {
-    --primary-color: #EA580C; /* 强烈橙色 */
-    --secondary-color: #000000; /* 纯黑 */
-    --accent-color: #FBBF24; /* 金黄色 */
-    --text-color: #FFFFFF; /* 白色 */
-    --bg-gradient: linear-gradient(135deg, #000000 0%, #1F2937 100%);
-}
-.slide {
-    font-family: 'Arial Black', '微软雅黑', sans-serif;
-    background: var(--bg-gradient);
-    color: var(--text-color);
-    border: 2px solid var(--primary-color);
-}
-.slide h1 { 
-    color: var(--primary-color);
-    font-weight: 900;
-    text-transform: uppercase;
-}
-"""
-    else:
-        style_config = """
-/* 通用风格 */
-:root {
-    --primary-color: #007AFF;
-    --secondary-color: #F2F2F7;
-    --accent-color: #FF9500;
-    --text-color: #000000;
-    --bg-gradient: linear-gradient(135deg, #FFFFFF 0%, #F2F2F7 100%);
-}
-"""
-
-    # 语音支持配置
-    voice_script = ""
-    if enable_voice:
-        voice_script = """
-<!-- 语音合成支持 -->
-<script>
-class PPTVoicePlayer {
-    constructor() {
-        this.synth = window.speechSynthesis;
-        this.currentUtterance = null;
-        this.isPlaying = false;
-        this.currentSlide = 0;
-        this.initVoice();
-    }
-    
-    initVoice() {
-        // 等待语音加载
-        if (this.synth.getVoices().length === 0) {
-            this.synth.addEventListener('voiceschanged', () => {
-                this.setupVoice();
-            });
-        } else {
-            this.setupVoice();
-        }
-    }
-    
-    setupVoice() {
-        const voices = this.synth.getVoices();
-        // 优先选择中文语音
-        this.voice = voices.find(voice => 
-            voice.lang.includes('zh') || voice.name.includes('Chinese')
-        ) || voices[0];
-    }
-    
-    playNarration(text, emotion = 'normal') {
-        if (this.isPlaying) {
-            this.stopNarration();
-        }
-        
-        this.currentUtterance = new SpeechSynthesisUtterance(text);
-        this.currentUtterance.voice = this.voice;
-        this.currentUtterance.rate = 0.9; // 稍慢的语速
-        this.currentUtterance.pitch = emotion === 'emotional' ? 1.2 : 1.0;
-        this.currentUtterance.volume = 0.8;
-        
-        this.currentUtterance.onstart = () => {
-            this.isPlaying = true;
-            this.updatePlayButton(true);
-        };
-        
-        this.currentUtterance.onend = () => {
-            this.isPlaying = false;
-            this.updatePlayButton(false);
-        };
-        
-        this.synth.speak(this.currentUtterance);
-    }
-    
-    stopNarration() {
-        if (this.currentUtterance) {
-            this.synth.cancel();
-            this.isPlaying = false;
-            this.updatePlayButton(false);
-        }
-    }
-    
-    updatePlayButton(playing) {
-        const btn = document.querySelector('.voice-control');
-        if (btn) {
-            btn.textContent = playing ? '⏸️ 暂停' : '🔊 播放解说';
-            btn.classList.toggle('playing', playing);
-        }
-    }
-    
-    playCurrentSlide() {
-        const slideElement = document.querySelector(`.slide[data-slide="${this.currentSlide}"]`);
-        if (slideElement) {
-            const narrationText = slideElement.dataset.narration;
-            const emotion = slideElement.dataset.emotion || 'normal';
-            if (narrationText) {
-                this.playNarration(narrationText, emotion);
-            }
-        }
-    }
-}
-
-// 初始化语音播放器
-const voicePlayer = new PPTVoicePlayer();
-
-// 添加语音控制按钮事件
-document.addEventListener('DOMContentLoaded', function() {
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('voice-control')) {
-            if (voicePlayer.isPlaying) {
-                voicePlayer.stopNarration();
-            } else {
-                voicePlayer.playCurrentSlide();
-            }
-        }
-    });
-});
-</script>
-"""
-
-    system_prompt = f"""基于以下数据，生成一个完整的HTML格式PPT，采用指定方法论的设计风格：
+    system_prompt = f"""基于以下数据，生成一个完整的HTML格式PPT，采用苹果发布会的设计风格：
 
 书籍数据：
 {json.dumps(book_data, ensure_ascii=False, indent=2)}
@@ -890,11 +519,9 @@ PPT画面：
 解说词：
 {json.dumps(narrations, ensure_ascii=False, indent=2)}
 
-{style_config}
-
 **重要要求：必须实现真正的分页PPT效果，每次只显示一页内容，而不是把所有页面都显示在一个页面上！**
 
-## 正确的HTML结构要求：
+## 正确的HTML结构示例：
 ```html
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -1505,11 +1132,6 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     for i, slide in enumerate(processed_slides):
         active_class = "active" if i == 0 else ""
         
-        # 获取对应的解说词，用于data-speech属性
-        narration_text = processed_narrations[i] if i < len(processed_narrations) else f'这是第{i+1}页的解说内容'
-        # 清理解说词，移除特殊字符
-        clean_narration = str(narration_text).replace('"', '&quot;').replace('\n', ' ').replace('\r', '')
-        
         # 如果是封面页，显示封面
         if i == 0:
             if cover_url and (cover_url.startswith('http') or cover_url.startswith('covers/')):
@@ -1522,21 +1144,21 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
                     static_url = cover_url
                 
                 slides_html += f'''
-        <div class="slide {active_class}" data-slide="{i}" data-speech="{clean_narration}">
+        <div class="slide {active_class}" data-slide="{i}">
             <div class="cover-container">
                 <div class="book-cover">
                     <img src="{static_url}" alt="{book_title}" class="cover-image">
                 </div>
                 <div class="cover-text">
-                    <h1 data-speech="{slide.get('title', book_title)}">{slide.get('title', book_title)}</h1>
-                    <h2 data-speech="{slide.get('subtitle', '')}">{slide.get('subtitle', '')}</h2>
+                    <h1>{slide.get('title', book_title)}</h1>
+                    <h2>{slide.get('subtitle', '')}</h2>
                 </div>
             </div>
         </div>'''
             else:
                 # 没有真实封面，显示默认封面
                 slides_html += f'''
-        <div class="slide {active_class}" data-slide="{i}" data-speech="{clean_narration}">
+        <div class="slide {active_class}" data-slide="{i}">
             <div class="cover-container">
                 <div class="book-cover">
                     <div class="default-cover">
@@ -1544,17 +1166,17 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
                     </div>
                 </div>
                 <div class="cover-text">
-                    <h1 data-speech="{slide.get('title', book_title)}">{slide.get('title', book_title)}</h1>
-                    <h2 data-speech="{slide.get('subtitle', '')}">{slide.get('subtitle', '')}</h2>
+                    <h1>{slide.get('title', book_title)}</h1>
+                    <h2>{slide.get('subtitle', '')}</h2>
                 </div>
             </div>
         </div>'''
         else:
             slides_html += f'''
-        <div class="slide {active_class}" data-slide="{i}" data-speech="{clean_narration}">
-            <h1 data-speech="{slide.get('title', f'第{i+1}页')}">{slide.get('title', f'第{i+1}页')}</h1>
-            <h2 data-speech="{slide.get('subtitle', '')}">{slide.get('subtitle', '')}</h2>
-            <p data-speech="{slide.get('content', '')}">{slide.get('content', '')}</p>
+        <div class="slide {active_class}" data-slide="{i}">
+            <h1>{slide.get('title', f'第{i+1}页')}</h1>
+            <h2>{slide.get('subtitle', '')}</h2>
+            <p>{slide.get('content', '')}</p>
         </div>'''
     
     # 生成解说词JavaScript数组
@@ -2277,201 +1899,6 @@ def get_fallback_narrations_data(book_title: str) -> list:
     }]
 
 # -----------------------------------------------------------------------
-# 增强的流式生成器
-# -----------------------------------------------------------------------
-
-async def enhanced_llm_event_stream(
-    topic: str,
-    history: Optional[List[dict]] = None,
-    model: str = QWEN_MODEL,
-    user_id: Optional[int] = None,
-    methodology: str = "dongyu_literature",
-    voice_style: str = "professional_style",
-    video_style: str = "classic_ppt",
-    book_info: dict = None,
-) -> AsyncGenerator[str, None]:
-    """
-    增强的流式生成器：支持方法论定制和语音生成
-    """
-    history = history or []
-    book_info = book_info or {}
-    
-    # 生成唯一的会话ID用于保存文件
-    import uuid
-    session_id = str(uuid.uuid4())
-    
-    try:
-        # 开始思考与规划阶段
-        yield f"data: {json.dumps({'log': '🎭 增强生成模式启动...'}, ensure_ascii=False)}\n\n"
-        await asyncio.sleep(0.5)
-        
-        book_title = book_info.get("title", "未知")
-        yield f"data: {json.dumps({'log': f'📚 书籍：《{book_title}》'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': f'🎭 方法论：{methodology}'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': f'🎙️ 语音风格：{voice_style}'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': f'🎬 视频风格：{video_style}'}, ensure_ascii=False)}\n\n"
-        await asyncio.sleep(0.5)
-        
-        yield f"data: {json.dumps({'log': '🎯 制定个性化生成策略...'}, ensure_ascii=False)}\n\n"
-        await asyncio.sleep(0.3)
-        
-        yield f"data: {json.dumps({'log': '  ├─ 步骤1: 基于方法论分析书籍'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  ├─ 步骤2: 按风格设计PPT结构'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  ├─ 步骤3: 生成个性化解说词'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  ├─ 步骤4: 生成HTML和语音'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  └─ 步骤5: 后处理优化'}, ensure_ascii=False)}\n\n"
-        await asyncio.sleep(0.5)
-        
-        # 步骤1：基于方法论提取书本数据 
-        yield f"data: {json.dumps({'log': '🔍 [步骤1/5] 基于方法论分析书籍数据...'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': f'  ├─ 使用 {methodology} 方法论分析'}, ensure_ascii=False)}\n\n"
-        
-        # 构建方法论特定的提示词
-        methodology_context = f"""
-你正在使用 {methodology} 方法论来分析书籍《{book_info.get('title', '未知')}》。
-
-请特别注意：
-- 如果是董宇辉式方法论：注重情感共鸣、个人经历植入、古今中外引用
-- 如果是罗振宇式方法论：强调认知升级、时代焦虑、方法论拆解
-- 确保分析结果体现所选方法论的特色和风格
-        """
-        
-        enhanced_topic = f"{topic}\n\n【方法论上下文】\n{methodology_context}"
-        
-        try:
-            book_data = await step1_extract_book_data(enhanced_topic, methodology=methodology)
-        except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
-                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API连接问题，使用备用数据'}, ensure_ascii=False)}\n\n"
-                book_data = get_fallback_book_data(book_info.get('title', topic))
-            else:
-                yield f"data: {json.dumps({'log': f'  ├─ ⚠️  未知错误，使用备用数据: {str(e)}'}, ensure_ascii=False)}\n\n"
-                book_data = get_fallback_book_data(book_info.get('title', topic))
-        
-        # 添加方法论信息到书籍数据
-        if isinstance(book_data, dict):
-            book_data['methodology'] = methodology
-            book_data['voice_style'] = voice_style
-            book_data['video_style'] = video_style
-        
-        book_title = book_info.get('title', topic)
-        yield f"data: {json.dumps({'log': f'  ├─ 书籍分析完成: 《{book_title}》'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  └─ ✅ 方法论特色已融入分析'}, ensure_ascii=False)}\n\n"
-        await asyncio.sleep(0.3)
-        
-        # 步骤2：基于风格创建PPT画面
-        yield f"data: {json.dumps({'log': '🎨 [步骤2/5] 基于风格设计PPT结构...'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': f'  ├─ 应用 {video_style} 视频风格'}, ensure_ascii=False)}\n\n"
-        
-        try:
-            slides_data = await step2_create_ppt_slides(book_data, methodology=methodology, video_style=video_style)
-        except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
-                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API连接问题，使用备用幻灯片'}, ensure_ascii=False)}\n\n"
-                slides_data = get_fallback_slides_data(book_title)
-            else:
-                yield f"data: {json.dumps({'log': f'  ├─ ⚠️  未知错误，使用备用幻灯片: {str(e)}'}, ensure_ascii=False)}\n\n"
-                slides_data = get_fallback_slides_data(book_title)
-        
-        yield f"data: {json.dumps({'log': '  ├─ PPT结构设计完成'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  └─ ✅ 风格特色已体现'}, ensure_ascii=False)}\n\n"
-        await asyncio.sleep(0.3)
-        
-        # 步骤3：生成个性化解说词
-        yield f"data: {json.dumps({'log': '🎙️ [步骤3/5] 生成个性化解说词...'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': f'  ├─ 采用 {voice_style} 语音风格'}, ensure_ascii=False)}\n\n"
-        
-        try:
-            narrations_data = await step3_create_narration(slides_data, book_data, methodology=methodology)
-        except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
-                yield f"data: {json.dumps({'log': '  ├─ ⚠️  API连接问题，使用备用解说词'}, ensure_ascii=False)}\n\n"
-                narrations_data = get_fallback_narrations_data(book_title)
-            else:
-                yield f"data: {json.dumps({'log': f'  ├─ ⚠️  未知错误，使用备用解说词: {str(e)}'}, ensure_ascii=False)}\n\n"
-                narrations_data = get_fallback_narrations_data(book_title)
-        
-        yield f"data: {json.dumps({'log': '  ├─ 个性化解说词生成完成'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  └─ ✅ 方法论风格已融入'}, ensure_ascii=False)}\n\n"
-        await asyncio.sleep(0.3)
-        
-        # 步骤4：生成HTML和语音
-        yield f"data: {json.dumps({'log': '🌐 [步骤4/5] 生成HTML演示文件...'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  ├─ 整合所有组件'}, ensure_ascii=False)}\n\n"
-        
-        # 组合所有数据
-        combined_data = {
-            "topic": topic,
-            "book_data": book_data,
-            "slides": slides_data,
-            "narrations": narrations_data,
-            "methodology": methodology,
-            "voice_style": voice_style,
-            "video_style": video_style
-        }
-        
-        try:
-            html_content = await step4_generate_html(slides_data, narrations_data, book_data, methodology=methodology, enable_voice=True)
-        except Exception as e:
-            yield f"data: {json.dumps({'log': f'  ├─ HTML生成遇到问题: {str(e)}'}, ensure_ascii=False)}\n\n"
-            # 使用简化的HTML生成
-            html_content = f"<html><body><h1>《{book_title}》</h1><p>演示文件生成中遇到问题，请稍后重试。</p></body></html>"
-        
-        yield f"data: {json.dumps({'log': '  ├─ HTML文件生成完成'}, ensure_ascii=False)}\n\n"
-        
-        # 步骤5：后处理优化（语音生成等）
-        yield f"data: {json.dumps({'log': '🎵 [步骤5/5] 后处理优化...'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  ├─ 添加语音支持'}, ensure_ascii=False)}\n\n"
-        
-        # 保存文件
-        output_dir = Path(f"outputs/{session_id}")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 保存HTML文件
-        html_file = output_dir / "presentation.html"
-        with open(html_file, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        
-        # 语音生成集成（暂时禁用以避免阻塞）
-        try:
-            yield f"data: {json.dumps({'log': '  ├─ 语音功能暂时跳过（避免阻塞）'}, ensure_ascii=False)}\n\n"
-            # TODO: 后续优化语音生成流程
-            # voice_results = voice_generator.generate_all_audio()
-            
-        except Exception as e:
-            yield f"data: {json.dumps({'log': f'  ├─ ⚠️ 语音生成失败: {str(e)}'}, ensure_ascii=False)}\n\n"
-        
-        yield f"data: {json.dumps({'log': '  ├─ 优化播放体验'}, ensure_ascii=False)}\n\n"
-        yield f"data: {json.dumps({'log': '  └─ ✅ 后处理完成'}, ensure_ascii=False)}\n\n"
-        
-        # 保存数据文件
-        data_file = output_dir / "data.json"
-        with open(data_file, 'w', encoding='utf-8') as f:
-            json.dump(combined_data, f, ensure_ascii=False, indent=2)
-        
-        # 返回成功结果
-        yield f"data: {json.dumps({'log': '🎉 增强生成完成！', 'session_id': session_id}, ensure_ascii=False)}\n\n"
-        
-        result = {
-            "status": "complete",
-            "session_id": session_id,
-            "html_url": f"/outputs/{session_id}/presentation.html",
-            "methodology": methodology,
-            "voice_style": voice_style,
-            "video_style": video_style
-        }
-        
-        yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
-        
-    except Exception as e:
-        print(f"Enhanced generation error: {e}")
-        error_result = {
-            "status": "error",
-            "message": f"增强生成失败: {str(e)}"
-        }
-        yield f"data: {json.dumps(error_result, ensure_ascii=False)}\n\n"
-
-# -----------------------------------------------------------------------
 # 3. 路由 (CHANGED: Now a POST request)
 # -----------------------------------------------------------------------
 @app.post("/generate")
@@ -2501,28 +1928,6 @@ async def generate(
                 # 检查是否包含session_id
                 if '"session_id"' in chunk:
                     try:
-                        data = json.loads(chunk.replace('data: ', ''))
-                        if 'session_id' in data:
-                            session_id = data['session_id']
-                    except:
-                        pass
-                
-                if await request.is_disconnected():
-                    break
-                yield chunk
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-
-    async def wrapped_stream():
-        async for chunk in event_generator():
-            yield chunk
-
-    headers = {
-        "Cache-Control": "no-store",
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "X-Accel-Buffering": "no",
-    }
-    return StreamingResponse(wrapped_stream(), headers=headers)
 
 @app.post("/api/enhanced-generate")
 async def enhanced_generate(
@@ -2539,10 +1944,7 @@ async def enhanced_generate(
     
     try:
         # 初始化方法论配置
-        try:
-            config = MethodologyConfig()
-        except:
-            config = None
+        config = MethodologyConfig()
         
         # 构建书籍信息
         book_info = {
@@ -2554,24 +1956,12 @@ async def enhanced_generate(
         }
         
         # 生成方法论特定的提示词
-        if config:
-            methodology_prompt = config.generate_methodology_prompt(
-                request_data.methodology, 
-                book_info
-            )
-        else:
-            methodology_prompt = f"""
-请使用 {request_data.methodology} 方法论来介绍书籍《{request_data.title}》。
-
-**书籍信息：**
-- 书名：{request_data.title}
-- 作者：{request_data.author or '未知作者'}
-- 分类：{request_data.category or '文学类'}
-
-请根据所选方法论的特点来组织内容结构和表达方式。
-            """
+        methodology_prompt = config.generate_methodology_prompt(
+            request_data.methodology, 
+            book_info
+        )
         
-        # 创建增强的聊天请求 - 这里是关键，我们需要明确指示AI使用方法论
+        # 创建增强的聊天请求
         enhanced_topic = f"""
 请为书籍《{request_data.title}》生成一个专业的介绍演示。
 
@@ -2591,27 +1981,22 @@ async def enhanced_generate(
 - 视频风格：{request_data.video_style}
 
 请严格按照选定的方法论来组织内容结构和表达方式，确保生成的介绍具有该方法论的特色和风格。
-
-**重要要求：**
-1. 在生成slides内容时，必须体现所选方法论的核心特点
-2. 在生成narrations时，必须采用对应的表达风格和语调
-3. 确保生成的HTML包含data-speech属性以支持语音生成
-4. 整体内容应该具有明显的方法论特色，而不是通用的介绍方式
         """
         
-        # 使用增强的流式生成器
+        chat_request = ChatRequest(
+            topic=enhanced_topic,
+            history=None
+        )
+        
+        accumulated_response = ""
+        session_id = None
+
         async def enhanced_event_generator():
-            session_id = None
+            nonlocal accumulated_response, session_id
             try:
-                async for chunk in enhanced_llm_event_stream(
-                    enhanced_topic, 
-                    None,  # history
-                    user_id=user.id,
-                    methodology=request_data.methodology,
-                    voice_style=request_data.voice_style,
-                    video_style=request_data.video_style,
-                    book_info=book_info
-                ):
+                async for chunk in llm_event_stream(chat_request.topic, chat_request.history, user_id=user.id):
+                    accumulated_response += chunk
+                    
                     # 检查是否包含session_id
                     if '"session_id"' in chunk:
                         try:
@@ -2678,6 +2063,28 @@ async def save_enhanced_config(session_id: str, config: EnhancedGenerateRequest)
                 
     except Exception as e:
         print(f"保存增强配置失败: {e}")
+                        data = json.loads(chunk.replace('data: ', ''))
+                        if 'session_id' in data:
+                            session_id = data['session_id']
+                    except:
+                        pass
+                
+                if await request.is_disconnected():
+                    break
+                yield chunk
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    async def wrapped_stream():
+        async for chunk in event_generator():
+            yield chunk
+
+    headers = {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+    }
+    return StreamingResponse(wrapped_stream(), headers=headers)
 
 @app.post("/step/{step_number}")
 async def execute_step(step_number: int, chat_request: ChatRequest):

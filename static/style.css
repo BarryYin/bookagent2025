@@ -378,6 +378,25 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     pointer-events: none;
 }
 
+/* 增强生成器按钮特殊样式 */
+.agent-button.enhanced-generator-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    border: 2px solid transparent;
+}
+
+.agent-button.enhanced-generator-btn:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.agent-button.enhanced-generator-btn::after {
+    display: none; /* 隐藏底部下划线 */
+}
+
 .initial-form { position: relative; margin-top: 1rem; max-width: 800px; width: 100%; }
 
 .initial-form input { 
