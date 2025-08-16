@@ -215,3 +215,5 @@ __MACOSX/
 **/Thumbs.db
 **/ehthumbs.db
 credentials.json
+
+ *.mp3

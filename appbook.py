@@ -100,6 +100,13 @@ class EnhancedGenerateRequest(BaseModel):
     video_style: Optional[str] = "classic_ppt"
     agent_type: str = "exploration"
 
+class InterviewRequest(BaseModel):
+    """读后感访谈请求模型"""
+    message: str
+    book_title: str
+    book_author: Optional[str] = None
+    history: Optional[List[dict]] = None
+
 # -----------------------------------------------------------------------
 # 1.5. 书籍封面搜索功能 - 导入test_cover.py的函数
 # -----------------------------------------------------------------------
@@ -2293,6 +2300,8 @@ async def enhanced_llm_event_stream(
     """
     增强的流式生成器：支持方法论定制和语音生成
     """
+    import asyncio  # 在函数开头导入，确保整个函数都能使用
+    
     history = history or []
     book_info = book_info or {}
     
@@ -2432,11 +2441,45 @@ async def enhanced_llm_event_stream(
         with open(html_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
         
-        # 语音生成集成（暂时禁用以避免阻塞）
+        # 语音生成集成（优化后重新启用）
+        voice_generated = False
+        
         try:
-            yield f"data: {json.dumps({'log': '  ├─ 语音功能暂时跳过（避免阻塞）'}, ensure_ascii=False)}\n\n"
-            # TODO: 后续优化语音生成流程
-            # voice_results = voice_generator.generate_all_audio()
+            if voice_style and voice_style != "no_voice":
+                yield f"data: {json.dumps({'log': '  ├─ 正在生成语音文件...'}, ensure_ascii=False)}\n\n"
+                
+                # 导入语音生成器
+                sys.path.append(str(Path(__file__).parent / "create"))
+                from ppt_voice_generator import PPTVoiceGenerator
+                
+                # 初始化语音生成器
+                voice_generator = PPTVoiceGenerator(
+                    html_file=str(html_file),
+                    audio_prefix=f"{session_id}_slide"
+                )
+                
+                # 生成语音文件 - 设置超时保护
+                try:
+                    # 使用 asyncio.wait_for 设置超时
+                    voice_results = await asyncio.wait_for(
+                        asyncio.to_thread(voice_generator.generate_all_audio),
+                        timeout=60.0  # 60秒超时
+                    )
+                    
+                    if voice_results:
+                        yield f"data: {json.dumps({'log': f'  ├─ ✅ 语音文件生成完成 ({len(voice_results)}个音频)'}, ensure_ascii=False)}\n\n"
+                        # 创建播放列表
+                        voice_generator.create_playlist(voice_results)
+                        yield f"data: {json.dumps({'log': '  ├─ ✅ 播放列表创建完成'}, ensure_ascii=False)}\n\n"
+                        voice_generated = True
+                    else:
+                        yield f"data: {json.dumps({'log': '  ├─ ⚠️ 语音生成完成但结果为空'}, ensure_ascii=False)}\n\n"
+                
+                except asyncio.TimeoutError:
+                    yield f"data: {json.dumps({'log': '  ├─ ⚠️ 语音生成超时，跳过语音功能'}, ensure_ascii=False)}\n\n"
+                
+            else:
+                yield f"data: {json.dumps({'log': '  ├─ ℹ️ 跳过语音生成（用户选择）'}, ensure_ascii=False)}\n\n"
             
         except Exception as e:
             yield f"data: {json.dumps({'log': f'  ├─ ⚠️ 语音生成失败: {str(e)}'}, ensure_ascii=False)}\n\n"

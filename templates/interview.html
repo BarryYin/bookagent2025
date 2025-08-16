@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>读后感访谈 - ReadBook Agent</title>
+    <link rel="stylesheet" href="/static/style.css?v={{ time }}&force=1">
+    <link rel="icon" href="/static/favicon.png?v={{ time }}" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .interview-container {
+            display: flex;
+            height: 100vh;
+            background: var(--bg-primary);
+        }
+        
+        .interview-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+        
+        .interview-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+        
+        .interview-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+        
+        .interview-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .interview-book-info {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+        
+        .book-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+        }
+        
+        .book-author {
+            color: var(--text-secondary);
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        .interview-chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .interview-input {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+        
+        .interview-form {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .interview-form input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        
+        .interview-form button {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .interview-form button:hover {
+            background: var(--accent-hover);
+        }
+        
+        .interview-form button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .book-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .book-cover {
+            width: 200px;
+            height: 300px;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 3rem;
+        }
+        
+        .book-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
+        
+        .book-details {
+            max-width: 400px;
+        }
+        
+        .book-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-top: 1rem;
+        }
+        
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+        }
+        
+        .chat-message.user {
+            background: var(--accent-color);
+            color: white;
+            margin-left: auto;
+        }
+        
+        .chat-message.assistant {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .chat-message.system {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            text-align: center;
+            margin: 0 auto;
+        }
+        
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+        }
+        
+        .loading-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            animation: loading 1.4s infinite;
+        }
+        
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes loading {
+            0%, 80%, 100% {
+                opacity: 0.3;
+            }
+            40% {
+                opacity: 1;
+            }
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .back-button:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 2rem;
+        }
+        
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="/" class="back-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/>
+            <path d="M12 19l-7-7 7-7"/>
+        </svg>
+        返回首页
+    </a>
+
+    <div class="interview-container">
+        <!-- 左侧：访谈对话区域 -->
+        <div class="interview-left">
+            <div class="interview-header">
+                <h2 class="interview-title">读后感访谈</h2>
+            </div>
+            
+            <div class="interview-book-info">
+                <h3 class="book-title" id="book-title">{{ book_title or '未知书名' }}</h3>
+                <p class="book-author" id="book-author">{{ book_author or '未知作者' }}</p>
+            </div>
+            
+            <div class="interview-chat" id="interview-chat">
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <p>开始你的读后感访谈吧！</p>
+                    <p style="font-size: 0.9rem; margin-top: 0.5rem;">分享你对这本书的想法和感受</p>
+                </div>
+            </div>
+            
+            <div class="interview-input">
+                <form class="interview-form" id="interview-form">
+                    <input type="text" id="interview-input" placeholder="分享你的读后感或提出问题..." autocomplete="off" required>
+                    <button type="submit" id="send-button">发送</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 右侧：书籍展示区域 -->
+        <div class="interview-right">
+            <div class="interview-header">
+                <h2 class="interview-title">书籍信息</h2>
+            </div>
+            
+            <div class="book-display" id="book-display">
+                <div class="book-cover" id="book-cover">
+                    {% if book_cover %}
+                    <img src="{{ book_cover }}" alt="{{ book_title }}">
+                    {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    {% endif %}
+                </div>
+                
+                <div class="book-details">
+                    <h3 class="book-title">{{ book_title or '未知书名' }}</h3>
+                    <p class="book-author">{{ book_author or '未知作者' }}</p>
+                    <div class="book-description" id="book-description">
+                        {{ book_description or '暂无书籍简介' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const interviewForm = document.getElementById('interview-form');
+        const interviewInput = document.getElementById('interview-input');
+        const interviewChat = document.getElementById('interview-chat');
+        const sendButton = document.getElementById('send-button');
+        
+        let bookTitle = "{{ book_title or '' }}";
+        let bookAuthor = "{{ book_author or '' }}";
+        let isLoading = false;
+        
+        // 添加消息到聊天区域
+        function addMessage(content, type = 'user') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            messageDiv.textContent = content;
+            interviewChat.appendChild(messageDiv);
+            interviewChat.scrollTop = interviewChat.scrollHeight;
+        }
+        
+        // 添加加载指示器
+        function addLoadingIndicator() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'chat-message assistant loading-indicator';
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.innerHTML = `
+                <span>正在思考</span>
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            interviewChat.appendChild(loadingDiv);
+            interviewChat.scrollTop = interviewChat.scrollHeight;
+        }
+        
+        // 移除加载指示器
+        function removeLoadingIndicator() {
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.remove();
+            }
+        }
+        
+        // 发送消息
+        async function sendMessage() {
+            const message = interviewInput.value.trim();
+            if (!message || isLoading) return;
+            
+            // 清空输入框
+            interviewInput.value = '';
+            
+            // 添加用户消息
+            addMessage(message, 'user');
+            
+            // 添加加载指示器
+            addLoadingIndicator();
+            isLoading = true;
+            sendButton.disabled = true;
+            
+            try {
+                const response = await fetch('/api/interview-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        book_title: bookTitle,
+                        book_author: bookAuthor,
+                        history: getChatHistory()
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                const data = await response.json();
+                
+                // 移除加载指示器
+                removeLoadingIndicator();
+                
+                if (data.success) {
+                    addMessage(data.response, 'assistant');
+                } else {
+                    addMessage('抱歉，出现了错误，请稍后重试。', 'system');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                removeLoadingIndicator();
+                addMessage('网络错误，请检查连接后重试。', 'system');
+            } finally {
+                isLoading = false;
+                sendButton.disabled = false;
+            }
+        }
+        
+        // 获取聊天历史
+        function getChatHistory() {
+            const messages = interviewChat.querySelectorAll('.chat-message');
+            const history = [];
+            
+            messages.forEach(message => {
+                if (message.classList.contains('user') || message.classList.contains('assistant')) {
+                    history.push({
+                        role: message.classList.contains('user') ? 'user' : 'assistant',
+                        content: message.textContent
+                    });
+                }
+            });
+            
+            return history;
+        }
+        
+        // 事件监听
+        interviewForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            sendMessage();
+        });
+        
+        // 清空初始状态
+        document.addEventListener('DOMContentLoaded', () => {
+            const emptyState = interviewChat.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+
+</html>
