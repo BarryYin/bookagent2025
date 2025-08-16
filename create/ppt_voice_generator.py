@@ -2,7 +2,7 @@
 """
 通用 PPT 配音工具
 从 HTML 文件中提取 data-speech 文本并生成配音到 ppt_audio/
-优先使用 Fish Audio（如安装并配置），否则回退到 macOS 系统语音（say）
+优先使用讯飞语音合成，其次 Fish Audio，最后回退到 macOS 系统语音（say）
 用法: python ppt_voice_generator.py <html_file> <audio_prefix>
 默认: html_file=高效人士的7个习惯PPT演示.html, audio_prefix=habit_slide
 """
@@ -15,6 +15,14 @@ import time
 import subprocess
 from pathlib import Path
 import importlib
+import requests
+import base64
+import hashlib
+import hmac
+from datetime import datetime
+from wsgiref.handlers import format_date_time
+from time import mktime
+from urllib.parse import urlencode
 
 
 def _module_available(name: str) -> bool:
@@ -28,12 +36,168 @@ BS4_AVAILABLE = _module_available('bs4')
 FISH_AUDIO_AVAILABLE = _module_available('fish_audio_sdk')
 
 
+class XunfeiTTS:
+    """讯飞语音合成类"""
+    def __init__(self, host="api-dx.xf-yun.com", app_id=None, api_key=None, api_secret=None):
+        self.host = host
+        self.app_id = app_id or os.getenv("XUNFEI_APP_ID", "e6950ae6")
+        self.api_key = api_key or os.getenv("XUNFEI_API_KEY", "f2d4b9650c13355fc8286ac3fc34bf6e")
+        self.api_secret = api_secret or os.getenv("XUNFEI_API_SECRET", "NzRkOWNlZDUzZThjMDI5NzI0N2EyMGRh")
+
+    def assemble_auth_url(self, path):
+        """生成鉴权的url"""
+        params = self.assemble_auth_params(path)
+        request_url = "http://" + self.host + path
+        auth_url = request_url + "?" + urlencode(params)
+        return auth_url
+
+    def assemble_auth_params(self, path):
+        """生成鉴权的参数"""
+        format_date = format_date_time(mktime(datetime.now().timetuple()))
+        signature_origin = "host: " + self.host + "\n"
+        signature_origin += "date: " + format_date + "\n"
+        signature_origin += "POST " + path + " HTTP/1.1"
+        signature_sha = hmac.new(self.api_secret.encode('utf-8'), signature_origin.encode('utf-8'),
+                                 digestmod=hashlib.sha256).digest()
+        signature_sha = base64.b64encode(signature_sha).decode(encoding='utf-8')
+        authorization_origin = 'api_key="%s", algorithm="%s", headers="%s", signature="%s"' % (
+            self.api_key, "hmac-sha256", "host date request-line", signature_sha)
+        authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode(encoding='utf-8')
+        params = {
+            "host": self.host,
+            "date": format_date,
+            "authorization": authorization
+        }
+        return params
+
+    def create_task(self, text, voice="x4_xiaoguo"):
+        """创建语音合成任务"""
+        create_path = "/v1/private/dts_create"
+        auth_url = self.assemble_auth_url(create_path)
+        encode_str = base64.encodebytes(text.encode("UTF8"))
+        txt = encode_str.decode()
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "header": {
+                "app_id": self.app_id,
+            },
+            "parameter": {
+                "dts": {
+                    "vcn": voice,  # 发音人：x4_yeting,x4_qianxue,wangqianqian,x4_xiaoguo
+                    "language": "zh",
+                    "speed": 50,
+                    "volume": 50,
+                    "pitch": 50,
+                    "rhy": 1,
+                    "bgs": 0,
+                    "reg": 0,
+                    "rdn": 0,
+                    "scn": 0,
+                    "audio": {
+                        "encoding": "lame",
+                        "sample_rate": 16000,
+                        "channels": 1,
+                        "bit_depth": 16,
+                        "frame_size": 0
+                    },
+                    "pybuf": {
+                        "encoding": "utf8",
+                        "compress": "raw",
+                        "format": "plain"
+                    }
+                }
+            },
+            "payload": {
+                "text": {
+                    "encoding": "utf8",
+                    "compress": "raw",
+                    "format": "plain",
+                    "text": txt
+                }
+            },
+        }
+        try:
+            res = requests.post(url=auth_url, headers=headers, data=json.dumps(data))
+            res = json.loads(res.text)
+            return res
+        except Exception as e:
+            print(f"创建讯飞语音合成任务失败: {e}")
+            return None
+
+    def query_task(self, task_id):
+        """查询语音合成任务"""
+        query_path = "/v1/private/dts_query"
+        auth_url = self.assemble_auth_url(query_path)
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "header": {
+                "app_id": self.app_id,
+                "task_id": task_id
+            }
+        }
+        try:
+            res = requests.post(url=auth_url, headers=headers, data=json.dumps(data))
+            res = json.loads(res.text)
+            return res
+        except Exception as e:
+            print(f"查询讯飞语音合成任务失败: {e}")
+            return None
+
+    def synthesize_to_file(self, text, output_file, voice="x4_xiaoguo", max_retries=10):
+        """合成语音并保存到文件"""
+        # 创建任务
+        create_result = self.create_task(text, voice)
+        if not create_result or create_result.get('header', {}).get('code') != 0:
+            return False
+
+        task_id = create_result.get('header', {}).get('task_id')
+        if not task_id:
+            return False
+
+        # 查询任务结果
+        for i in range(max_retries):
+            time.sleep(2)  # 等待处理
+            query_result = self.query_task(task_id)
+            if not query_result:
+                continue
+
+            code = query_result.get('header', {}).get('code')
+            if code != 0:
+                continue
+
+            task_status = query_result.get('header', {}).get('task_status')
+            if task_status == '5':  # 任务完成
+                audio_data = query_result.get('payload', {}).get('audio', {}).get('audio')
+                if audio_data:
+                    # 解码下载链接
+                    download_url = base64.b64decode(audio_data).decode()
+                    # 下载音频文件
+                    try:
+                        response = requests.get(download_url)
+                        with open(output_file, "wb") as f:
+                            f.write(response.content)
+                        return True
+                    except Exception as e:
+                        print(f"下载音频文件失败: {e}")
+                        return False
+            elif task_status == '2':  # 任务失败
+                print(f"讯飞语音合成任务失败，状态码: {task_status}")
+                return False
+
+        print("讯飞语音合成任务超时")
+        return False
+
+
 class PPTVoiceGenerator:
     def __init__(self, html_file: str = "高效人士的7个习惯PPT演示.html", audio_prefix: str = "habit_slide"):
         self.html_file = html_file
         self.audio_prefix = audio_prefix
         self.audio_dir = Path("./ppt_audio")
         self.audio_dir.mkdir(exist_ok=True)
+
+        # 讯飞语音配置
+        self.xunfei_tts = XunfeiTTS()
+        self.xunfei_voice = os.getenv("XUNFEI_VOICE", "x4_xiaoguo")  # 可选: x4_yeting,x4_qianxue,wangqianqian,x4_xiaoguo
 
         # Fish Audio 配置（可由环境变量覆盖）
         self.fish_api_key = os.getenv("FISH_API_KEY", "8a3f82b04cdc4ae6bdd799953c45813b")
@@ -50,7 +214,9 @@ class PPTVoiceGenerator:
                 print(f"⚠️ Fish Audio Session 初始化失败: {e}")
                 self.fish_session = None
         else:
-            print("⚠️ 未检测到 fish_audio_sdk，将使用系统语音")
+            print("⚠️ 未检测到 fish_audio_sdk")
+
+        print(f"🎤 语音合成优先级: 讯飞({self.xunfei_voice}) > Fish Audio > 系统语音")
 
     def extract_speech_texts(self):
         """从 HTML 中提取所有 data-speech 内容"""
@@ -84,6 +250,18 @@ class PPTVoiceGenerator:
 
         print(f"✅ 提取到 {len(speech_texts)} 页配音文本")
         return speech_texts
+
+    def _try_xunfei_tts(self, text: str, output_file: Path) -> bool:
+        """尝试使用讯飞语音合成"""
+        try:
+            print("🔄 使用讯飞语音合成…")
+            success = self.xunfei_tts.synthesize_to_file(text, str(output_file), self.xunfei_voice)
+            if success and output_file.exists() and output_file.stat().st_size > 0:
+                return True
+            return False
+        except Exception as e:
+            print(f"❌ 讯飞语音合成失败: {e}")
+            return False
 
     def _try_fish_audio(self, text: str, output_file: Path) -> bool:
         if not self.fish_session or not self._fish_mod:
@@ -140,18 +318,28 @@ class PPTVoiceGenerator:
             pass
         return 0.0
 
-    def generate_audio_for_slide(self, slide: dict, use_fish_audio: bool = True) -> str | None:
+    def generate_audio_for_slide(self, slide: dict) -> str | None:
         index = slide['index']
         text = slide['text']
         out = self.audio_dir / f"{self.audio_prefix}_{index:02d}.mp3"
 
         print(f"🎵 第{index}页: {min(len(text), 80)} 字")
-        if use_fish_audio and self.fish_session:
-            if self._try_fish_audio(text, out):
-                print(f"✅ Fish Audio: {out.name}")
-                return str(out)
-            else:
-                print("🔁 Fish Audio 失败，改用系统语音…")
+        
+        # 优先级1: 讯飞语音合成
+        if self._try_xunfei_tts(text, out):
+            print(f"✅ 讯飞语音: {out.name}")
+            return str(out)
+        
+        print("🔁 讯飞语音失败，尝试 Fish Audio…")
+        
+        # 优先级2: Fish Audio
+        if self.fish_session and self._try_fish_audio(text, out):
+            print(f"✅ Fish Audio: {out.name}")
+            return str(out)
+        
+        print("🔁 Fish Audio 失败，改用系统语音…")
+        
+        # 优先级3: 系统语音
         return self._generate_system_audio(text, out)
 
     def generate_all_audio(self) -> list[dict]:
@@ -169,7 +357,7 @@ class PPTVoiceGenerator:
         results: list[dict] = []
         total = 0.0
         for slide in slides:
-            audio_path = self.generate_audio_for_slide(slide, use_fish_audio=True)
+            audio_path = self.generate_audio_for_slide(slide)
             if audio_path:
                 dur = self.get_audio_duration(audio_path)
                 total += dur
