@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未知书籍 - FogSight AI 智能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, 
+                #667eea 0%, 
+                #764ba2 25%, 
+                #f093fb 50%, 
+                #f5576c 75%, 
+                #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .presentation-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        /* 左侧导航 */
+        .nav-sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-section {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-button {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button.playing {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .slide-counter {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: auto;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .slide-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .slide {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 60px;
+            max-width: 900px;
+            width: 100%;
+            min-height: 600px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .slide h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            text-align: center;
+            line-height: 1.3;
+            font-weight: 600;
+        }
+
+        .slide h2 {
+            font-size: 2em;
+            margin-bottom: 25px;
+            color: #34495e;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .slide p {
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: #555;
+            text-align: justify;
+        }
+
+        .slide ul {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+
+        .slide li {
+            font-size: 1.1em;
+            line-height: 1.7;
+            margin-bottom: 12px;
+            color: #666;
+        }
+
+        /* 右侧导航 */
+        .nav-right {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-arrow {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-size: 20px;
+            margin: 0 auto;
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 字幕区域 */
+        .narration-display {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            color: #FFD700;
+            padding: 25px 40px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.6;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .sentence {
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            font-weight: 500;
+        }
+
+        .sentence.active {
+            opacity: 1;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .nav-sidebar {
+                width: 200px;
+            }
+            
+            .slide {
+                padding: 40px;
+                max-width: 700px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .presentation-container {
+                flex-direction: column;
+            }
+            
+            .nav-sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 15px;
+            }
+            
+            .nav-right {
+                width: 100%;
+                flex-direction: row;
+                justify-content: center;
+                height: auto;
+                padding: 15px;
+            }
+            
+            .slide {
+                padding: 30px;
+                margin: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 左侧导航栏 -->
+        <div class="nav-sidebar">
+            <div class="logo-section">
+                <div class="logo-title">FogSight AI</div>
+            </div>
+            
+            <button id="playPauseButton" class="nav-button" onclick="toggleAudio()">
+                🔊 播放解说
+            </button>
+            
+            <div class="slide-counter">
+                <div id="slideCounter">第 1 页 / 8 页</div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="slide-container">
+                
+                <div class="slide active">
+                    <h1>病中碎语，灵魂低吟</h1>
+                    <p>你有没有在最深的绝望里，突然听见自己内心的声音？
+
+史铁生说：“其实每时每刻我们都是幸运的，因为任何灾难的前面都可能再加一个‘更’字。”</p>
+                </div>
+                <div class="slide ">
+                    <h2>我的阅读之旅：从困惑到共鸣</h2>
+                    <p>我第一次读这本书时，正值人生的低谷。<br><br>书中那些关于病痛、信仰和存在意义的句子，像灯塔一样照亮了我。<br><br>“真正的自由，不是摆脱苦难，而是在苦难中依然热爱生活。”</p>
+                </div>
+                <div class="slide ">
+                    <h2>一位思想者的抗争史</h2>
+                    <p>史铁生，一个被疾病困于轮椅的人，却用残缺的身体书写了完整的人性。<br><br>他的文字没有华丽辞藻，却直抵人心。<br><br>这是一个关于信念、苦难、救赎与爱的灵魂史诗。</p>
+                </div>
+                <div class="slide ">
+                    <h2>病榻上的哲思</h2>
+                    <p>他在病痛中写道：“死是一件不必急于求成的事，死是一个必然会降临的节日。”<br><br>这句话让我第一次明白：死亡不是恐惧的终点，而是思考的起点。<br><br>就像他笔下的落叶，看似凋零，实则孕育新生。</p>
+                </div>
+                <div class="slide ">
+                    <h2>古人说生死，今人谈信仰</h2>
+                    <p>庄子曰：“死生亦大矣。”<br><br>而在《病隙碎笔》中，史铁生说：“死不是生的对立面，而是作为背景存在。”<br><br>古人的豁达与今人的挣扎，都指向同一个问题：我们该如何面对生命的有限性？</p>
+                </div>
+                <div class="slide ">
+                    <h2>史铁生：用苦难雕刻灵魂</h2>
+                    <p>他说：“写作不是为了名声，是为了活下去。”<br><br>每一次提笔，都是对命运的一次叩问；每一个句子，都是对自我的一次救赎。<br><br>他不是在写作，而是在用文字为自己建造一座精神的教堂。</p>
+                </div>
+                <div class="slide ">
+                    <h2>在这个浮躁的世界，我们需要安静的力量</h2>
+                    <p>我们每天都在刷手机、追热点、焦虑未来。<br><br>但在《病隙碎笔》中，史铁生告诉我们：真正的自由，是在喧嚣中保持内心的宁静。<br><br>这不是逃避，而是一种更高层次的清醒。</p>
+                </div>
+                <div class="slide ">
+                    <h2>在文字中，与命运和解</h2>
+                    <p>这本书教会我：苦难无法避免，但我们可以选择如何回应。<br><br>史铁生用一生诠释了什么叫做“向死而生”。<br><br>愿你我都能在这本书中，找到属于自己的光。</p>
+                </div>
+            </div>
+
+            <!-- 字幕显示区域 -->
+            <div class="narration-display">
+                <div id="currentNarration">点击"播放解说"开始自动播放演示</div>
+            </div>
+        </div>
+
+        <!-- 右侧导航 -->
+        <div class="nav-right">
+            <button class="nav-arrow" id="prevBtn" onclick="prevSlide()">❮</button>
+            <button class="nav-arrow" id="nextBtn" onclick="nextSlide()">❯</button>
+        </div>
+    </div>
+
+    <!-- 音频播放器 -->
+    <audio id="audioPlayer" preload="auto"></audio>
+
+    <script>
+        // 全局变量
+        let currentSlide = 0;
+        let totalSlides = 8;
+        let isAutoPlaying = false;
+        let isPlaying = false;
+        let sentenceTimers = [];
+
+        // 解说词数据
+        const narrationData = [
+        {
+            "sentences": ["当我第一次翻开《病隙碎笔》时，仿佛走进了一个安静而沉重的世界。", "那是史铁生躺在病榻上，用残缺的身体书写完整的灵魂。", "他不是在讲故事，而是在与命运对话，在疼痛中寻找意义。", "他说：‘其实每时每刻我们都是幸运的，因为任何灾难的前面都可能再加一个“更”字。", "’这句话像一记轻柔却有力的钟声，敲醒了我对苦难的认知。"],
+            "timings": [0, 6, 12, 18, 24]
+        },
+        {
+            "sentences": ["那时候的我，就像被困在一座孤岛上，四周是无边的黑暗。", "而史铁生的文字，就像是远处的一盏灯塔，让我看到了方向。", "他说：‘真正的自由，不是摆脱苦难，而是在苦难中依然热爱生活。", "’那一刻我才明白，原来我们每个人都在各自的苦海里挣扎，而文学，就是那一叶扁舟，载着我们穿越风雨。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["他被疾病困于轮椅数十年，却从未被困住灵魂。", "他的文字没有华丽辞藻，却有一种直抵人心的力量。", "就像他在书中写到的那样：‘死是一件不必急于求成的事，死是一个必然会降临的节日。", "’这是一种怎样的豁达与坦然啊！他不是逃避现实，而是用哲学的方式，重新定义了生命的价值。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["就像他说的那句关于死亡的话——‘死是一件不必急于求成的事，死是一个必然会降临的节日。", "’这让我第一次意识到，死亡不是恐惧的终点，而是思考的起点。", "就像他笔下的落叶，看似凋零，实则孕育新生。", "这种对生死的洞察，不是冰冷的逻辑推理，而是源自生命深处的体验和沉淀。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["古人谈生死，讲的是豁达；今人谈生死，说的是挣扎。", "但他们都在问同一个问题：我们该如何面对生命的有限性？史铁生的回答是：接受它，并从中找到存在的价值。", "他不是否定死亡，而是通过它，更加珍惜活着的每一天。", "这种古今对话，不只是思想的传承，更是人性永恒的回响。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["他曾说：‘写作不是为了名声，是为了活下去。", "’每一次提笔，都是对命运的一次叩问；每一个句子，都是对自我的一次救赎。", "他不是在写作，而是在用文字为自己建造一座精神的教堂。", "在那里，他可以与上帝对话，与过去和解，与未来握手言和。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["我们在刷手机、追热点、焦虑未来的时候，是否还记得那个最初的自己？史铁生告诉我们：真正的自由，是在喧嚣中保持内心的宁静。", "这不是逃避，而是一种更高层次的清醒。", "就像他说的那样：‘真正的自由，不是摆脱苦难，而是在苦难中依然热爱生活。", "’这才是真正的力量。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["史铁生用一生诠释了什么叫做‘向死而生’。", "他没有逃避命运，也没有抱怨不公，而是用自己的方式，把苦难转化成了思想的力量。", "他说：‘其实每时每刻我们都是幸运的，因为任何灾难的前面都可能再加一个“更”字。", "’愿你我都能在这本书中，找到属于自己的光。"],
+            "timings": [0, 6, 12, 18]
+        }
+    ];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSlideCounter();
+            updateNavigationButtons();
+        });
+
+        // 音频播放功能
+        function toggleAudio() {
+            const playPauseButton = document.getElementById('playPauseButton');
+            
+            if (isAutoPlaying) {
+                // 停止自动播放
+                stopAutoPlay();
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            } else {
+                // 开始自动播放整个PPT
+                startAutoPlay();
+                playPauseButton.textContent = '⏸️ 停止播放';
+                playPauseButton.classList.add('playing');
+            }
+        }
+        
+        function startAutoPlay() {
+            isAutoPlaying = true;
+            currentSlide = 0; // 从第一页开始
+            showSlide(0);
+            playCurrentSlide();
+        }
+        
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            isPlaying = false;
+            const audioPlayer = document.getElementById('audioPlayer');
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            clearSentenceTimers();
+            resetNarrationDisplay();
+        }
+        
+        function playCurrentSlide() {
+            if (!isAutoPlaying) return;
+            
+            const audioPlayer = document.getElementById('audioPlayer');
+            const sessionId = window.location.pathname.split('/')[2]; // 从URL中提取session_id
+            const slideNumber = (currentSlide + 1).toString().padStart(2, '0');
+            const audioPath = `/ppt_audio/${sessionId}_slide_${slideNumber}.mp3`;
+            
+            audioPlayer.src = audioPath;
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                startSentenceDisplay();
+            }).catch((error) => {
+                console.error('音频播放失败:', error);
+                // 如果音频播放失败，仍然显示字幕并在5秒后切换到下一页
+                startSentenceDisplay();
+                setTimeout(() => {
+                    if (isAutoPlaying) {
+                        goToNextSlide();
+                    }
+                }, 5000);
+            });
+        }
+
+        // 导航功能
+        function nextSlide() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+            goToNextSlide();
+        }
+        
+        function prevSlide() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+            goToPrevSlide();
+        }
+        
+        function goToNextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+                if (isAutoPlaying) {
+                    setTimeout(() => playCurrentSlide(), 500);
+                }
+            } else if (isAutoPlaying) {
+                // 到达最后一页，停止自动播放
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+        }
+        
+        function goToPrevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+                if (isAutoPlaying) {
+                    setTimeout(() => playCurrentSlide(), 500);
+                }
+            }
+        }
+
+        function showSlide(slideIndex) {
+            const slides = document.querySelectorAll('.slide');
+            
+            // 隐藏所有幻灯片
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 显示目标幻灯片
+            if (slides[slideIndex]) {
+                slides[slideIndex].classList.add('active');
+                currentSlide = slideIndex;
+            }
+            
+            updateSlideCounter();
+            updateNavigationButtons();
+            if (!isAutoPlaying) {
+                resetNarrationDisplay();
+            }
+        }
+
+        function updateSlideCounter() {
+            const counter = document.getElementById('slideCounter');
+            if (counter) {
+                counter.textContent = `第 ${currentSlide + 1} 页 / ${totalSlides} 页`;
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            if (prevBtn) {
+                prevBtn.disabled = currentSlide === 0;
+            }
+            if (nextBtn) {
+                nextBtn.disabled = currentSlide === totalSlides - 1;
+            }
+        }
+
+        // 字幕显示功能
+        function startSentenceDisplay() {
+            const slideData = narrationData[currentSlide];
+            if (!slideData) return;
+            
+            clearSentenceTimers();
+            
+            slideData.sentences.forEach((sentence, index) => {
+                const delay = slideData.timings[index] * 1000;
+                const timer = setTimeout(() => {
+                    if (isAutoPlaying || isPlaying) {
+                        displaySentence(sentence);
+                    }
+                }, delay);
+                sentenceTimers.push(timer);
+            });
+
+            // 音频结束后自动切换到下一页
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.onended = () => {
+                if (isAutoPlaying) {
+                    setTimeout(() => goToNextSlide(), 1000);
+                }
+            };
+        }
+
+        function displaySentence(sentence) {
+            const narrationDiv = document.getElementById('currentNarration');
+            if (narrationDiv) {
+                narrationDiv.innerHTML = `<span class="sentence active">${sentence}</span>`;
+            }
+        }
+
+        function clearSentenceTimers() {
+            sentenceTimers.forEach(timer => clearTimeout(timer));
+            sentenceTimers = [];
+        }
+
+        function resetNarrationDisplay() {
+            const narrationDiv = document.getElementById('currentNarration');
+            if (narrationDiv) {
+                narrationDiv.innerHTML = '点击"播放解说"开始自动播放演示';
+            }
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (event.key === 'ArrowRight') {
+                nextSlide();
+            } else if (event.key === ' ') {
+                event.preventDefault();
+                toggleAudio();
+            }
+        });
+    </script>
+</body>
+</html>

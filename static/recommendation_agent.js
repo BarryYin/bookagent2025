@@ -110,6 +110,9 @@ async function initializeRecommendationSystem() {
     }
 }
 
+// 全局变量存储聊天记录
+let chatHistory = [];
+
 function addMessage(type, text) {
     const messagesContainer = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
@@ -135,6 +138,85 @@ function addMessage(type, text) {
     
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // 保存聊天记录到全局变量
+    chatHistory.push({
+        type: type,
+        text: text,
+        timestamp: now.toISOString()
+    });
+    
+    // 显示保存按钮
+    document.getElementById('save-chat-btn').style.display = 'block';
+}
+
+// 保存聊天记录功能
+document.addEventListener('DOMContentLoaded', function() {
+    const saveButton = document.getElementById('save-chat-btn');
+    if (saveButton) {
+        saveButton.addEventListener('click', saveChatHistory);
+    }
+});
+
+// 保存聊天记录
+function saveChatHistory() {
+    if (chatHistory.length === 0) {
+        alert('没有可保存的聊天记录');
+        return;
+    }
+    
+    // 创建完整聊天记录
+    const fullChatHistory = {
+        timestamp: new Date().toISOString(),
+        messages: chatHistory,
+        metadata: {
+            user_agent: navigator.userAgent,
+            platform: navigator.platform
+        }
+    };
+    
+    // 创建压缩版本（只保留文本内容）
+    const compressedChatHistory = chatHistory.map(msg => {
+        return {
+            role: msg.type === 'agent' ? 'assistant' : 'user',
+            content: msg.text
+        };
+    });
+    
+    // 将聊天记录转换为JSON字符串
+    const fullChatJSON = JSON.stringify(fullChatHistory, null, 2);
+    const compressedChatJSON = JSON.stringify(compressedChatHistory, null, 2);
+    
+    // 创建下载链接 - 完整版
+    const fullDataBlob = new Blob([fullChatJSON], { type: 'application/json' });
+    const fullDataURL = URL.createObjectURL(fullDataBlob);
+    const fullDownloadLink = document.createElement('a');
+    fullDownloadLink.href = fullDataURL;
+    fullDownloadLink.download = `chat_history_full_${new Date().toISOString().slice(0,10)}.json`;
+    
+    // 创建下载链接 - 压缩版
+    const compressedDataBlob = new Blob([compressedChatJSON], { type: 'application/json' });
+    const compressedDataURL = URL.createObjectURL(compressedDataBlob);
+    const compressedDownloadLink = document.createElement('a');
+    compressedDownloadLink.href = compressedDataURL;
+    compressedDownloadLink.download = `chat_history_${new Date().toISOString().slice(0,10)}.json`;
+    
+    // 触发下载
+    document.body.appendChild(fullDownloadLink);
+    fullDownloadLink.click();
+    document.body.removeChild(fullDownloadLink);
+    
+    setTimeout(() => {
+        document.body.appendChild(compressedDownloadLink);
+        compressedDownloadLink.click();
+        document.body.removeChild(compressedDownloadLink);
+    }, 100);
+    
+    // 释放URL对象
+    setTimeout(() => {
+        URL.revokeObjectURL(fullDataURL);
+        URL.revokeObjectURL(compressedDataURL);
+    }, 1000);
 }
 
 function updateUserProfile(profile) {

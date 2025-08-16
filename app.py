@@ -383,6 +383,24 @@ except Exception as e:
                 "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
             }
         )
+
+# 导入独立版本的引导推荐智能体API（无需认证）
+try:
+    from standalone_recommendation_api import router as standalone_recommendation_router
+    app.include_router(standalone_recommendation_router)
+    print("✅ 成功导入独立版本引导推荐智能体API")
+    
+    @app.get("/recommendation-standalone")
+    async def recommendation_standalone_page(request: Request):
+        """独立的引导推荐智能体页面（无需认证）"""
+        return templates.TemplateResponse(
+            "recommendation_standalone.html", {
+                "request": request,
+                "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
+            }
+        )
+except Exception as e:
+    print(f"⚠️ 导入独立版本引导推荐智能体API失败: {e}")
     
     @app.get("/recommendation-standalone")
     async def recommendation_standalone_page(request: Request):

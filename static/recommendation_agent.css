@@ -47,6 +47,32 @@
 .header-info {
     font-size: 0.9rem;
     opacity: 0.8;
+    display: flex;
+    align-items: center;
+}
+
+.save-chat-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-left: 12px;
+}
+
+.save-chat-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.save-chat-button svg {
+    width: 14px;
+    height: 14px;
 }
 
 .recommendation-main {
@@ -292,6 +318,14 @@
     transform: translateY(-2px);
 }
 
+.book-action-btn.primary {
+    background: #4299e1;
+}
+
+.book-action-btn.primary:hover {
+    background: #3182ce;
+}
+
 .book-cover {
     width: 80px;
     height: 120px;
@@ -357,6 +391,15 @@
 .difficulty-tag {
     background: #e8f5e8;
     color: #388e3c;
+}
+
+.available-tag {
+    background: #48bb78;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
 .loading-state {

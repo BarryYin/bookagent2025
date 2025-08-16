@@ -1080,69 +1080,28 @@
             }
         }
 
-        // 显示生成进度
+        // 显示生成进度 - 简化版本，直接跳转
         function showGenerationProgress() {
-            // 隐藏配置界面
-            document.querySelector('.generation-wizard').style.display = 'none';
-            document.querySelector('.header').style.display = 'none';
-            
-            // 重置容器样式为进度页面专用
+            // 显示简单的加载提示
             const container = document.querySelector('.container');
-            container.style.maxWidth = 'none';
-            container.style.padding = '0';
-            
-            // 创建进度界面
-            const progressHTML = `
-                <div class="generation-progress">
-                    <div class="progress-header">
-                        <h2>🚀 正在生成您的书籍介绍...</h2>
-                        <p>根据您选择的方法论和配置，我们正在为您打造专业的内容</p>
-                    </div>
-                    
-                    <div class="progress-steps">
-                        <div class="progress-step active" id="step-1">
-                            <div class="step-icon">📚</div>
-                            <div class="step-info">
-                                <h4>分析书籍信息</h4>
-                                <p>正在处理书籍内容和背景信息...</p>
-                            </div>
-                        </div>
-                        
-                        <div class="progress-step" id="step-2">
-                            <div class="step-icon">🎭</div>
-                            <div class="step-info">
-                                <h4>应用介绍方法论</h4>
-                                <p>根据选定的方法论构建介绍结构...</p>
-                            </div>
-                        </div>
-                        
-                        <div class="progress-step" id="step-3">
-                            <div class="step-icon">🎨</div>
-                            <div class="step-info">
-                                <h4>生成演示内容</h4>
-                                <p>创建幻灯片和演讲稿...</p>
-                            </div>
-                        </div>
-                        
-                        <div class="progress-step" id="step-4">
-                            <div class="step-icon">✨</div>
-                            <div class="step-info">
-                                <h4>完成制作</h4>
-                                <p>应用风格配置，生成最终作品...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-log" id="progressLog">
-                        <!-- 进度日志将在这里显示 -->
-                    </div>
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; color: white;">
+                    <div style="font-size: 3rem; margin-bottom: 2rem;">�</div>
+                    <h2 style="font-size: 2rem; margin-bottom: 1rem; color: white; writing-mode: horizontal-tb;">正在生成您的书籍介绍...</h2>
+                    <p style="font-size: 1.2rem; opacity: 0.9; margin-bottom: 2rem; writing-mode: horizontal-tb;">请稍候，我们正在为您打造专业的内容</p>
+                    <div style="width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
                 </div>
+                <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                * {
+                    writing-mode: horizontal-tb !important;
+                    text-orientation: mixed !important;
+                }
+                </style>
             `;
-            
-            document.querySelector('.container').innerHTML = progressHTML;
-            
-            // 添加进度样式
-            addProgressStyles();
         }
 
         // 处理生成进度
@@ -1154,8 +1113,8 @@
                 const logEntry = document.createElement('div');
                 logEntry.className = 'log-entry';
                 logEntry.innerHTML = `
-                    <span class="log-time">${new Date().toLocaleTimeString()}</span>
-                    <span class="log-message">${data.status}</span>
+                    <span class="log-time" style="writing-mode: horizontal-tb;">${new Date().toLocaleTimeString()}</span>
+                    <span class="log-message" style="writing-mode: horizontal-tb;">${data.status}</span>
                 `;
                 progressLog.appendChild(logEntry);
                 progressLog.scrollTop = progressLog.scrollHeight;
@@ -1223,7 +1182,7 @@
                 <style>
                 /* 进度页面特有样式 - 避免与原有样式冲突 */
                 .generation-progress {
-                    max-width: 900px;
+                    max-width: 1200px;
                     margin: 0 auto;
                     padding: 3rem 2rem;
                     text-align: center;
@@ -1273,26 +1232,30 @@
                 
                 .progress-steps {
                     display: grid;
-                    gap: 1.5rem;
+                    gap: 2.5rem;
                     margin-bottom: 3rem;
                     position: relative;
                     z-index: 1;
+                    max-width: 1000px;
+                    margin-left: auto;
+                    margin-right: auto;
                 }
                 
                 .progress-step {
                     display: flex;
                     align-items: center;
-                    gap: 1.5rem;
-                    padding: 1.5rem 2rem;
-                    border-radius: 20px;
-                    background: rgba(255, 255, 255, 0.1);
+                    gap: 3rem;
+                    padding: 2.5rem 3rem;
+                    border-radius: 25px;
+                    background: rgba(255, 255, 255, 0.15);
                     backdrop-filter: blur(20px);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
                     text-align: left;
                     transition: all 0.4s ease;
                     transform: translateY(20px);
                     opacity: 0;
                     animation: slideInUp 0.6s ease-out forwards;
+                    min-height: 140px;
                 }
                 
                 .progress-step:nth-child(1) { animation-delay: 0.1s; }
@@ -1301,15 +1264,16 @@
                 .progress-step:nth-child(4) { animation-delay: 0.4s; }
                 
                 .progress-step:hover {
-                    transform: translateY(-5px);
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+                    transform: translateY(-8px);
+                    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+                    background: rgba(255, 255, 255, 0.2);
                 }
                 
                 .progress-step.active {
-                    background: rgba(255, 255, 255, 0.25);
-                    border: 2px solid rgba(255, 255, 255, 0.5);
-                    box-shadow: 0 15px 35px rgba(0,0,0,0.2), 
-                                0 0 30px rgba(255, 255, 255, 0.3);
+                    background: rgba(255, 255, 255, 0.3);
+                    border: 2px solid rgba(255, 255, 255, 0.6);
+                    box-shadow: 0 20px 45px rgba(0,0,0,0.25), 
+                                0 0 40px rgba(255, 255, 255, 0.4);
                     animation: glowPulse 2s infinite;
                 }
                 
@@ -1320,15 +1284,15 @@
                 }
                 
                 .step-icon {
-                    font-size: 2.5rem;
-                    width: 80px;
-                    height: 80px;
+                    font-size: 3rem;
+                    width: 100px;
+                    height: 100px;
                     border-radius: 50%;
-                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    box-shadow: 0 15px 35px rgba(0,0,0,0.25);
                     transition: all 0.3s ease;
                     flex-shrink: 0;
                 }
@@ -1344,20 +1308,30 @@
                     animation: checkmark 0.6s ease-out;
                 }
                 
+                .step-info {
+                    flex: 1;
+                    min-width: 0;
+                    padding-left: 1rem;
+                }
+                
                 .step-info h4 {
-                    margin: 0 0 0.5rem 0;
+                    margin: 0 0 1rem 0;
                     color: white;
-                    font-size: 1.3rem;
-                    font-weight: 600;
-                    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                    font-size: 1.6rem;
+                    font-weight: 700;
+                    text-shadow: 0 3px 15px rgba(0,0,0,0.4);
+                    line-height: 1.3;
+                    letter-spacing: 0.5px;
                 }
                 
                 .step-info p {
                     margin: 0;
-                    color: rgba(255, 255, 255, 0.8);
-                    font-size: 1rem;
-                    line-height: 1.5;
-                    text-shadow: 0 1px 5px rgba(0,0,0,0.2);
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: 1.2rem;
+                    line-height: 1.8;
+                    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    word-wrap: break-word;
+                    font-weight: 400;
                 }
                 
                 .progress-log {
@@ -1526,6 +1500,7 @@
                 @media (max-width: 768px) {
                     .generation-progress {
                         padding: 2rem 1rem;
+                        max-width: 100%;
                     }
                     
                     .progress-header h2 {
@@ -1536,23 +1511,37 @@
                         font-size: 1rem;
                     }
                     
+                    .progress-steps {
+                        gap: 2rem;
+                        max-width: 100%;
+                    }
+                    
                     .progress-step {
-                        padding: 1rem 1.5rem;
-                        gap: 1rem;
+                        padding: 2rem 1.5rem;
+                        gap: 2rem;
+                        flex-direction: column;
+                        text-align: center;
+                        min-height: auto;
                     }
                     
                     .step-icon {
-                        width: 60px;
-                        height: 60px;
-                        font-size: 2rem;
+                        width: 80px;
+                        height: 80px;
+                        font-size: 2.5rem;
+                    }
+                    
+                    .step-info {
+                        text-align: center;
+                        padding-left: 0;
                     }
                     
                     .step-info h4 {
-                        font-size: 1.1rem;
+                        font-size: 1.3rem;
                     }
                     
                     .step-info p {
-                        font-size: 0.9rem;
+                        font-size: 1rem;
+                        line-height: 1.6;
                     }
                 }
                 </style>
