@@ -1235,7 +1235,7 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{book_title} - FogSight AI 智能演示</title>
+    <title>{book_title} - Bookagent 智能演示</title>
     <style>
         * {{
             margin: 0;
@@ -1546,11 +1546,15 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
         <!-- 左侧导航栏 -->
         <div class="nav-sidebar">
             <div class="logo-section">
-                <div class="logo-title">FogSight AI</div>
+                <div class="logo-title">Bookagent</div>
             </div>
             
             <button id="playPauseButton" class="nav-button" onclick="toggleAudio()">
                 🔊 播放解说
+            </button>
+            
+            <button id="backButton" class="nav-button" onclick="goBack()" style="background: rgba(255, 255, 255, 0.2);">
+                ← 返回主页
             </button>
             
             <div class="slide-counter">
@@ -1798,6 +1802,12 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
                 toggleAudio();
             }}
         }});
+
+        // 返回主页功能
+        function goBack() {{
+            // 返回到主应用页面
+            window.location.href = '/';
+        }}
     </script>
 </body>
 </html>'''
