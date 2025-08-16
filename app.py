@@ -346,6 +346,44 @@ try:
 except ImportError as e:
     print(f"⚠️ 导入appbook模块失败: {e}")
 
+# 导入引导推荐智能体API
+try:
+    from simple_recommendation_api import router as recommendation_router
+    app.include_router(recommendation_router)
+    print("✅ 成功导入引导推荐智能体API")
+    
+    @app.get("/recommendation-agent")
+    async def recommendation_agent_page(request: Request):
+        """引导推荐智能体页面"""
+        return templates.TemplateResponse(
+            "recommendation_agent.html", {
+                "request": request,
+                "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
+            }
+        )
+except Exception as e:
+    print(f"⚠️ 导入引导推荐智能体API失败: {e}")
+    # 创建备用路由
+    @app.get("/api/recommendation/recommendations")
+    async def fallback_recommendations():
+        return {"recommendations": [
+            {"title": "乌合之众", "author": "古斯塔夫·勒庞", "reason": "基于职场阅读背景推荐"}
+        ]}
+    
+    @app.post("/api/recommendation/start")
+    async def fallback_start():
+        return {"message": "你好！我是你的私人阅读顾问。让我们聊聊你的阅读需求。"}
+        
+    @app.get("/recommendation-agent")
+    async def recommendation_agent_page_fallback(request: Request):
+        """引导推荐智能体页面（备用）"""
+        return templates.TemplateResponse(
+            "recommendation_agent.html", {
+                "request": request,
+                "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
+            }
+        )
+
 # -----------------------------------------------------------------------
 # 6. 本地启动命令
 # -----------------------------------------------------------------------

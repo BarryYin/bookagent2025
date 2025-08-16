@@ -69,7 +69,7 @@
                 
                 <!-- 智能体选择按钮 -->
                 <div class="agent-selector">
-                    <button type="button" class="agent-button" data-agent="recommendation" data-translate-key="agentRecommendation">
+                    <button type="button" class="agent-button" data-agent="recommendation" data-translate-key="agentRecommendation" onclick="recommendationUI.toggle()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
@@ -268,6 +268,7 @@
 
     <script src="/static/script.js?v={{ time }}"></script>
     <script src="/static/fix_ppt_gallery.js?v={{ time }}"></script>
+    <script src="/static/recommendation_agent.js?v={{ time }}"></script>
 
     <script>
         // 查看更多PPT功能

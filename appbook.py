@@ -71,6 +71,8 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/podcast_audio", StaticFiles(directory="podcast_audio"), name="podcast_audio")
+app.mount("/covers", StaticFiles(directory="covers"), name="covers")
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 class ChatRequest(BaseModel):
@@ -196,11 +198,8 @@ async def search_book_cover(book_title: str, author: str = None, download: bool 
 def get_default_book_cover(book_title: str) -> str:
     """
     生成默认书籍封面
-    基于书名生成一个简单的封面样式
+    基于书名生成一个美观的默认封面样式
     """
-    # 根据书名长度和内容选择不同的默认样式
-    title_length = len(book_title)
-    
     # 预定义的渐变色方案
     gradients = [
         "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -1315,8 +1314,27 @@ async def save_ppt_to_database(session_id: str, user_id: int, topic: str):
                 data = json.load(f)
             
             book_data = data.get('book_data', {})
-            title = topic
+            title = topic  # 默认使用topic
             author = "未知作者"
+            
+            # 首先尝试从book_data中提取书名
+            if isinstance(book_data, dict):
+                if 'title' in book_data:
+                    title = book_data['title']
+                elif 'book_title' in book_data:
+                    title = book_data['book_title']
+                elif 'raw_content' in book_data:
+                    content_str = str(book_data['raw_content'])
+                    # 尝试从内容中提取书名
+                    title_match = re.search(r'"title":\s*"([^"]+)"', content_str)
+                    if title_match:
+                        title = title_match.group(1)
+                    else:
+                        # 如果没有找到结构化的书名，尝试从topic中提取
+                        if '《' in topic and '》' in topic:
+                            title_match = re.search(r'《([^》]+)》', topic)
+                            if title_match:
+                                title = title_match.group(1)
             
             # 提取作者信息
             if isinstance(book_data, dict):
@@ -1547,7 +1565,9 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             <div class="cover-container">
                 <div class="book-cover">
                     <div class="default-cover">
+                        <div class="default-cover-icon">📚</div>
                         <div class="default-cover-title">{book_title}</div>
+                        <div class="default-cover-subtitle">书籍封面</div>
                     </div>
                 </div>
                 <div class="cover-text">
@@ -1698,20 +1718,48 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             color: white;
             font-weight: 600;
             text-align: center;
-            padding: 40px;
+            padding: 30px;
             box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
         }}
         
         .default-cover::before {{
-            content: "📚";
-            font-size: 4rem;
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }}
+        
+        .default-cover-icon {{
+            font-size: 5rem;
             margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1;
         }}
         
         .default-cover-title {{
-            font-size: 1.5rem;
-            line-height: 1.3;
+            font-size: 1.8rem;
+            line-height: 1.4;
             word-break: break-word;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+            max-width: 100%;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }}
+        
+        .default-cover-subtitle {{
+            font-size: 1rem;
+            margin-top: 10px;
+            opacity: 0.9;
+            z-index: 1;
         }}
         
         /* 引用页特殊样式 */
@@ -3624,6 +3672,99 @@ async def check_book_in_bookshelf(
     except Exception as e:
         print(f"检查书籍是否在书架中失败: {e}")
         return {"in_bookshelf": False}
+
+# -----------------------------------------------------------------------
+# 访谈功能API路由
+# -----------------------------------------------------------------------
+from interview_dialogue import get_dialogue_engine
+from interview_content_processor import get_podcast_generator
+
+class InterviewStartRequest(BaseModel):
+    """访谈开始请求"""
+    book_title: str
+    book_author: str
+    user_intro: str
+
+class InterviewMessageRequest(BaseModel):
+    """访谈消息请求"""
+    session_id: str
+    message: str
+
+class InterviewGenerateRequest(BaseModel):
+    """访谈生成请求"""
+    session_id: str
+
+@app.post("/api/interview/start")
+async def start_interview(request: InterviewStartRequest):
+    """开始访谈"""
+    try:
+        engine = get_dialogue_engine()
+        result = engine.start_interview(
+            request.book_title,
+            request.book_author,
+            request.user_intro
+        )
+        return result
+    except Exception as e:
+        print(f"开始访谈失败: {e}")
+        raise HTTPException(status_code=500, detail="开始访谈失败")
+
+@app.post("/api/interview/message")
+async def send_interview_message(request: InterviewMessageRequest):
+    """发送访谈消息"""
+    try:
+        engine = get_dialogue_engine()
+        result = await engine.process_user_message(
+            request.session_id,
+            request.message
+        )
+        return result
+    except Exception as e:
+        print(f"处理访谈消息失败: {e}")
+        raise HTTPException(status_code=500, detail="处理消息失败")
+
+@app.post("/api/interview/generate-podcast")
+async def generate_interview_podcast(request: InterviewGenerateRequest):
+    """生成访谈播客"""
+    try:
+        generator = get_podcast_generator()
+        result = await generator.generate_podcast_content(request.session_id)
+        return result
+    except Exception as e:
+        print(f"生成播客失败: {e}")
+        raise HTTPException(status_code=500, detail="生成播客失败")
+
+@app.get("/api/interview/session/{session_id}")
+async def get_interview_session(session_id: str):
+    """获取访谈会话信息"""
+    try:
+        from interview_user_model import get_session
+        session = get_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="会话不存在")
+        
+        engine = get_dialogue_engine()
+        summary = engine.get_session_summary(session_id)
+        return summary
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"获取会话信息失败: {e}")
+        raise HTTPException(status_code=500, detail="获取会话信息失败")
+
+@app.get("/interview", response_class=HTMLResponse)
+async def interview_page(request: Request, book_title: str = None, book_author: str = None):
+    """读后感访谈页面"""
+    return templates.TemplateResponse(
+        "interview.html", {
+            "request": request,
+            "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S"),
+            "book_title": book_title,
+            "book_author": book_author,
+            "book_cover": None,
+            "book_description": f"关于《{book_title}》的深度访谈"
+        }
+    )
 
 # -----------------------------------------------------------------------
 # 4. 本地启动命令

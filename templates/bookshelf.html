@@ -239,15 +239,19 @@
                             (ppt.cover_url.startsWith('gradient:') ? 
                                 `<div class="gradient-cover" style="background: ${ppt.cover_url.replace('gradient:', '')}">
                                     <div class="gradient-cover-content">
-                                        <div class="gradient-cover-icon">📖</div>
+                                        <div class="gradient-cover-icon">📚</div>
                                         <div class="gradient-cover-title">${ppt.title}</div>
+                                        <div class="gradient-cover-subtitle">书籍封面</div>
                                     </div>
                                 </div>` :
                                 `<img src="${ppt.cover_url}" alt="${ppt.title}" class="book-cover-image">`
                             ) :
-                            `<div class="fallback-cover">
-                                <div class="fallback-icon">📖</div>
-                                <div class="fallback-title">${ppt.title}</div>
+                            `<div class="gradient-cover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="gradient-cover-content">
+                                    <div class="gradient-cover-icon">📚</div>
+                                    <div class="gradient-cover-title">${ppt.title}</div>
+                                    <div class="gradient-cover-subtitle">书籍封面</div>
+                                </div>
                             </div>`
                         }
                     </div>

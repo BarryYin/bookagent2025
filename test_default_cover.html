@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试默认封面</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 封面页样式 */
+        .cover-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .book-cover {
+            flex-shrink: 0;
+            width: 300px;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: perspective(1000px) rotateY(-15deg);
+            transition: transform 0.3s ease;
+        }
+        
+        .book-cover:hover {
+            transform: perspective(1000px) rotateY(-5deg) scale(1.05);
+        }
+        
+        /* 默认封面样式（当没有真实封面时） */
+        .default-cover {
+            background: linear-gradient(135deg, #8fd3f4 0%, #84fab0 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+        
+        .default-cover::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }
+        
+        .default-cover-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+        
+        .default-cover-title {
+            font-size: 1.8rem;
+            line-height: 1.4;
+            word-break: break-word;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+            max-width: 100%;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        
+        .default-cover-subtitle {
+            font-size: 1rem;
+            margin-top: 10px;
+            opacity: 0.9;
+            z-index: 1;
+        }
+        
+        .cover-text {
+            flex: 1;
+            max-width: 500px;
+            text-align: left;
+        }
+        
+        .cover-text h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .cover-text h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <div class="cover-container">
+                <div class="book-cover">
+                    <div class="default-cover">
+                        <div class="default-cover-icon">📚</div>
+                        <div class="default-cover-title">测试书籍</div>
+                        <div class="default-cover-subtitle">书籍封面</div>
+                    </div>
+                </div>
+                <div class="cover-text">
+                    <h1>测试书籍</h1>
+                    <h2>一本测试用的书籍</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

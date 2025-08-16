@@ -334,6 +334,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // 检查是否为访谈智能体
+        if (currentAgent === 'interview') {
+            // 读后感访谈：解析书籍信息并跳转到访谈页面
+            const parts = topic.split(' ');
+            const bookTitle = parts[0];
+            const bookAuthor = parts.length > 1 ? parts.slice(1).join(' ') : '未知作者';
+            window.location.href = `/interview?book_title=${encodeURIComponent(bookTitle)}&book_author=${encodeURIComponent(bookAuthor)}`;
+            return;
+        }
+
         // 检查用户是否已登录
         const isAuthenticated = await checkUserAuth();
         if (!isAuthenticated) {
@@ -827,11 +837,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 根据智能体类型更新页面状态
         if (agentType === 'recommendation') {
-            // 引导推荐：显示功能开发中提示
-            showComingSoonModal();
+            // 引导推荐：打开引导推荐智能体
+            if (typeof recommendationUI !== 'undefined') {
+                recommendationUI.toggle();
+            } else {
+                // 如果recommendationUI未定义，直接打开推荐页面
+                window.location.href = '/recommendation-agent';
+            }
         } else if (agentType === 'interview') {
-            // 读后感访谈：显示功能开发中提示
-            showComingSoonModal();
+            // 读后感访谈：不需要立即跳转，等待用户输入书名并提交
+            // 移除自动跳转逻辑，改为在表单提交时处理
         } else if (agentType === 'exploration') {
             // 书籍探索：当前功能，不需要特殊处理
         }

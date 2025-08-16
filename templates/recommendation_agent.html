@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>引导推荐 - 私人阅读顾问</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/recommendation_agent.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="recommendation-container">
+        <header class="recommendation-header">
+            <button class="back-button" onclick="window.location.href='/'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"/>
+                    <path d="M12 19l-7-7 7-7"/>
+                </svg>
+                返回首页
+            </button>
+            <h1>私人阅读顾问</h1>
+            <div class="header-info">
+                <span id="session-status">正在分析阅读偏好...</span>
+            </div>
+        </header>
+
+        <main class="recommendation-main">
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message agent-message">
+                        <div class="message-avatar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                                <line x1="9" y1="9" x2="9.01" y2="9"/>
+                                <line x1="15" y1="9" x2="15.01" y2="9"/>
+                            </svg>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-text">你好！我是你的私人阅读顾问。让我先了解一下你的阅读情况...</div>
+                            <div class="message-time">正在加载</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="chat-input" 
+                            placeholder="告诉我你的阅读需求、困惑，或者最近读过的好书..."
+                            rows="1"
+                        ></textarea>
+                        <button id="send-button" class="send-button" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recommendations-panel">
+                <div class="panel-header">
+                    <h3>为你推荐</h3>
+                    <span id="recommendation-count">0本书</span>
+                </div>
+                <div id="recommendations-list" class="recommendations-list">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>正在分析你的阅读偏好...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/recommendation_agent.js"></script>
+    <script>
+        // 初始化推荐会话
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeRecommendationSystem();
+        });
+
+        async function initializeRecommendationSystem() {
+            try {
+                const response = await fetch('/api/recommendation/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addMessage('agent', data.message);
+                    updateUserProfile(data.user_profile);
+                } else {
+                    addMessage('agent', '抱歉，推荐系统暂时无法使用。请稍后再试。');
+                }
+            } catch (error) {
+                console.error('Failed to initialize recommendation system:', error);
+                addMessage('agent', '连接失败，请检查网络后重试。');
+            }
+        }
+
+        function addMessage(type, text) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        ${type === 'agent' ? 
+                            '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>' :
+                            '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'
+                        }
+                    </svg>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">${text}</div>
+                    <div class="message-time">${timeString}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function updateUserProfile(profile) {
+            const statusEl = document.getElementById('session-status');
+            statusEl.textContent = `已分析 ${profile.recent_books.length} 本书的阅读模式`;
+        }
+
+        // 发送消息功能
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.getElementById('send-button').addEventListener('click', sendMessage);
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addMessage('user', message);
+            input.value = '';
+            
+            try {
+                const response = await fetch('/api/recommendation/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        user_id: 1
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addMessage('agent', data.message);
+                    
+                    if (data.recommendations) {
+                        updateRecommendations(data.recommendations);
+                    }
+                } else {
+                    addMessage('agent', '抱歉，暂时无法回复。请稍后再试。');
+                }
+            } catch (error) {
+                console.error('Failed to send message:', error);
+                addMessage('agent', '发送失败，请检查网络后重试。');
+            }
+        }
+
+        function updateRecommendations(recommendations) {
+            const container = document.getElementById('recommendations-list');
+            const countEl = document.getElementById('recommendation-count');
+            
+            container.innerHTML = '';
+            countEl.textContent = `${recommendations.length}本书`;
+            
+            recommendations.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card';
+                bookCard.innerHTML = `
+                    <div class="book-cover">📚</div>
+                    <div class="book-info">
+                        <h4>${book.title}</h4>
+                        <p class="book-author">${book.author}</p>
+                        <p class="book-reason">${book.reason}</p>
+                        <div class="book-meta">
+                            <span class="category-tag">${book.category}</span>
+                            <span class="difficulty-tag">${book.difficulty}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(bookCard);
+            });
+        }
+    </script>
+</body>
+</html>

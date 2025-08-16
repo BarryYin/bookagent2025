@@ -211,7 +211,7 @@
                     </div>
                 `;
             } else {
-                // 使用渐变背景或默认样式
+                // 使用改进的默认封面样式
                 let background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                 if (ppt.cover_url && ppt.cover_url.startsWith('gradient:')) {
                     background = ppt.cover_url.replace('gradient:', '');
@@ -223,19 +223,25 @@
                         'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                         'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
                         'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                        'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+                        'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                        'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                        'linear-gradient(135deg, #ff8a80 0%, #ea4c89 100%)',
+                        'linear-gradient(135deg, #8fd3f4 0%, #84fab0 100%)'
                     ];
                     background = gradients[index % gradients.length];
                 }
 
-                const bookIcons = ['📖', '📚', '📘', '📙', '📗', '📕'];
+                const bookIcons = ['📚', '📖', '📘', '📙', '📗', '📕'];
                 const icon = bookIcons[index % bookIcons.length];
 
                 previewContent = `
-                    <div class="library-card-preview" style="background: ${background};">
-                        <div class="preview-content">
-                            <div class="preview-icon">${icon}</div>
-                            <div class="preview-title">${escapeHtml(ppt.title)}</div>
+                    <div class="library-card-preview">
+                        <div class="gradient-cover" style="background: ${background};">
+                            <div class="gradient-cover-content">
+                                <div class="gradient-cover-icon">${icon}</div>
+                                <div class="gradient-cover-title">${escapeHtml(ppt.title)}</div>
+                                <div class="gradient-cover-subtitle">书籍封面</div>
+                            </div>
                         </div>
                     </div>
                 `;

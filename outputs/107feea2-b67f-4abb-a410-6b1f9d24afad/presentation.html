@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未知书籍 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* 开场页特殊样式 */
+        .slide[data-slide="0"] {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+        }
+        
+        .slide[data-slide="0"] h1 {
+            font-size: 5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 封面页样式 */
+        .cover-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .book-cover {
+            flex-shrink: 0;
+            width: 300px;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: perspective(1000px) rotateY(-15deg);
+            transition: transform 0.3s ease;
+        }
+        
+        .book-cover:hover {
+            transform: perspective(1000px) rotateY(-5deg) scale(1.05);
+        }
+        
+        .cover-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .cover-text {
+            flex: 1;
+            max-width: 500px;
+            text-align: left;
+        }
+        
+        .cover-text h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .cover-text h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        /* 默认封面样式（当没有真实封面时） */
+        .default-cover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+        
+        .default-cover::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }
+        
+        .default-cover-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+        
+        .default-cover-title {
+            font-size: 1.8rem;
+            line-height: 1.4;
+            word-break: break-word;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+            max-width: 100%;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        
+        .default-cover-subtitle {
+            font-size: 1rem;
+            margin-top: 10px;
+            opacity: 0.9;
+            z-index: 1;
+        }
+        
+        /* 引用页特殊样式 */
+        .slide[data-slide="3"] p {
+            font-size: 2rem;
+            font-style: italic;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 4px solid #667eea;
+        }
+        
+        /* 总结页特殊样式 */
+        .slide[data-slide="6"] {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+        
+        .slide h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide h2 {
+            font-size: 2rem;
+            font-weight: 500;
+            color: #86868B;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 1001;
+        }
+        
+        .navigation button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .navigation button:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .navigation button:disabled {
+            background-color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dots {
+            display: flex;
+            margin: 0 20px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.2);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .narration-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 800px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #1D1D1F;
+            z-index: 1000;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }
+        
+        .back-home-button {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-home-button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: translateY(-2px);
+        }
+        
+        .back-home-button svg {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0" data-speech="你有没有这样的感受：每天一睁眼就开始刷手机、回邮件、开无数个会，任务清单永远划不完，但到头来，真正推动你成长的那件事，却被淹没在琐碎之中。我们误以为“忙碌”等于“高效”，却没意识到，真正的突破，从来不是来自四处出击，而是聚焦于那一件真正重要的事。这，就是这个时代最残酷的现实：不是你不够努力，而是你没有把劲儿用对地方。">
+            <div class="cover-container">
+                <div class="book-cover">
+                    <div class="default-cover">
+                        <div class="default-cover-icon">📚</div>
+                        <div class="default-cover-title">未知书籍</div>
+                        <div class="default-cover-subtitle">书籍封面</div>
+                    </div>
+                </div>
+                <div class="cover-text">
+                    <h1 data-speech="我们为何总是忙却不见成效？">我们为何总是忙却不见成效？</h1>
+                    <h2 data-speech="在信息过载的时代中迷失的我们">在信息过载的时代中迷失的我们</h2>
+                </div>
+            </div>
+        </div>
+        <div class="slide " data-slide="1" data-speech="成功不是做更多事，而是持续做对的事。这句话听起来简单，但背后却藏着一个深刻的逻辑：少即是多，慢即是快。你看，那些在职场上如鱼得水、在生活中从容不迫的人，他们不是没有挑战，而是懂得聚焦。他们不会同时追三只兔子，而是把全部精力放在那一只真正能跑赢的兔子身上。这是高效人生的底层逻辑，也是我们接下来要拆解的核心能力模型。">
+            <h1 data-speech="少即是多，慢即是快">少即是多，慢即是快</h1>
+            <h2 data-speech="高效人生的底层逻辑重构">高效人生的底层逻辑重构</h2>
+            <p data-speech="成功不是做更多事，而是持续做对的事。专注力是新时代最稀缺也最重要的能力之一。真正的高手懂得用单点突破代替多线作战。">成功不是做更多事，而是持续做对的事。专注力是新时代最稀缺也最重要的能力之一。真正的高手懂得用单点突破代替多线作战。</p>
+        </div>
+        <div class="slide " data-slide="2" data-speech="我们提出一个简单却极具穿透力的法则——“一件事优先”。怎么用？第一步，明确你今年最重要的那一件事；第二步，把它拆解成季度的关键任务；第三步，每天只锁定唯一优先事项；第四步，屏蔽干扰，进入深度工作状态。听起来是不是不复杂？但它的威力在于：层层聚焦，步步为营。你不是在做任务清单，而是在构建你的成果金字塔。">
+            <h1 data-speech="「一件事优先」法则的实践路径">「一件事优先」法则的实践路径</h1>
+            <h2 data-speech="如何构建你的关键成果金字塔？">如何构建你的关键成果金字塔？</h2>
+            <p data-speech="['第一步：明确年度核心目标', '第二步：拆解季度关键任务', '第三步：每日锁定唯一优先事项', '第四步：屏蔽干扰，进入深度工作状态']">['第一步：明确年度核心目标', '第二步：拆解季度关键任务', '第三步：每日锁定唯一优先事项', '第四步：屏蔽干扰，进入深度工作状态']</p>
+        </div>
+        <div class="slide " data-slide="3" data-speech="行为科学研究显示：大脑在切换任务时，效率损失高达40%；而进入深度工作状态，创造力可以提升3倍以上。更关键的是，当我们专注在单一目标上时，更容易进入心流状态，那种“时间变快、效率翻倍”的体验，你一定不陌生。此外，清晰的目标优先级还能减少决策疲劳，让你在关键时刻做出更明智的选择。这些，都是专注力训练背后的五大底层逻辑。">
+            <h1 data-speech="专注力训练的五大底层逻辑">专注力训练的五大底层逻辑</h1>
+            <h2 data-speech="行为科学告诉你为什么这样做有效">行为科学告诉你为什么这样做有效</h2>
+            <p data-speech="['1. 注意力有限性原理：大脑无法长期并行处理多项复杂任务', '2. 成果递减效应：切换任务会损失40%以上效率', '3. 深度工作优势：专注状态下创造力提升3倍以上', '4. 心流机制：单一目标更容易激发最佳表现状态', '5. 目标锚定效应：清晰优先级减少决策疲劳']">['1. 注意力有限性原理：大脑无法长期并行处理多项复杂任务', '2. 成果递减效应：切换任务会损失40%以上效率', '3. 深度工作优势：专注状态下创造力提升3倍以上', '4. 心流机制：单一目标更容易激发最佳表现状态', '5. 目标锚定效应：清晰优先级减少决策疲劳']</p>
+        </div>
+        <div class="slide " data-slide="4" data-speech="现在，就请你立刻行动起来。第一步，拿出一张纸，写下你今年最重要的那一件事；第二步，每天早上列出三项任务，但只完成第一项；第三步，设置一个90分钟的专注时段，关闭所有通知，全身心投入。听起来不难，但难的是坚持。这三步，不是任务清单，而是你构建“一件事系统”的起点。当你真正开始这样做，你会发现，效率提升只是一个开始，真正的改变，是从内而外的。">
+            <h1 data-speech="从今天开始改变">从今天开始改变</h1>
+            <h2 data-speech="三步打造你的“一件事系统”">三步打造你的“一件事系统”</h2>
+            <p data-speech="['✅ 第一步：写下你今年最重要的那一件事', '✅ 第二步：每天早上列出三项任务，只完成第一项', '✅ 第三步：设置专注时段，关闭所有通知，沉浸工作90分钟']">['✅ 第一步：写下你今年最重要的那一件事', '✅ 第二步：每天早上列出三项任务，只完成第一项', '✅ 第三步：设置专注时段，关闭所有通知，沉浸工作90分钟']</p>
+        </div>
+        <div class="slide " data-slide="5" data-speech="你会发现，工作节奏更清晰，成果产出更稳定；决策压力显著降低，精力分配更合理；长期积累形成正向循环，实现跨越式成长。甚至在组织层面，也能推动资源聚焦，提升整体效能。这不是一种技巧，而是一场思维系统的革命。当你从“做很多”转向“做一件”，你就从被动应付，走向了主动掌控。这就是聚焦的力量，这就是效率的底层逻辑。">
+            <h1 data-speech="聚焦一件事，改变整个系统">聚焦一件事，改变整个系统</h1>
+            <h2 data-speech="学以致用的价值体现">学以致用的价值体现</h2>
+            <p data-speech="当你真正掌握「一件事优先」的原则后，你会发现：
+
+• 工作节奏更清晰，成果产出更稳定
+• 决策压力显著降低，精力分配更合理
+• 长期积累形成正向循环，实现跨越式成长
+• 组织层面也能推动资源聚焦，提升整体效能">当你真正掌握「一件事优先」的原则后，你会发现：
+
+• 工作节奏更清晰，成果产出更稳定
+• 决策压力显著降低，精力分配更合理
+• 长期积累形成正向循环，实现跨越式成长
+• 组织层面也能推动资源聚焦，提升整体效能</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">6</span>
+    </div>
+    
+    <button class="back-home-button" onclick="goBackHome()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/>
+            <path d="M12 19l-7-7 7-7"/>
+        </svg>
+        返回首页
+    </button>
+    
+    <div class="navigation">
+        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
+    </div>
+    
+    <div class="narration-panel" id="narrationPanel">
+        <strong>解说词：</strong><br>
+        你有没有这样的感受：每天一睁眼就开始刷手机、回邮件、开无数个会，任务清单永远划不完，但到头来，真正推动你成长的那件事，却被淹没在琐碎之中。我们误以为“忙碌”等于“高效”，却没意识到，真正的突破，从来不是来自四处出击，而是聚焦于那一件真正重要的事。这，就是这个时代最残酷的现实：不是你不够努力，而是你没有把劲儿用对地方。
+    </div>
+    
+    <script>
+        // 解说词数据
+        const narrations = [
+        "你有没有这样的感受：每天一睁眼就开始刷手机、回邮件、开无数个会，任务清单永远划不完，但到头来，真正推动你成长的那件事，却被淹没在琐碎之中。我们误以为“忙碌”等于“高效”，却没意识到，真正的突破，从来不是来自四处出击，而是聚焦于那一件真正重要的事。这，就是这个时代最残酷的现实：不是你不够努力，而是你没有把劲儿用对地方。",
+        "成功不是做更多事，而是持续做对的事。这句话听起来简单，但背后却藏着一个深刻的逻辑：少即是多，慢即是快。你看，那些在职场上如鱼得水、在生活中从容不迫的人，他们不是没有挑战，而是懂得聚焦。他们不会同时追三只兔子，而是把全部精力放在那一只真正能跑赢的兔子身上。这是高效人生的底层逻辑，也是我们接下来要拆解的核心能力模型。",
+        "我们提出一个简单却极具穿透力的法则——“一件事优先”。怎么用？第一步，明确你今年最重要的那一件事；第二步，把它拆解成季度的关键任务；第三步，每天只锁定唯一优先事项；第四步，屏蔽干扰，进入深度工作状态。听起来是不是不复杂？但它的威力在于：层层聚焦，步步为营。你不是在做任务清单，而是在构建你的成果金字塔。",
+        "行为科学研究显示：大脑在切换任务时，效率损失高达40%；而进入深度工作状态，创造力可以提升3倍以上。更关键的是，当我们专注在单一目标上时，更容易进入心流状态，那种“时间变快、效率翻倍”的体验，你一定不陌生。此外，清晰的目标优先级还能减少决策疲劳，让你在关键时刻做出更明智的选择。这些，都是专注力训练背后的五大底层逻辑。",
+        "现在，就请你立刻行动起来。第一步，拿出一张纸，写下你今年最重要的那一件事；第二步，每天早上列出三项任务，但只完成第一项；第三步，设置一个90分钟的专注时段，关闭所有通知，全身心投入。听起来不难，但难的是坚持。这三步，不是任务清单，而是你构建“一件事系统”的起点。当你真正开始这样做，你会发现，效率提升只是一个开始，真正的改变，是从内而外的。",
+        "你会发现，工作节奏更清晰，成果产出更稳定；决策压力显著降低，精力分配更合理；长期积累形成正向循环，实现跨越式成长。甚至在组织层面，也能推动资源聚焦，提升整体效能。这不是一种技巧，而是一场思维系统的革命。当你从“做很多”转向“做一件”，你就从被动应付，走向了主动掌控。这就是聚焦的力量，这就是效率的底层逻辑。",
+    ];
+        
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const dotsContainer = document.getElementById('dotsContainer');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const narrationPanel = document.getElementById('narrationPanel');
+        const currentSlideNum = document.getElementById('currentSlideNum');
+        const totalSlideNum = document.getElementById('totalSlideNum');
+        
+        // 初始化
+        totalSlideNum.textContent = totalSlides;
+        
+        // 生成导航点
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => showSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        
+        function showSlide(n) {
+            // 边界检查
+            if (n < 0 || n >= totalSlides) return;
+            
+            // 移除所有活动状态
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 设置当前页面
+            slides[n].classList.add('active');
+            currentSlide = n;
+            
+            // 更新UI
+            updateNarration(n);
+            updateDots(n);
+            updateNavigationButtons();
+            updateSlideCounter(n);
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function updateNavigationButtons() {
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function updateDots(n) {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === n);
+            });
+        }
+        
+        function updateNarration(slideIndex) {
+            if (narrations[slideIndex]) {
+                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${narrations[slideIndex]}`;
+            }
+        }
+        
+        function updateSlideCounter(n) {
+            currentSlideNum.textContent = n + 1;
+        }
+        
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevSlide();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    showSlide(totalSlides - 1);
+                    break;
+            }
+        });
+        
+        // 返回首页函数
+        function goBackHome() {
+            // 返回到主应用页面
+            window.location.href = '/';
+        }
+        
+        // 初始化显示
+        updateNavigationButtons();
+        console.log('PPT初始化完成，共', totalSlides, '页');
+    </script>
+</body>
+</html>

@@ -32,6 +32,256 @@
             background: var(--bg-primary);
         }
         
+        .input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        
+        .input-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .input-suggestions.show {
+            display: block;
+        }
+        
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .suggestion-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        #send-button {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .button-loading {
+            display: none;
+        }
+        
+        .loading #send-button .button-text {
+            display: none;
+        }
+        
+        .loading #send-button .button-loading {
+            display: inline;
+        }
+        
+        .message typing {
+            opacity: 0.7;
+        }
+        
+        .message .typing-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        .podcast-script {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .podcast-script h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .podcast-script h4 {
+            margin: 15px 0 10px 0;
+            color: #555;
+            font-size: 16px;
+        }
+        
+        .podcast-script pre {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .stage-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        
+        .stage-ice_break {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .stage-deep_dive {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .stage-perspective_clash {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .stage-creative_inspiration {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+        
+        .chat-message {
+            margin: 15px 0;
+            padding: 0 20px;
+        }
+        
+        .message-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .message-bubble {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+        
+        .chat-message.user .message-avatar {
+            background: #007bff;
+            color: white;
+        }
+        
+        .chat-message.user .message-bubble {
+            background: #007bff;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .chat-message.assistant .message-avatar {
+            background: #28a745;
+            color: white;
+        }
+        
+        .chat-message.assistant .message-bubble {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .chat-message.system .message-avatar {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .chat-message.system .message-bubble {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #e9ecef;
+            font-style: italic;
+            font-size: 14px;
+        }
+        
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #007bff;
+            animation: loading 1.4s infinite;
+        }
+        
+        .loading-dots span:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes loading {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
         .interview-header {
             padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border-color);
@@ -283,8 +533,14 @@
             
             <div class="interview-input">
                 <form class="interview-form" id="interview-form">
-                    <input type="text" id="interview-input" placeholder="分享你的读后感或提出问题..." autocomplete="off" required>
-                    <button type="submit" id="send-button">发送</button>
+                    <div class="input-wrapper">
+                        <input type="text" id="interview-input" placeholder="分享你的读后感或提出问题..." autocomplete="off" required>
+                        <div class="input-suggestions" id="input-suggestions"></div>
+                    </div>
+                    <button type="submit" id="send-button">
+                        <span class="button-text">发送</span>
+                        <span class="button-loading" style="display: none;">发送中...</span>
+                    </button>
                 </form>
             </div>
         </div>
@@ -326,13 +582,50 @@
         
         let bookTitle = "{{ book_title or '' }}";
         let bookAuthor = "{{ book_author or '' }}";
+        let currentSessionId = null;
         let isLoading = false;
         
         // 添加消息到聊天区域
-        function addMessage(content, type = 'user') {
+        function addMessage(content, type = 'user', stage = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${type}`;
-            messageDiv.textContent = content;
+            
+            let stageIndicator = '';
+            if (stage && type === 'assistant') {
+                const stageClass = `stage-${stage}`;
+                const stageNames = {
+                    'ice_break': '破冰',
+                    'deep_dive': '深挖',
+                    'perspective_clash': '碰撞',
+                    'creative_inspiration': '创作'
+                };
+                const stageName = stageNames[stage] || stage;
+                stageIndicator = `<span class="stage-indicator ${stageClass}">${stageName}</span>`;
+            }
+            
+            if (type === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-avatar">👤</div>
+                        <div class="message-bubble">${content}</div>
+                    </div>
+                `;
+            } else if (type === 'assistant') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-avatar">🎙️</div>
+                        <div class="message-bubble">${content}${stageIndicator}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-avatar">📝</div>
+                        <div class="message-bubble system">${content}</div>
+                    </div>
+                `;
+            }
+            
             interviewChat.appendChild(messageDiv);
             interviewChat.scrollTop = interviewChat.scrollHeight;
         }
@@ -365,7 +658,7 @@
         // 发送消息
         async function sendMessage() {
             const message = interviewInput.value.trim();
-            if (!message || isLoading) return;
+            if (!message || isLoading || !currentSessionId) return;
             
             // 清空输入框
             interviewInput.value = '';
@@ -379,16 +672,14 @@
             sendButton.disabled = true;
             
             try {
-                const response = await fetch('/api/interview-chat', {
+                const response = await fetch('/api/interview/message', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        message: message,
-                        book_title: bookTitle,
-                        book_author: bookAuthor,
-                        history: getChatHistory()
+                        session_id: currentSessionId,
+                        message: message
                     })
                 });
                 
@@ -401,8 +692,14 @@
                 // 移除加载指示器
                 removeLoadingIndicator();
                 
-                if (data.success) {
-                    addMessage(data.response, 'assistant');
+                if (data.response) {
+                    addMessage(data.response, 'assistant', data.stage);
+                    
+                    // 检查是否需要显示播客按钮
+                    const messageCount = interviewChat.querySelectorAll('.chat-message').length;
+                    if (messageCount >= 6 && !document.querySelector('button[onclick="generatePodcast()"]')) {
+                        addPodcastButton();
+                    }
                 } else {
                     addMessage('抱歉，出现了错误，请稍后重试。', 'system');
                 }
@@ -440,12 +737,169 @@
             sendMessage();
         });
         
-        // 清空初始状态
-        document.addEventListener('DOMContentLoaded', () => {
-            const emptyState = interviewChat.querySelector('.empty-state');
-            if (emptyState) {
-                emptyState.style.display = 'none';
+        // 初始化访谈会话
+        async function initializeInterview() {
+            if (!bookTitle) {
+                addMessage('请先选择一本书籍进行访谈', 'system');
+                return;
             }
+            
+            try {
+                const response = await fetch('/api/interview/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        book_title: bookTitle,
+                        book_author: bookAuthor,
+                        user_intro: '我想分享我的读后感'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to start interview');
+                }
+                
+                const data = await response.json();
+                currentSessionId = data.session_id;
+                
+                // 添加开场白
+                addMessage(data.opening_message, 'assistant', data.stage);
+                
+                // 清空初始状态
+                const emptyState = interviewChat.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Error initializing interview:', error);
+                addMessage('初始化访谈失败，请刷新页面重试', 'system');
+            }
+        }
+        
+        // 生成播客
+        async function generatePodcast() {
+            if (!currentSessionId) {
+                addMessage('请先进行一些对话再生成播客', 'system');
+                return;
+            }
+            
+            try {
+                addMessage('正在生成播客内容...', 'system');
+                
+                const response = await fetch('/api/interview/generate-podcast', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to generate podcast');
+                }
+                
+                const data = await response.json();
+                
+                if (data.podcast_structure) {
+                    addMessage(`播客生成完成！标题：${data.podcast_structure.title}`, 'system');
+                    addMessage(`总时长：${Math.floor(data.podcast_structure.total_duration / 60)}分${data.podcast_structure.total_duration % 60}秒`, 'system');
+                    
+                    // 显示播客内容（包含音频）
+                    displayPodcastContent(data.podcast_script, data.audio_generation);
+                }
+                
+            } catch (error) {
+                console.error('Error generating podcast:', error);
+                addMessage('生成播客失败，请稍后重试', 'system');
+            }
+        }
+        
+        // 显示播客内容
+        function displayPodcastContent(script, audioData = null) {
+            const scriptDiv = document.createElement('div');
+            scriptDiv.className = 'podcast-script';
+            
+            let audioHtml = '';
+            if (audioData && audioData.merged_audio) {
+                audioHtml = `
+                    <div class="podcast-audio-player" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <h4>🎵 播客音频</h4>
+                        <audio controls style="width: 100%; margin: 10px 0;">
+                            <source src="/${audioData.merged_audio}" type="audio/mpeg">
+                            您的浏览器不支持音频播放。
+                        </audio>
+                        <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                            总时长：${Math.floor(audioData.total_duration / 60)}分${audioData.total_duration % 60}秒
+                        </div>
+                    </div>
+                `;
+            }
+            
+            scriptDiv.innerHTML = `
+                <h3>🎙️ 播客内容</h3>
+                ${audioHtml}
+                <div class="script-content">
+                    <h4>播客脚本</h4>
+                    <pre>${script}</pre>
+                </div>
+                <div class="download-buttons" style="margin-top: 15px;">
+                    <button onclick="downloadPodcastScript()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">下载脚本</button>
+                    ${audioData && audioData.merged_audio ? `<a href="/${audioData.merged_audio}" download style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block;">下载音频</a>` : ''}
+                </div>
+            `;
+            interviewChat.appendChild(scriptDiv);
+            interviewChat.scrollTop = interviewChat.scrollHeight;
+        }
+        
+        // 下载播客脚本
+        function downloadPodcastScript() {
+            const scriptElement = document.querySelector('.podcast-script pre');
+            if (scriptElement) {
+                const blob = new Blob([scriptElement.textContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${bookTitle}_播客脚本.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // 添加播客生成按钮
+        function addPodcastButton() {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.marginTop = '20px';
+            buttonContainer.style.textAlign = 'center';
+            buttonContainer.innerHTML = `
+                <button onclick="generatePodcast()" style="padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                    🎙️ 生成播客
+                </button>
+            `;
+            interviewChat.appendChild(buttonContainer);
+        }
+        
+        // 事件监听
+        interviewForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            sendMessage();
+        });
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeInterview();
+            
+            // 在对话几次后显示播客按钮
+            setTimeout(() => {
+                const messageCount = interviewChat.querySelectorAll('.chat-message').length;
+                if (messageCount >= 6) {
+                    addPodcastButton();
+                }
+            }, 1000);
         });
     </script>
 </body>

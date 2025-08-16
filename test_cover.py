@@ -113,6 +113,80 @@ async def search_douban_books(book_title: str, author: str = None):
         print(f"❌ 豆瓣搜索失败: {e}")
         return None
 
+async def search_open_library(book_title: str, author: str = None):
+    """使用Open Library API搜索书籍封面"""
+    try:
+        async with httpx.AsyncClient() as client:
+            # 构建搜索查询
+            query_parts = []
+            if book_title:
+                query_parts.append(f'title:"{book_title}"')
+            if author:
+                query_parts.append(f'author:"{author}"')
+            
+            query = " AND ".join(query_parts) if query_parts else book_title
+            url = "https://openlibrary.org/search.json"
+            params = {
+                "q": query,
+                "limit": 10
+            }
+            
+            print(f"📚 Open Library搜索: {query}")
+            
+            response = await client.get(url, params=params, timeout=10.0)
+            
+            if response.status_code == 200:
+                data = response.json()
+                docs = data.get("docs", [])
+                print(f"📚 Open Library找到 {len(docs)} 本书")
+                
+                best_match = None
+                best_score = 0
+                
+                for doc in docs:
+                    title = doc.get('title', '')
+                    authors = doc.get('author_name', [])
+                    author_name = authors[0] if authors else ''
+                    cover_id = doc.get('cover_i')
+                    
+                    print(f"  📖 {title} - {author_name}")
+                    
+                    if cover_id:
+                        # 构建封面URL
+                        cover_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+                        
+                        # 检查是否更好的匹配
+                        is_better, score = is_better_match(
+                            {'title': title, 'authors': authors}, 
+                            book_title, 
+                            author, 
+                            best_score
+                        )
+                        
+                        if is_better:
+                            best_score = score
+                            best_match = {
+                                'title': title,
+                                'author': author_name,
+                                'cover_url': cover_url,
+                                'score': score
+                            }
+                            print(f"    🎯 新的最佳匹配 (相似度: {score:.2f})")
+                        else:
+                            print(f"    📊 相似度: {score:.2f}")
+                    else:
+                        print(f"    ❌ 无封面图片")
+                
+                return best_match
+            else:
+                print(f"❌ Open Library API请求失败: {response.status_code}")
+                return None
+                
+    except Exception as e:
+        print(f"❌ Open Library搜索失败: {e}")
+        return None
+
+
 async def search_google_books(book_title: str, author: str = None):
     """使用Google Books API搜索"""
     try:
@@ -368,7 +442,44 @@ async def search_book_cover(book_title: str, author: str = None, download: bool 
                 else:
                     return cover_url
         
-        print("❌ 两个API都没有找到足够匹配的书籍封面")
+        # 如果前两个API都没有找到好的结果，尝试Open Library
+        print("\n📚 尝试Open Library API...")
+        open_library_result = await search_open_library(book_title, author)
+        
+        if open_library_result and open_library_result['score'] > 0.2:
+            print(f"\n🎯 Open Library找到最佳匹配:")
+            print(f"   📖 书名: {open_library_result['title']}")
+            print(f"   ✍️ 作者: {open_library_result['author']}")
+            print(f"   📊 相似度: {open_library_result['score']:.2f}")
+            
+            cover_url = open_library_result['cover_url']
+            print(f"✅ 找到封面URL: {cover_url}")
+            
+            if download:
+                # 生成文件名
+                safe_title = "".join(c for c in book_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                safe_author = "".join(c for c in (author or "") if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                
+                # 从URL获取文件扩展名
+                parsed_url = urlparse(cover_url)
+                path = parsed_url.path
+                ext = os.path.splitext(path)[1]
+                if not ext:
+                    ext = '.jpg'  # 默认扩展名
+                
+                filename = f"{safe_title}_{safe_author}{ext}".replace(' ', '_')
+                save_path = os.path.join("covers", filename)
+                
+                # 下载图片
+                if await download_image(cover_url, save_path):
+                    return save_path
+                else:
+                    print("⚠️ 下载失败，返回URL")
+                    return cover_url
+            else:
+                return cover_url
+        
+        print("❌ 三个API都没有找到足够匹配的书籍封面")
         
     except Exception as e:
         print(f"❌ 搜索书籍封面失败: {e}")
