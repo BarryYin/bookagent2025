@@ -302,6 +302,7 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     flex: 1; /* 占据剩余空间 */
     text-align: center;
     margin-bottom: 4rem; /* 增加与PPT区域的间距 */
+    padding-top: 4rem; /* 增加与顶部的区隔 */
 }
 .hero-group { 
     text-align: center; 
@@ -1486,6 +1487,28 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
 
 .create-first-btn:hover, .retry-btn:hover {
     background: #0070E0;
+}
+
+.create-first-btn.primary {
+    background: #28a745;
+    margin-right: 0.5rem;
+}
+
+.create-first-btn.primary:hover {
+    background: #218838;
+}
+
+.create-first-btn.secondary {
+    background: #6c757d;
+    margin-left: 0.5rem;
+}
+
+.create-first-btn.secondary:hover {
+    background: #5a6268;
+}
+
+.empty-actions {
+    margin-top: 1rem;
 }
 
 /* 响应式设计 */

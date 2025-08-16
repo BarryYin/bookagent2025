@@ -668,6 +668,13 @@
             initializeMethodologies();
             initializeStyleOptions();
             updateProgressIndicator();
+            
+            // 检查URL参数中的书籍名称
+            const urlParams = new URLSearchParams(window.location.search);
+            const bookParam = urlParams.get('book');
+            if (bookParam) {
+                document.getElementById('bookTitle').value = bookParam;
+            }
         });
 
         // 检查用户认证状态

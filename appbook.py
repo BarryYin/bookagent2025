@@ -150,6 +150,28 @@ except ImportError as e:
     def get_categories_summary():
         return {}
 
+    def search_books_by_keyword(keyword: str):
+        """搜索书籍的兼容性函数"""
+        try:
+            # 如果导入了真正的函数，使用它
+            from book_category_manager import search_books_by_keyword as real_search
+            return real_search(keyword)
+        except ImportError:
+            # 否则返回所有书籍并过滤
+            all_books = get_all_books_with_categories()
+            if not keyword:
+                return all_books
+            
+            keyword_lower = keyword.lower()
+            filtered_books = []
+            for book in all_books:
+                # 搜索标题、作者或描述
+                if (keyword_lower in book.get('title', '').lower() or 
+                    keyword_lower in book.get('author', '').lower() or 
+                    keyword_lower in book.get('description', '').lower()):
+                    filtered_books.append(book)
+            return filtered_books
+
 async def search_book_cover(book_title: str, author: str = None, download: bool = True) -> str:
     """
     搜索书籍封面图片
@@ -3278,6 +3300,16 @@ async def recommendations_page(request: Request):
         }
     )
 
+@app.get("/recommendation-agent", response_class=HTMLResponse)
+async def recommendation_agent_page(request: Request):
+    """引导推荐代理页面"""
+    return templates.TemplateResponse(
+        "recommendation_agent.html", {
+            "request": request,
+            "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
+        }
+    )
+
 @app.get("/api/user-ppts")
 async def get_user_ppts(
     request: Request,
@@ -3337,6 +3369,83 @@ async def get_recommendations(request: Request, limit: int = 10):
     except Exception as e:
         print(f"获取推荐失败: {e}")
         return {"recommendations": []}
+
+@app.get("/api/books/search")
+async def search_books_api(title: str = None, author: str = None, search: str = None):
+    """书籍搜索API"""
+    try:
+        # 构建搜索关键词
+        search_term = search or ""
+        if title:
+            search_term += f" {title}"
+        if author:
+            search_term += f" {author}"
+        
+        search_term = search_term.strip()
+        
+        if search_term:
+            books = search_books_by_keyword(search_term)
+        else:
+            books = get_all_books_with_categories()
+        
+        return {
+            "success": True,
+            "books": books,
+            "total": len(books)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "books": []
+        }
+
+@app.post("/api/recommendation/start")
+async def start_recommendation_session(request: Request):
+    """开始引导推荐会话"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        # 这里可以集成 guided_recommendation_agent.py 的功能
+        # 目前返回基本响应
+        return {
+            "success": True,
+            "message": "你好！我是你的私人阅读顾问。让我先了解一下你的阅读情况...",
+            "user_profile": {
+                "reading_frequency": "未知",
+                "preferred_categories": [],
+                "current_life_stage": "分析中"
+            },
+            "user_info": {
+                "username": user.username,
+                "id": user.id
+            }
+        }
+    except Exception as e:
+        print(f"启动推荐会话失败: {e}")
+        raise HTTPException(status_code=500, detail="启动推荐会话失败")
+
+@app.get("/api/user")
+async def get_current_user_info(request: Request):
+    """获取当前用户信息"""
+    try:
+        user = await get_current_user(request)
+        if user:
+            return {
+                "success": True,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": getattr(user, 'email', '')
+                }
+            }
+        else:
+            return {"success": False, "user": None}
+    except Exception as e:
+        print(f"获取用户信息失败: {e}")
+        return {"success": False, "error": str(e)}
 
 @app.get("/api/user-preferences")
 async def get_user_preferences(request: Request):

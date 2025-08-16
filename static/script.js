@@ -11,17 +11,17 @@ document.addEventListener('DOMContentLoaded', () => {
         officialWebsite: { zh: "通向 AGI 之路社区", en: "WaytoAGI Open Source Community" },
         groupChat: { zh: "联系我们/加入交流群", en: "Contact Us" },
         agentRecommendation: { zh: "引导推荐", en: "Guided Recommendation" },
-        agentExploration: { zh: "书籍探索", en: "Book Exploration" },
+        agentLibrary: { zh: "图书馆搜索", en: "Library Search" },
         agentInterview: { zh: "读后感访谈", en: "Reading Interview" },
         placeholders: {
             zh: {
                 recommendation: ["推荐一些适合我的书", "我想读一些科幻小说", "有什么励志类的书籍"],
-                exploration: ["微积分的几何原理", "冒泡排序", "热寂", "黑洞是如何形成的"],
+                library: ["边城", "平凡的世界", "三体", "活着", "百年孤独"],
                 interview: ["我刚读完《三体》", "分享我对《活着》的感受", "讨论《百年孤独》的主题"]
             },
             en: {
                 recommendation: ["Recommend some books for me", "I want to read sci-fi novels", "Any inspirational books?"],
-                exploration: ["What is Heat Death?", "How are black holes formed?", "What is Bubble Sort?"],
+                library: ["Border Town", "The Three-Body Problem", "To Live", "One Hundred Years of Solitude"],
                 interview: ["I just finished 'The Three-Body Problem'", "Share my thoughts on 'To Live'", "Discuss themes in 'One Hundred Years of Solitude'"]
             }
         },
@@ -341,6 +341,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const bookTitle = parts[0];
             const bookAuthor = parts.length > 1 ? parts.slice(1).join(' ') : '未知作者';
             window.location.href = `/interview?book_title=${encodeURIComponent(bookTitle)}&book_author=${encodeURIComponent(bookAuthor)}`;
+            return;
+        }
+
+        // 检查是否为图书馆搜索智能体
+        if (currentAgent === 'library') {
+            // 图书馆搜索：搜索书籍并跳转到图书馆页面
+            window.location.href = `/library?search=${encodeURIComponent(topic)}`;
             return;
         }
 
@@ -772,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let placeholderIndex = 0;
-    let currentAgent = 'exploration'; // 默认智能体：书籍探索
+    let currentAgent = 'library'; // 默认智能体：图书馆搜索
 
     function init() {
         // 智能体按钮事件监听
@@ -847,8 +854,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (agentType === 'interview') {
             // 读后感访谈：不需要立即跳转，等待用户输入书名并提交
             // 移除自动跳转逻辑，改为在表单提交时处理
-        } else if (agentType === 'exploration') {
-            // 书籍探索：当前功能，不需要特殊处理
+        } else if (agentType === 'library') {
+            // 图书馆搜索：当前功能，不需要特殊处理
         }
         
         // 更新输入框占位符

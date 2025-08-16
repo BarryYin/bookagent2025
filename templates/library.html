@@ -109,7 +109,15 @@
 
         // 图书馆页面初始化
         document.addEventListener('DOMContentLoaded', function() {
-            loadLibraryPagePPTs();
+            // 检查URL参数中的搜索词
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchParam = urlParams.get('search');
+            if (searchParam) {
+                currentSearch = searchParam;
+                document.getElementById('search-input').value = searchParam;
+            }
+            
+            loadLibraryPagePPTs(currentPage, currentCategory, currentSearch);
             
             // 刷新按钮事件
             document.getElementById('refresh-library').addEventListener('click', function() {
