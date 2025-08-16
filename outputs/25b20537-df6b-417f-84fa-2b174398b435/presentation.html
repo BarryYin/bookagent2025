@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未知书籍 - Bookagent 智能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, 
+                #667eea 0%, 
+                #764ba2 25%, 
+                #f093fb 50%, 
+                #f5576c 75%, 
+                #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .presentation-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        /* 左侧导航 */
+        .nav-sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-section {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-button {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button.playing {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .slide-counter {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: auto;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .slide-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .slide {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 60px;
+            max-width: 900px;
+            width: 100%;
+            min-height: 600px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .slide h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            text-align: center;
+            line-height: 1.3;
+            font-weight: 600;
+        }
+
+        .slide h2 {
+            font-size: 2em;
+            margin-bottom: 25px;
+            color: #34495e;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .slide p {
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: #555;
+            text-align: justify;
+        }
+
+        .slide ul {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+
+        .slide li {
+            font-size: 1.1em;
+            line-height: 1.7;
+            margin-bottom: 12px;
+            color: #666;
+        }
+
+        /* 右侧导航 */
+        .nav-right {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-arrow {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-size: 20px;
+            margin: 0 auto;
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 字幕区域 */
+        .narration-display {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            color: #FFD700;
+            padding: 25px 40px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.6;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .sentence {
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            font-weight: 500;
+        }
+
+        .sentence.active {
+            opacity: 1;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .nav-sidebar {
+                width: 200px;
+            }
+            
+            .slide {
+                padding: 40px;
+                max-width: 700px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .presentation-container {
+                flex-direction: column;
+            }
+            
+            .nav-sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 15px;
+            }
+            
+            .nav-right {
+                width: 100%;
+                flex-direction: row;
+                justify-content: center;
+                height: auto;
+                padding: 15px;
+            }
+            
+            .slide {
+                padding: 30px;
+                margin: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 左侧导航栏 -->
+        <div class="nav-sidebar">
+            <div class="logo-section">
+                <div class="logo-title">Bookagent</div>
+            </div>
+            
+            <button id="playPauseButton" class="nav-button" onclick="toggleAudio()">
+                🔊 播放解说
+            </button>
+            
+            <button id="backButton" class="nav-button" onclick="goBack()" style="background: rgba(255, 255, 255, 0.2);">
+                ← 返回主页
+            </button>
+            
+            <div class="slide-counter">
+                <div id="slideCounter">第 1 页 / 8 页</div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="slide-container">
+                
+                <div class="slide active" data-speech="在毛姆的《面纱》中，我们看到一个名叫凯蒂的女子，在虚荣与爱情之间迷失，最终被迫直面内心的真实。就像许多现代人一样，她在婚姻中寻找依靠，却发现自己不过是活在一个幻梦里。你有没有戴过面纱？那层面纱不是别人强加给你的，而是你自己选择披上的，因为真实的自己太难面对了。">
+                    <h1>你有没有戴过面纱？</h1>
+                    <p>每个人都在生活中戴着面具，害怕被看见真实的自己。今天，我们从毛姆的《面纱》中，一起寻找撕下面具后的勇气。</p>
+                </div>
+                <div class="slide " data-speech="就像凯蒂一样，我也曾在别人的期待里挣扎。我问自己：我是谁？我想成为什么样的人？毛姆笔下的凯蒂，从一场婚姻的幻梦中醒来，才开始真正认识自己。她不是一开始就是英雄，她是在痛苦中蜕变的普通人。这本书让我明白，真正的自由，是从认识自己开始的。">
+                    <h2>我也曾活在别人的期待里</h2>
+                    <p>就像凯蒂一样，我也曾为了迎合别人而迷失自己。直到有一天我问自己：我是谁？我想成为什么样的人？这本书让我明白，真正的自由，是从认识自己开始。</p>
+                </div>
+                <div class="slide " data-speech="凯蒂的故事，不是一段简单的婚外情，而是一个女人的英雄之旅。她因为背叛婚姻，随丈夫前往霍乱肆虐的中国疫区。在那里，她不再有华丽的裙子、虚伪的社交，只有生死之间的抉择。这不是命运的惩罚，而是灵魂的试炼。毛姆用冷静的笔触告诉我们：真正的成长，往往始于最痛苦的选择。">
+                    <h2>一场霍乱中的爱情试炼</h2>
+                    <p>一个英国女子因背叛婚姻随夫远赴中国疫区，在生死边缘重新审视自我。这不是一段普通的情感纠葛，而是一个女人如何从虚荣走向真实的成长史诗。</p>
+                </div>
+                <div class="slide " data-speech="屋檐下，雨水打湿了她的裙摆，也冲刷着她内心的虚伪。她终于明白，自己一直活在别人的眼光里，却从未正视过自己的内心。那一刻，她不是被审判的罪人，而是被唤醒的灵魂。就像古人说的，“知耻而后勇”，真正的勇气，是从承认自己的不完美开始的。">
+                    <h2>那场雨中的对话</h2>
+                    <p>在霍乱肆虐的夜晚，凯蒂和丈夫站在屋檐下，雨水打湿了她的裙摆，也冲刷着她内心的虚伪。这是她第一次真正看见自己的渺小与自私。</p>
+                </div>
+                <div class="slide " data-speech="凯蒂的经历让我们想起这句古语。在这个浮躁的时代，我们总是忙着展示光鲜的一面，却很少停下来问问自己：我真实的样子，还剩下什么？毛姆通过凯蒂的成长，告诉我们一个道理：真正的勇敢，是敢于直面自己的脆弱，承认自己的不完美。就像那场雨后的清晨，她终于可以坦然地面对镜子中的自己。">
+                    <h2>古人说：“知耻而后勇”</h2>
+                    <p>凯蒂的经历让我们想起古人所说的“知耻近乎勇”。在这个浮躁的时代，敢于直面内心的脆弱，本身就是一种勇敢。</p>
+                </div>
+                <div class="slide " data-speech="他一生游历四方，见证过战争、疾病、背叛，也见过无数戴着面具的灵魂。他的笔触犀利，是因为他深知人性的复杂。他不写童话，他写的是现实。他用文字为我们揭开一层层面纱，让我们看清自己，也看清这个世界。正如他说的那样，唯有看清真相，才能获得真正的自由。">
+                    <h2>毛姆：冷眼看世界的哲学家</h2>
+                    <p>毛姆一生游历四方，见证了人性的复杂。他用冷静的笔触剖析人心，因为他深知：唯有看清真相，才能获得真正的自由。</p>
+                </div>
+                <div class="slide " data-speech="在这个信息爆炸的时代，我们越来越习惯用滤镜美化自己，用标签定义自己。可是在深夜里，当手机屏幕熄灭的那一刻，我们面对的，还是那个真实的自己吗？《面纱》提醒我们：唯有真诚，才能抵达心灵的彼岸。撕下面具，不是为了别人，而是为了自己。">
+                    <h2>今天的我们，还在戴面纱吗？</h2>
+                    <p>在朋友圈里光鲜亮丽，在现实中却迷茫不安。我们是否也在用虚拟的面具掩盖真实的痛苦？《面纱》提醒我们：唯有真诚，才能抵达心灵的彼岸。</p>
+                </div>
+                <div class="slide " data-speech="《面纱》不仅是一本书，更是一场心灵的洗礼。它教会我们在苦难中成长，在背叛中宽恕，在孤独中坚强。正如毛姆所说，生活不是等待风暴过去，而是学会在雨中起舞。愿你在阅读中找到属于自己的光，在人生的风雨里，依然保持内心的温暖。">
+                    <h2>愿你拥有直面真实的勇气</h2>
+                    <p>这不仅是一本书，更是一场心灵的洗礼。它教会我们在苦难中成长，在背叛中宽恕，在孤独中坚强。愿你在阅读中找到属于自己的光。</p>
+                </div>
+            </div>
+
+            <!-- 字幕显示区域 -->
+            <div class="narration-display">
+                <div id="currentNarration">点击"播放解说"开始自动播放演示</div>
+            </div>
+        </div>
+
+        <!-- 右侧导航 -->
+        <div class="nav-right">
+            <button class="nav-arrow" id="prevBtn" onclick="prevSlide()">❮</button>
+            <button class="nav-arrow" id="nextBtn" onclick="nextSlide()">❯</button>
+        </div>
+    </div>
+
+    <!-- 音频播放器 -->
+    <audio id="audioPlayer" preload="auto"></audio>
+
+    <script>
+        // 全局变量
+        let currentSlide = 0;
+        let totalSlides = 8;
+        let isAutoPlaying = false;
+        let isPlaying = false;
+        let sentenceTimers = [];
+
+        // 解说词数据
+        const narrationData = [
+        {
+            "sentences": ["在毛姆的《面纱》中，我们看到一个名叫凯蒂的女子，在虚荣与爱情之间迷失，最终被迫直面内心的真实。", "就像许多现代人一样，她在婚姻中寻找依靠，却发现自己不过是活在一个幻梦里。", "你有没有戴过面纱？那层面纱不是别人强加给你的，而是你自己选择披上的，因为真实的自己太难面对了。"],
+            "timings": [0, 6, 12]
+        },
+        {
+            "sentences": ["就像凯蒂一样，我也曾在别人的期待里挣扎。", "我问自己：我是谁？我想成为什么样的人？毛姆笔下的凯蒂，从一场婚姻的幻梦中醒来，才开始真正认识自己。", "她不是一开始就是英雄，她是在痛苦中蜕变的普通人。", "这本书让我明白，真正的自由，是从认识自己开始的。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["凯蒂的故事，不是一段简单的婚外情，而是一个女人的英雄之旅。", "她因为背叛婚姻，随丈夫前往霍乱肆虐的中国疫区。", "在那里，她不再有华丽的裙子、虚伪的社交，只有生死之间的抉择。", "这不是命运的惩罚，而是灵魂的试炼。", "毛姆用冷静的笔触告诉我们：真正的成长，往往始于最痛苦的选择。"],
+            "timings": [0, 6, 12, 18, 24]
+        },
+        {
+            "sentences": ["屋檐下，雨水打湿了她的裙摆，也冲刷着她内心的虚伪。", "她终于明白，自己一直活在别人的眼光里，却从未正视过自己的内心。", "那一刻，她不是被审判的罪人，而是被唤醒的灵魂。", "就像古人说的，“知耻而后勇”，真正的勇气，是从承认自己的不完美开始的。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["凯蒂的经历让我们想起这句古语。", "在这个浮躁的时代，我们总是忙着展示光鲜的一面，却很少停下来问问自己：我真实的样子，还剩下什么？毛姆通过凯蒂的成长，告诉我们一个道理：真正的勇敢，是敢于直面自己的脆弱，承认自己的不完美。", "就像那场雨后的清晨，她终于可以坦然地面对镜子中的自己。"],
+            "timings": [0, 6, 12]
+        },
+        {
+            "sentences": ["他一生游历四方，见证过战争、疾病、背叛，也见过无数戴着面具的灵魂。", "他的笔触犀利，是因为他深知人性的复杂。", "他不写童话，他写的是现实。", "他用文字为我们揭开一层层面纱，让我们看清自己，也看清这个世界。", "正如他说的那样，唯有看清真相，才能获得真正的自由。"],
+            "timings": [0, 6, 12, 18, 24]
+        },
+        {
+            "sentences": ["在这个信息爆炸的时代，我们越来越习惯用滤镜美化自己，用标签定义自己。", "可是在深夜里，当手机屏幕熄灭的那一刻，我们面对的，还是那个真实的自己吗？《面纱》提醒我们：唯有真诚，才能抵达心灵的彼岸。", "撕下面具，不是为了别人，而是为了自己。"],
+            "timings": [0, 6, 12]
+        },
+        {
+            "sentences": ["《面纱》不仅是一本书，更是一场心灵的洗礼。", "它教会我们在苦难中成长，在背叛中宽恕，在孤独中坚强。", "正如毛姆所说，生活不是等待风暴过去，而是学会在雨中起舞。", "愿你在阅读中找到属于自己的光，在人生的风雨里，依然保持内心的温暖。"],
+            "timings": [0, 6, 12, 18]
+        }
+    ];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSlideCounter();
+            updateNavigationButtons();
+        });
+
+        // 音频播放功能
+        function toggleAudio() {
+            const playPauseButton = document.getElementById('playPauseButton');
+            
+            if (isAutoPlaying) {
+                // 停止自动播放
+                stopAutoPlay();
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            } else {
+                // 开始自动播放整个PPT
+                startAutoPlay();
+                playPauseButton.textContent = '⏸️ 停止播放';
+                playPauseButton.classList.add('playing');
+            }
+        }
+        
+        function startAutoPlay() {
+            isAutoPlaying = true;
+            currentSlide = 0; // 从第一页开始
+            showSlide(0);
+            playCurrentSlide();
+        }
+        
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            isPlaying = false;
+            const audioPlayer = document.getElementById('audioPlayer');
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            clearSentenceTimers();
+            resetNarrationDisplay();
+        }
+        
+        function playCurrentSlide() {
+            if (!isAutoPlaying) return;
+            
+            const audioPlayer = document.getElementById('audioPlayer');
+            const sessionId = window.location.pathname.split('/')[2]; // 从URL中提取session_id
+            const slideNumber = (currentSlide + 1).toString().padStart(2, '0');
+            const audioPath = `/ppt_audio/${sessionId}_slide_${slideNumber}.mp3`;
+            
+            audioPlayer.src = audioPath;
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                startSentenceDisplay();
+            }).catch((error) => {
+                console.error('音频播放失败:', error);
+                // 如果音频播放失败，仍然显示字幕并在5秒后切换到下一页
+                startSentenceDisplay();
+                setTimeout(() => {
+                    if (isAutoPlaying) {
+                        goToNextSlide();
+                    }
+                }, 5000);
+            });
+        }
+
+        // 导航功能
+        function nextSlide() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+            goToNextSlide();
+        }
+        
+        function prevSlide() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+            goToPrevSlide();
+        }
+        
+        function goToNextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+                if (isAutoPlaying) {
+                    setTimeout(() => playCurrentSlide(), 500);
+                }
+            } else if (isAutoPlaying) {
+                // 到达最后一页，停止自动播放
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+        }
+        
+        function goToPrevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+                if (isAutoPlaying) {
+                    setTimeout(() => playCurrentSlide(), 500);
+                }
+            }
+        }
+
+        function showSlide(slideIndex) {
+            const slides = document.querySelectorAll('.slide');
+            
+            // 隐藏所有幻灯片
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 显示目标幻灯片
+            if (slides[slideIndex]) {
+                slides[slideIndex].classList.add('active');
+                currentSlide = slideIndex;
+            }
+            
+            updateSlideCounter();
+            updateNavigationButtons();
+            if (!isAutoPlaying) {
+                resetNarrationDisplay();
+            }
+        }
+
+        function updateSlideCounter() {
+            const counter = document.getElementById('slideCounter');
+            if (counter) {
+                counter.textContent = `第 ${currentSlide + 1} 页 / ${totalSlides} 页`;
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            if (prevBtn) {
+                prevBtn.disabled = currentSlide === 0;
+            }
+            if (nextBtn) {
+                nextBtn.disabled = currentSlide === totalSlides - 1;
+            }
+        }
+
+        // 字幕显示功能
+        function startSentenceDisplay() {
+            const slideData = narrationData[currentSlide];
+            if (!slideData) return;
+            
+            clearSentenceTimers();
+            
+            slideData.sentences.forEach((sentence, index) => {
+                const delay = slideData.timings[index] * 1000;
+                const timer = setTimeout(() => {
+                    if (isAutoPlaying || isPlaying) {
+                        displaySentence(sentence);
+                    }
+                }, delay);
+                sentenceTimers.push(timer);
+            });
+
+            // 音频结束后自动切换到下一页
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.onended = () => {
+                if (isAutoPlaying) {
+                    setTimeout(() => goToNextSlide(), 1000);
+                }
+            };
+        }
+
+        function displaySentence(sentence) {
+            const narrationDiv = document.getElementById('currentNarration');
+            if (narrationDiv) {
+                narrationDiv.innerHTML = `<span class="sentence active">${sentence}</span>`;
+            }
+        }
+
+        function clearSentenceTimers() {
+            sentenceTimers.forEach(timer => clearTimeout(timer));
+            sentenceTimers = [];
+        }
+
+        function resetNarrationDisplay() {
+            const narrationDiv = document.getElementById('currentNarration');
+            if (narrationDiv) {
+                narrationDiv.innerHTML = '点击"播放解说"开始自动播放演示';
+            }
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (event.key === 'ArrowRight') {
+                nextSlide();
+            } else if (event.key === ' ') {
+                event.preventDefault();
+                toggleAudio();
+            }
+        });
+
+        // 返回主页功能
+        function goBack() {
+            // 返回到主应用页面
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

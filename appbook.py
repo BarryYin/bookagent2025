@@ -724,7 +724,7 @@ PPT画面结构：
             print(f"Step3 未知错误，使用备用数据: {e}")
             return get_fallback_narrations_data(book_title)
 
-async def step4_generate_html(slides: list, narrations: list, book_data: dict, methodology: str = "dongyu_literature", enable_voice: bool = False) -> str:
+async def step4_generate_html(slides: list, narrations: list, book_data: dict, methodology: str = "dongyu_literature", enable_voice: bool = False, book_title: str = None) -> str:
     """
     第4步：将画面和解说词转换为HTML格式（支持语音和方法论风格）
     """
@@ -733,7 +733,8 @@ async def step4_generate_html(slides: list, narrations: list, book_data: dict, m
     print(f"DEBUG: step4_generate_html直接调用generate_reliable_ppt_html_internal")
     print(f"DEBUG: slides类型: {type(slides)}, 长度: {len(slides) if isinstance(slides, list) else 'N/A'}")
     print(f"DEBUG: narrations类型: {type(narrations)}, 长度: {len(narrations) if isinstance(narrations, list) else 'N/A'}")
-    result = generate_reliable_ppt_html_internal(slides, narrations, book_data)
+    print(f"DEBUG: 传递的book_title: {book_title}")
+    result = generate_reliable_ppt_html_internal(slides, narrations, book_data, book_title)
     print(f"DEBUG: 生成的HTML长度: {len(result)}, 包含data-speech: {'data-speech' in result}")
     return result
 
@@ -1120,16 +1121,32 @@ def clean_html_content(html_content: str) -> str:
     
     return html_content
 
-def generate_reliable_ppt_html_internal(slides, narrations, book_data):
+def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_title=None):
     """生成优化的毛玻璃风格PPT HTML"""
     
     print(f"DEBUG: generate_reliable_ppt_html_internal 开始执行")
     print(f"DEBUG: slides: {type(slides)}, narrations: {type(narrations)}")
+    print(f"DEBUG: 传入的book_title参数: {book_title}")
     
     # 解析book_data
     parsed_book_data = parse_ai_response(book_data)
-    book_title = extract_book_title(parsed_book_data)
-    print(f"DEBUG: book_title: {book_title}")
+    
+    # 优先使用传入的book_title参数，否则尝试从book_data中提取
+    if book_title:
+        final_book_title = book_title
+        print(f"DEBUG: 使用传入的book_title: {final_book_title}")
+    else:
+        final_book_title = extract_book_title(parsed_book_data)
+        print(f"DEBUG: 从book_data提取的book_title: {final_book_title}")
+    
+    # 如果还是"未知书籍"，尝试从book_data的其他字段获取
+    if final_book_title == "未知书籍" and isinstance(book_data, dict):
+        if 'title' in book_data:
+            final_book_title = book_data['title']
+        elif 'book_title' in book_data:
+            final_book_title = book_data['book_title']
+    
+    print(f"DEBUG: 最终使用的book_title: {final_book_title}")
     
     # 获取书籍封面
     cover_url = ""
@@ -1140,12 +1157,12 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     
     # 解析slides数据
     parsed_slides = parse_ai_response(slides)
-    processed_slides = process_slides_data(parsed_slides, book_title)
+    processed_slides = process_slides_data(parsed_slides, final_book_title)
     print(f"DEBUG: processed_slides 长度: {len(processed_slides)}")
     
     # 解析narrations数据
     parsed_narrations = parse_ai_response(narrations)
-    processed_narrations = process_narrations_data(parsed_narrations, book_title)
+    processed_narrations = process_narrations_data(parsed_narrations, final_book_title)
     print(f"DEBUG: processed_narrations 长度: {len(processed_narrations)}")
     
     # 确保slides和narrations数量匹配
@@ -1203,11 +1220,14 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
         narration_text = str(narration_text).replace('"', '&quot;').replace('\n', ' ').replace('\r', '')
         
         if i == 0:
-            # 封面页
+            # 书籍标题页 - 专门展示书名
             slides_html += f'''
                 <div class="slide {active_class}" data-speech="{narration_text}">
-                    <h1>{slide.get('title', book_title)}</h1>
-                    <p>{slide.get('content', '欢迎来到本书的精彩解读。')}</p>
+                    <div style="text-align: center; padding: 2rem;">
+                        <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem; color: #1D1D1F;">{final_book_title}</h1>
+                        <div style="width: 80px; height: 3px; background: linear-gradient(to right, #667eea, #764ba2); margin: 2rem auto; border-radius: 2px;"></div>
+                        <p style="font-size: 1.2rem; color: #666; font-style: italic;">欢迎来到本书的精彩解读</p>
+                    </div>
                 </div>'''
         else:
             # 内容页
@@ -1235,7 +1255,7 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{book_title} - Bookagent 智能演示</title>
+    <title>{final_book_title} - Bookagent 智能演示</title>
     <style>
         * {{
             margin: 0;
@@ -1620,8 +1640,9 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
         
         function startAutoPlay() {{
             isAutoPlaying = true;
-            currentSlide = 0; // 从第一页开始
-            showSlide(0);
+            // 从当前页开始播放，而不是重置到第一页
+            // currentSlide 保持当前值
+            showSlide(currentSlide);
             playCurrentSlide();
         }}
         
@@ -2214,7 +2235,7 @@ async def enhanced_llm_event_stream(
         }
         
         try:
-            html_content = await step4_generate_html(slides_data, narrations_data, book_data, methodology=methodology, enable_voice=True)
+            html_content = await step4_generate_html(slides_data, narrations_data, book_data, methodology=methodology, enable_voice=True, book_title=book_title)
         except Exception as e:
             yield f"data: {json.dumps({'log': f'  ├─ HTML生成遇到问题: {str(e)}'}, ensure_ascii=False)}\n\n"
             # 使用简化的HTML生成
