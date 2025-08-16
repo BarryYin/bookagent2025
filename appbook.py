@@ -3003,6 +3003,45 @@ async def get_generated_ppts(
                         book_data = data.get("book_data", {})
                         cover_url = book_data.get("cover_url", get_default_book_cover(data.get("topic", "未知主题")))
                         
+                        # 获取书名 - 优先从book_data中提取
+                        title = data.get("topic", "未知主题")  # 默认值
+                        if book_data:
+                            # 尝试从book_data中提取书名
+                            if 'title' in book_data:
+                                title = book_data['title']
+                            elif 'raw_content' in book_data:
+                                # 尝试从raw_content中解析JSON获取书名
+                                try:
+                                    raw_content = book_data['raw_content']
+                                    if 'title' in raw_content:
+                                        import json as json_parser
+                                        # 尝试解析JSON
+                                        if raw_content.strip().startswith('```json'):
+                                            json_start = raw_content.find('{')
+                                            json_end = raw_content.rfind('}') + 1
+                                            if json_start != -1 and json_end > json_start:
+                                                parsed_data = json_parser.loads(raw_content[json_start:json_end])
+                                                if 'book_info' in parsed_data and 'title' in parsed_data['book_info']:
+                                                    title = parsed_data['book_info']['title']
+                                except:
+                                    pass
+                            
+                            # 如果还是原始的长文本，尝试从topic中提取书名
+                            if len(title) > 100:
+                                import re
+                                # 尝试匹配《书名》格式
+                                title_match = re.search(r'《([^》]+)》', title)
+                                if title_match:
+                                    title = title_match.group(1)
+                                else:
+                                    # 尝试匹配"书名："格式
+                                    title_match = re.search(r'书名[：:]\s*([^\n\-]+)', title)
+                                    if title_match:
+                                        title = title_match.group(1).strip()
+                                        title = re.sub(r'\s*-\s*作者.*$', '', title)
+                                        title = re.sub(r'\s*-\s*分类.*$', '', title)
+                                        title = title.strip()
+                        
                         # 转换本地封面路径为URL
                         if cover_url.startswith('covers/'):
                             cover_url = f"/covers/{cover_url.replace('covers/', '')}"
@@ -3015,7 +3054,7 @@ async def get_generated_ppts(
                         
                         ppt_info = {
                             "session_id": session_dir.name,
-                            "title": data.get("topic", "未知主题"),
+                            "title": title,
                             "created_time": created_time,
                             "html_url": f"/outputs/{session_dir.name}/presentation.html",
                             "preview_url": f"/ppt-preview/{session_dir.name}",
