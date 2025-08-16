@@ -1389,15 +1389,271 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             font-weight: 700;
             margin-bottom: 20px;
             color: #1D1D1F;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            line-height: 1.2;
         }}
         
         .slide h2 {{
-            font-size: 2rem;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #667eea;
+        }}
+        
+        .slide p, .slide li {{
+            font-size: 1.5rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: #444;
+        }}
+        
+        .slide ul {{
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+        }}
+        
+        .slide li {{
+            margin-bottom: 15px;
+            padding-left: 10px;
+        }}
+        
+        /* 侧边导航按钮 */
+        .side-navigation {{
+            position: fixed;
+            top: 50%;
+            width: 100%;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1001;
+            pointer-events: none;
+            padding: 0 30px;
+            box-sizing: border-box;
+        }}
+        
+        .side-nav-button {{
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1D1D1F;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        
+        .side-nav-button:hover {{
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+        }}
+        
+        .side-nav-button:disabled {{
+            background: rgba(255, 255, 255, 0.5);
+            color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }}
+        
+        /* 点状导航 */
+        .dots-container {{
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            z-index: 1001;
+        }}
+        
+        .dot {{
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }}
+        
+        .dot.active {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.2);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }}
+        
+        /* 解说词面板 - 字幕样式 */
+        .narration-panel {{
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 900px;
+            background: none;
+            border-radius: 0;
+            padding: 10px 20px;
+            box-shadow: none;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: white;
+            z-index: 1000;
+            text-align: center;
+            border: none;
+        }}
+        
+        .narration-content {{
+            margin-bottom: 20px;
+            min-height: 40px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            background: none;
+            backdrop-filter: none;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            text-align: center;
+        }}
+        
+        .current-sentence {{
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            animation: fadeIn 0.5s ease-in-out;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9), 
+                         0 0 10px rgba(255, 215, 0, 0.3);
+            font-weight: 600;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            display: inline-block;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }}
+        
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+        
+        /* 音频控制按钮 */
+        .audio-controls {{
+            text-align: center;
+            margin-top: 15px;
+        }}
+        
+        .audio-button {{
+            background: rgba(0, 122, 255, 0.9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+            transition: all 0.3s ease;
+            margin: 0 5px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }}
+        
+        .audio-button:hover {{
+            background: rgba(0, 122, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+        }}
+        
+        .audio-button.playing {{
+            background: rgba(255, 59, 48, 0.9);
+        }}
+        
+        .audio-button.playing:hover {{
+            background: rgba(255, 59, 48, 1);
+        }}
+        
+        .slide-counter {{
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 1000;
+        }}
+        
+        .back-home-button {{
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }}
+        
+        .back-home-button:hover {{
+            background-color: rgba(0, 0, 0, 0.8);
+            transform: translateY(-2px);
+        }}
+        
+        .back-home-button svg {{
+            width: 16px;
+            height: 16px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="presentation-container">{slides_html}
+    </div>
+    
+    <div class="slide-counter" id="slideCounter">1 / {len(processed_slides)}</div>
+    
+    <button class="back-home-button" onclick="window.history.back()">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z"/>
+        </svg>
+        返回首页
+    </button>
+    
+    <!-- 侧边导航 -->
+    <div class="side-navigation">
+        <button id="prevButton" class="side-nav-button" onclick="prevSlide()">‹</button>
+        <button id="nextButton" class="side-nav-button" onclick="nextSlide()">›</button>
+    </div>
+
+    <!-- 点状导航 -->
+    <div class="dots-container" id="dotsContainer"></div>
+
+    <!-- 解说词面板 -->
+    <div class="narration-panel" id="narrationPanel">
+        <div class="narration-content" id="narrationContent">
+            <!-- 字幕将在这里显示 -->
+        </div>
+        <div class="audio-controls">
+            <button id="playPauseButton" class="audio-button" onclick="toggleAudio()">
+                🔊 播放解说
+            </button>
+        </div>
+        <audio id="audioPlayer" style="display: none;"></audio>
+    </div>
             font-weight: 500;
             color: #86868B;
             margin-bottom: 30px;
@@ -1571,183 +1827,269 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     </div>
     
     <script>
-        // 解说词数据
+        // 解说词数据 - 将解说词按句子分割，用于逐句显示
         const narrations = {narrations_js};
-        
+        const narrationSentences = narrations.map(narration => {{
+            // 简单的句子分割（根据标点符号）
+            return narration.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
+        }});
+
         let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const totalSlides = slides.length;
-        const dotsContainer = document.getElementById('dotsContainer');
-        const prevButton = document.getElementById('prevButton');
-        const nextButton = document.getElementById('nextButton');
-        const narrationPanel = document.getElementById('narrationPanel');
-        const currentSlideNum = document.getElementById('currentSlideNum');
-        const totalSlideNum = document.getElementById('totalSlideNum');
-        
-        // 初始化
-        totalSlideNum.textContent = totalSlides;
-        
-        // 生成导航点
-        for (let i = 0; i < totalSlides; i++) {{
-            const dot = document.createElement('div');
-            dot.classList.add('dot');
-            if (i === 0) dot.classList.add('active');
-            dot.addEventListener('click', () => showSlide(i));
-            dotsContainer.appendChild(dot);
-        }}
-        
-        function showSlide(n) {{
-            // 边界检查
-            if (n < 0 || n >= totalSlides) return;
-            
-            // 移除所有活动状态
-            slides.forEach(slide => slide.classList.remove('active'));
-            
-            // 设置当前页面
-            slides[n].classList.add('active');
-            currentSlide = n;
-            
-            // 更新UI
-            updateNarration(n);
-            updateDots(n);
-            updateNavigationButtons();
-            updateSlideCounter(n);
-        }}
-        
-        function nextSlide() {{
-            if (currentSlide < totalSlides - 1) {{
-                showSlide(currentSlide + 1);
-            }}
-        }}
-        
-        function prevSlide() {{
-            if (currentSlide > 0) {{
-                showSlide(currentSlide - 1);
-            }}
-        }}
-        
-        function updateNavigationButtons() {{
-            prevButton.disabled = currentSlide === 0;
-            nextButton.disabled = currentSlide === totalSlides - 1;
-        }}
-        
-        function updateDots(n) {{
-            const dots = document.querySelectorAll('.dot');
-            dots.forEach((dot, index) => {{
-                dot.classList.toggle('active', index === n);
-            }});
-        }}
-        
-        function updateNarration(slideIndex) {{
-            if (narrations[slideIndex]) {{
-                narrationPanel.innerHTML = `
-                    <strong>解说词：</strong><br>${{narrations[slideIndex]}}
-                    <div class="audio-controls" style="margin-top: 15px;">
-                        <button id="playButton" onclick="toggleAudio()" style="background: #007AFF; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px;">
-                            🔊 播放解说
-                        </button>
-                        <button id="stopButton" onclick="stopAudio()" style="background: #FF3B30; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; margin-left: 10px;">
-                            ⏹️ 停止
-                        </button>
-                    </div>
-                    <audio id="audioPlayer" style="display: none;"></audio>
-                `;
-            }}
-        }}
-        
-        // 音频播放功能
         let isPlaying = false;
-        
+        let isAutoPlaying = false;
+        let currentSentenceIndex = 0;
+        let sentenceTimers = [];
+        const totalSlides = {len(processed_slides)};
+
+        // 音频播放功能
         function toggleAudio() {{
-            const audioPlayer = document.getElementById('audioPlayer');
-            const playButton = document.getElementById('playButton');
+            const playPauseButton = document.getElementById('playPauseButton');
             
-            if (!audioPlayer) return;
-            
-            if (isPlaying) {{
-                audioPlayer.pause();
-                playButton.textContent = '🔊 播放解说';
-                isPlaying = false;
+            if (isAutoPlaying) {{
+                // 停止自动播放
+                stopAutoPlay();
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
             }} else {{
-                // 构建音频文件路径 - 基于session_id
-                const sessionId = window.location.pathname.split('/')[2]; // 从URL中提取session_id
-                const slideNumber = (currentSlide + 1).toString().padStart(2, '0');
-                const audioPath = `/ppt_audio/${{sessionId}}_slide_${{slideNumber}}.mp3`;
-                
-                audioPlayer.src = audioPath;
-                audioPlayer.play().then(() => {{
-                    playButton.textContent = '⏸️ 暂停';
-                    isPlaying = true;
-                }}).catch((error) => {{
-                    console.error('音频播放失败:', error);
-                    console.log('尝试的音频路径:', audioPath);
-                    alert('音频文件不存在或播放失败');
-                }});
+                // 开始自动播放整个PPT
+                startAutoPlay();
+                playPauseButton.textContent = '⏸️ 停止播放';
+                playPauseButton.classList.add('playing');
             }}
         }}
         
-        function stopAudio() {{
+        function startAutoPlay() {{
+            isAutoPlaying = true;
+            currentSlide = 0; // 从第一页开始
+            showSlide(0);
+            playCurrentSlide();
+        }}
+        
+        function stopAutoPlay() {{
+            isAutoPlaying = false;
+            isPlaying = false;
             const audioPlayer = document.getElementById('audioPlayer');
-            const playButton = document.getElementById('playButton');
-            
             if (audioPlayer) {{
                 audioPlayer.pause();
                 audioPlayer.currentTime = 0;
-                playButton.textContent = '🔊 播放解说';
-                isPlaying = false;
+            }}
+            clearSentenceTimers();
+            resetNarrationDisplay();
+        }}
+        
+        function playCurrentSlide() {{
+            if (!isAutoPlaying) return;
+            
+            const audioPlayer = document.getElementById('audioPlayer');
+            const sessionId = window.location.pathname.split('/')[2]; // 从URL中提取session_id
+            const slideNumber = (currentSlide + 1).toString().padStart(2, '0');
+            const audioPath = `/ppt_audio/${{sessionId}}_slide_${{slideNumber}}.mp3`;
+            
+            audioPlayer.src = audioPath;
+            audioPlayer.play().then(() => {{
+                isPlaying = true;
+                startSentenceDisplay();
+            }}).catch((error) => {{
+                console.error('音频播放失败:', error);
+                // 如果音频播放失败，仍然显示字幕并在5秒后切换到下一页
+                startSentenceDisplay();
+                setTimeout(() => {{
+                    if (isAutoPlaying) {{
+                        goToNextSlide();
+                    }}
+                }}, 5000);
+            }});
+        }}
+        
+        function goToNextSlide() {{
+            if (!isAutoPlaying) return;
+            
+            if (currentSlide < totalSlides - 1) {{
+                currentSlide++;
+                showSlideForAutoPlay(currentSlide);
+                // 延迟一秒后播放下一页音频
+                setTimeout(() => {{
+                    if (isAutoPlaying) {{
+                        playCurrentSlide();
+                    }}
+                }}, 1000);
+            }} else {{
+                // 播放完成
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+                resetNarrationDisplay();
             }}
         }}
         
+        function showSlideForAutoPlay(slideIndex) {{
+            // 自动播放时的幻灯片切换
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[slideIndex].classList.add('active');
+            
+            updateNavigationButtons();
+            updateDots();
+            updateSlideCounter();
+            clearSentenceTimers();
+        }}
+
+        // 逐句显示解说词 - 一次只显示一句
+        function startSentenceDisplay() {{
+            const sentences = narrationSentences[currentSlide];
+            if (!sentences) return;
+
+            resetNarrationDisplay();
+            currentSentenceIndex = 0;
+
+            // 立即显示第一句
+            displayCurrentSentence(sentences[0]);
+
+            // 设置后续句子的显示时间
+            sentences.forEach((sentence, index) => {{
+                if (index === 0) return; // 跳过第一句，已经显示了
+                
+                const delay = index * 3000; // 每句话间隔3秒
+                
+                const timer = setTimeout(() => {{
+                    displayCurrentSentence(sentence);
+                }}, delay);
+                
+                sentenceTimers.push(timer);
+            }});
+        }}
+
+        function displayCurrentSentence(sentence) {{
+            const narrationContent = document.getElementById('narrationContent');
+            narrationContent.innerHTML = `<div class="current-sentence">${{sentence}}</div>`;
+        }}
+
+        function resetNarrationDisplay() {{
+            const narrationContent = document.getElementById('narrationContent');
+            narrationContent.innerHTML = '';
+            currentSentenceIndex = 0;
+        }}
+
+        function clearSentenceTimers() {{
+            sentenceTimers.forEach(timer => clearTimeout(timer));
+            sentenceTimers = [];
+        }}
+
         // 监听音频播放结束事件
         document.addEventListener('DOMContentLoaded', function() {{
-            // 为动态创建的audio元素添加事件监听器
-            document.addEventListener('ended', function(e) {{
-                if (e.target.id === 'audioPlayer') {{
-                    const playButton = document.getElementById('playButton');
-                    if (playButton) {{
-                        playButton.textContent = '🔊 播放解说';
-                        isPlaying = false;
+            const audioPlayer = document.getElementById('audioPlayer');
+            if (audioPlayer) {{
+                audioPlayer.addEventListener('ended', function() {{
+                    isPlaying = false;
+                    if (isAutoPlaying) {{
+                        // 自动播放模式下，音频结束后自动切换到下一页
+                        setTimeout(() => {{
+                            goToNextSlide();
+                        }}, 1000); // 1秒延迟，让用户看到最后一句字幕
+                    }} else {{
+                        // 手动播放模式下，只重置按钮状态
+                        const playPauseButton = document.getElementById('playPauseButton');
+                        if (playPauseButton) {{
+                            playPauseButton.textContent = '🔊 播放解说';
+                            playPauseButton.classList.remove('playing');
+                        }}
                     }}
-                }}
-            }}, true);
+                }});
+            }}
         }});
-        
-        function updateSlideCounter(n) {{
-            currentSlideNum.textContent = n + 1;
+
+        // 幻灯片导航
+        function nextSlide() {{
+            if (!isAutoPlaying && currentSlide < totalSlides - 1) {{
+                showSlide(currentSlide + 1);
+            }}
         }}
-        
+
+        function prevSlide() {{
+            if (!isAutoPlaying && currentSlide > 0) {{
+                showSlide(currentSlide - 1);
+            }}
+        }}
+
+        function showSlide(slideIndex) {{
+            // 如果正在自动播放，禁用手动切换
+            if (isAutoPlaying) return;
+            
+            // 停止当前播放的音频
+            if (isPlaying) {{
+                stopAutoPlay();
+            }}
+            
+            // 切换幻灯片
+            const slides = document.querySelectorAll('.slide');
+            slides[currentSlide].classList.remove('active');
+            slides[slideIndex].classList.add('active');
+            
+            currentSlide = slideIndex;
+            updateNavigationButtons();
+            updateDots();
+            updateSlideCounter();
+            resetNarrationDisplay();
+        }}
+
+        function updateNavigationButtons() {{
+            const prevButton = document.getElementById('prevButton');
+            const nextButton = document.getElementById('nextButton');
+            
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }}
+
+        function updateDots() {{
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {{
+                dot.classList.toggle('active', index === currentSlide);
+            }});
+        }}
+
+        function updateSlideCounter() {{
+            const counter = document.getElementById('slideCounter');
+            counter.textContent = `${{currentSlide + 1}} / ${{totalSlides}}`;
+        }}
+
+        // 初始化点状导航
+        function initDots() {{
+            const dotsContainer = document.getElementById('dotsContainer');
+            for (let i = 0; i < totalSlides; i++) {{
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => showSlide(i));
+                dotsContainer.appendChild(dot);
+            }}
+        }}
+
         // 键盘导航
-        document.addEventListener('keydown', (e) => {{
+        document.addEventListener('keydown', function(e) {{
             switch(e.key) {{
+                case 'ArrowLeft':
+                    if (!isAutoPlaying) prevSlide();
+                    break;
                 case 'ArrowRight':
+                    if (!isAutoPlaying) nextSlide();
+                    break;
                 case ' ':
                     e.preventDefault();
-                    nextSlide();
+                    toggleAudio();
                     break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    prevSlide();
-                    break;
-                case 'Home':
-                    e.preventDefault();
-                    showSlide(0);
-                    break;
-                case 'End':
-                    e.preventDefault();
-                    showSlide(totalSlides - 1);
+                case 'Escape':
+                    stopAutoPlay();
                     break;
             }}
         }});
-        
-        // 返回首页函数
-        function goBackHome() {{
-            // 返回到主应用页面
-            window.location.href = '/';
-        }}
-        
-        // 初始化显示
-        updateNavigationButtons();
-        console.log('PPT初始化完成，共', totalSlides, '页');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {{
+            initDots();
+            updateNavigationButtons();
+            updateSlideCounter();
+        }});
     </script>
 </body>
 </html>'''

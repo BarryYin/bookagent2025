@@ -1084,6 +1084,12 @@
         function showGenerationProgress() {
             // 隐藏配置界面
             document.querySelector('.generation-wizard').style.display = 'none';
+            document.querySelector('.header').style.display = 'none';
+            
+            // 重置容器样式为进度页面专用
+            const container = document.querySelector('.container');
+            container.style.maxWidth = 'none';
+            container.style.padding = '0';
             
             // 创建进度界面
             const progressHTML = `
@@ -1215,98 +1221,196 @@
         function addProgressStyles() {
             const styles = `
                 <style>
+                /* 进度页面特有样式 - 避免与原有样式冲突 */
                 .generation-progress {
-                    max-width: 800px;
+                    max-width: 900px;
                     margin: 0 auto;
-                    padding: 2rem;
+                    padding: 3rem 2rem;
                     text-align: center;
+                    min-height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    position: relative;
+                }
+                
+                /* 装饰性背景元素 */
+                .generation-progress::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                                radial-gradient(circle at 80% 20%, rgba(255, 120, 198, 0.15) 0%, transparent 50%),
+                                radial-gradient(circle at 40% 40%, rgba(120, 198, 255, 0.1) 0%, transparent 50%);
+                    pointer-events: none;
+                }
+                
+                .progress-header {
+                    position: relative;
+                    z-index: 1;
+                    margin-bottom: 4rem;
                 }
                 
                 .progress-header h2 {
-                    color: #2c3e50;
-                    margin-bottom: 0.5rem;
+                    color: white;
+                    font-size: 2.5rem;
+                    font-weight: 700;
+                    margin-bottom: 1rem;
+                    text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    animation: slideInFromTop 1s ease-out;
                 }
                 
                 .progress-header p {
-                    color: #6c757d;
-                    margin-bottom: 3rem;
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: 1.2rem;
+                    margin-bottom: 0;
+                    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                    animation: slideInFromTop 1s ease-out 0.2s both;
                 }
                 
                 .progress-steps {
                     display: grid;
-                    gap: 2rem;
+                    gap: 1.5rem;
                     margin-bottom: 3rem;
+                    position: relative;
+                    z-index: 1;
                 }
                 
                 .progress-step {
                     display: flex;
                     align-items: center;
-                    gap: 1rem;
-                    padding: 1rem;
-                    border-radius: 12px;
-                    background: #f8f9fa;
+                    gap: 1.5rem;
+                    padding: 1.5rem 2rem;
+                    border-radius: 20px;
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
                     text-align: left;
-                    transition: all 0.3s ease;
+                    transition: all 0.4s ease;
+                    transform: translateY(20px);
+                    opacity: 0;
+                    animation: slideInUp 0.6s ease-out forwards;
+                }
+                
+                .progress-step:nth-child(1) { animation-delay: 0.1s; }
+                .progress-step:nth-child(2) { animation-delay: 0.2s; }
+                .progress-step:nth-child(3) { animation-delay: 0.3s; }
+                .progress-step:nth-child(4) { animation-delay: 0.4s; }
+                
+                .progress-step:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
                 }
                 
                 .progress-step.active {
-                    background: #e3f2fd;
-                    border: 2px solid #2196f3;
+                    background: rgba(255, 255, 255, 0.25);
+                    border: 2px solid rgba(255, 255, 255, 0.5);
+                    box-shadow: 0 15px 35px rgba(0,0,0,0.2), 
+                                0 0 30px rgba(255, 255, 255, 0.3);
+                    animation: glowPulse 2s infinite;
                 }
                 
                 .progress-step.completed {
-                    background: #e8f5e8;
-                    border: 2px solid #4caf50;
+                    background: rgba(76, 175, 80, 0.2);
+                    border: 2px solid rgba(76, 175, 80, 0.5);
+                    box-shadow: 0 10px 25px rgba(76, 175, 80, 0.3);
                 }
                 
                 .step-icon {
-                    font-size: 2rem;
-                    width: 60px;
-                    height: 60px;
+                    font-size: 2.5rem;
+                    width: 80px;
+                    height: 80px;
                     border-radius: 50%;
-                    background: white;
+                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    transition: all 0.3s ease;
+                    flex-shrink: 0;
+                }
+                
+                .progress-step.active .step-icon {
+                    animation: bounce 2s infinite, rotate 1s ease-in-out;
+                    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+                }
+                
+                .progress-step.completed .step-icon {
+                    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+                    color: white;
+                    animation: checkmark 0.6s ease-out;
                 }
                 
                 .step-info h4 {
-                    margin: 0 0 0.25rem 0;
-                    color: #2c3e50;
+                    margin: 0 0 0.5rem 0;
+                    color: white;
+                    font-size: 1.3rem;
+                    font-weight: 600;
+                    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
                 }
                 
                 .step-info p {
                     margin: 0;
-                    color: #6c757d;
-                    font-size: 0.9rem;
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 1rem;
+                    line-height: 1.5;
+                    text-shadow: 0 1px 5px rgba(0,0,0,0.2);
                 }
                 
                 .progress-log {
-                    max-height: 200px;
+                    max-height: 250px;
                     overflow-y: auto;
-                    background: #f8f9fa;
-                    border-radius: 8px;
-                    padding: 1rem;
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(20px);
+                    border-radius: 15px;
+                    padding: 1.5rem;
                     text-align: left;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    position: relative;
+                    z-index: 1;
+                    animation: slideInUp 0.6s ease-out 0.5s both;
+                }
+                
+                .progress-log::-webkit-scrollbar {
+                    width: 6px;
+                }
+                
+                .progress-log::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 3px;
+                }
+                
+                .progress-log::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 3px;
                 }
                 
                 .log-entry {
                     display: flex;
                     gap: 1rem;
-                    padding: 0.25rem 0;
-                    border-bottom: 1px solid #e9ecef;
+                    padding: 0.5rem 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    animation: slideInRight 0.3s ease-out;
+                }
+                
+                .log-entry:last-child {
+                    border-bottom: none;
                 }
                 
                 .log-time {
-                    color: #6c757d;
-                    font-size: 0.8rem;
+                    color: rgba(255, 255, 255, 0.6);
+                    font-size: 0.9rem;
                     min-width: 80px;
+                    font-family: 'SF Mono', monospace;
                 }
                 
                 .log-message {
-                    color: #2c3e50;
-                    font-size: 0.9rem;
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: 1rem;
+                    line-height: 1.4;
                 }
                 
                 .generation-error {
@@ -1314,11 +1418,17 @@
                     padding: 3rem;
                     max-width: 500px;
                     margin: 0 auto;
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(20px);
+                    border-radius: 20px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
                 }
                 
                 .error-icon {
                     font-size: 4rem;
                     margin-bottom: 1rem;
+                    color: #ff6b6b;
+                    animation: shake 0.5s ease-in-out;
                 }
                 
                 .error-actions {
@@ -1328,14 +1438,122 @@
                     margin-top: 2rem;
                 }
                 
-                @keyframes pulse {
-                    0% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                    100% { opacity: 1; }
+                /* 动画定义 */
+                @keyframes slideInFromTop {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
                 }
                 
-                .progress-step.active .step-icon {
-                    animation: pulse 2s infinite;
+                @keyframes slideInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes slideInRight {
+                    from {
+                        opacity: 0;
+                        transform: translateX(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+                
+                @keyframes glowPulse {
+                    0%, 100% {
+                        box-shadow: 0 15px 35px rgba(0,0,0,0.2), 
+                                    0 0 30px rgba(255, 255, 255, 0.3);
+                    }
+                    50% {
+                        box-shadow: 0 20px 45px rgba(0,0,0,0.3), 
+                                    0 0 50px rgba(255, 255, 255, 0.5);
+                    }
+                }
+                
+                @keyframes bounce {
+                    0%, 20%, 53%, 80%, 100% {
+                        transform: translate3d(0,0,0);
+                    }
+                    40%, 43% {
+                        transform: translate3d(0, -8px, 0);
+                    }
+                    70% {
+                        transform: translate3d(0, -4px, 0);
+                    }
+                    90% {
+                        transform: translate3d(0, -2px, 0);
+                    }
+                }
+                
+                @keyframes rotate {
+                    from {
+                        transform: rotate(0deg);
+                    }
+                    to {
+                        transform: rotate(360deg);
+                    }
+                }
+                
+                @keyframes checkmark {
+                    from {
+                        transform: scale(0.8);
+                    }
+                    to {
+                        transform: scale(1);
+                    }
+                }
+                
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                    20%, 40%, 60%, 80% { transform: translateX(5px); }
+                }
+                
+                /* 响应式设计 */
+                @media (max-width: 768px) {
+                    .generation-progress {
+                        padding: 2rem 1rem;
+                    }
+                    
+                    .progress-header h2 {
+                        font-size: 2rem;
+                    }
+                    
+                    .progress-header p {
+                        font-size: 1rem;
+                    }
+                    
+                    .progress-step {
+                        padding: 1rem 1.5rem;
+                        gap: 1rem;
+                    }
+                    
+                    .step-icon {
+                        width: 60px;
+                        height: 60px;
+                        font-size: 2rem;
+                    }
+                    
+                    .step-info h4 {
+                        font-size: 1.1rem;
+                    }
+                    
+                    .step-info p {
+                        font-size: 0.9rem;
+                    }
                 }
                 </style>
             `;

@@ -119,6 +119,10 @@ async def chat_with_agent(
         # 调用AI生成回复
         response_data = await generate_ai_response(conversation_context)
         
+        # 保存对话记录
+        save_conversation_message(current_user.id, "user", chat_request.message)
+        save_conversation_message(current_user.id, "agent", response_data.get("message", ""))
+        
         return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -268,7 +272,15 @@ def analyze_user_reading_patterns(user_id: int) -> Dict[str, Any]:
         conn = sqlite3.connect("fogsight.db")
         cursor = conn.cursor()
         
-        # 从用户的PPT记录中获取阅读历史（因为这是现有的数据源）
+        # 检查ppts表是否存在
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ppts'")
+        if not cursor.fetchone():
+            # 如果表不存在，使用默认数据
+            print("警告: ppts表不存在，使用默认推荐数据")
+            conn.close()
+            return get_default_user_profile()
+        
+        # 从用户的PPT记录中获取阅读历史
         cursor.execute("""
             SELECT title, author, category_name, created_at 
             FROM ppts 
@@ -281,14 +293,7 @@ def analyze_user_reading_patterns(user_id: int) -> Dict[str, Any]:
         conn.close()
         
         if not books:
-            return {
-                "reading_frequency": "新用户",
-                "preferred_categories": [],
-                "current_life_stage": "探索阶段",
-                "emotional_needs": ["兴趣发现"],
-                "recent_books": [],
-                "total_books": 0
-            }
+            return get_default_user_profile()
         
         # 分析类别偏好
         categories = {}
@@ -342,14 +347,18 @@ def analyze_user_reading_patterns(user_id: int) -> Dict[str, Any]:
         
     except Exception as e:
         print(f"分析用户阅读模式失败: {e}")
-        return {
-            "reading_frequency": "未知",
-            "preferred_categories": [],
-            "current_life_stage": "探索阶段",
-            "emotional_needs": ["兴趣发现"],
-            "recent_books": [],
-            "total_books": 0
-        }
+        return get_default_user_profile()
+
+def get_default_user_profile() -> Dict[str, Any]:
+    """获取默认用户画像"""
+    return {
+        "reading_frequency": "新用户",
+        "preferred_categories": ["文学", "心理学", "历史"],
+        "current_life_stage": "探索阶段",
+        "emotional_needs": ["兴趣发现", "知识拓展"],
+        "recent_books": ["《活着》", "《解忧杂货店》", "《人类简史》"],
+        "total_books": 3
+    }
 
 def generate_personalized_greeting(user_profile: Dict[str, Any]) -> str:
     """生成个性化开场白"""
@@ -505,6 +514,30 @@ def save_conversation_message(user_id: int, role: str, content: str):
         conn = sqlite3.connect("fogsight.db")
         cursor = conn.cursor()
         
+        # 确保表存在
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS conversation_sessions (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status TEXT DEFAULT 'active'
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS conversation_messages (
+                id TEXT PRIMARY KEY,
+                session_id TEXT,
+                user_id INTEGER,
+                role TEXT,
+                content TEXT,
+                metadata TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (session_id) REFERENCES conversation_sessions (id)
+            )
+        ''')
+        
         message_id = f"msg_{user_id}_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
         session_id = f"session_{user_id}_{datetime.now().strftime('%Y%m%d')}"
         
@@ -523,6 +556,8 @@ def save_conversation_message(user_id: int, role: str, content: str):
         conn.commit()
         conn.close()
         
+        print(f"成功保存对话消息: {role} - {content[:20]}...")
+        
     except Exception as e:
         print(f"保存对话消息失败: {e}")
 
@@ -534,6 +569,33 @@ def generate_personalized_recommendations(user_profile: Dict[str, Any]) -> List[
     
     # 基础推荐池
     all_books = MOCK_BOOKS.copy()
+    
+    # 检查数据库中是否有这些书的生成内容
+    conn = sqlite3.connect("fogsight.db")
+    cursor = conn.cursor()
+    
+    for book in all_books:
+        # 查找是否有对应的生成内容
+        try:
+            cursor.execute("""
+                SELECT id FROM ppts 
+                WHERE title LIKE ? OR title LIKE ?
+                LIMIT 1
+            """, (f"%{book['title']}%", f"%{book['title'].replace(' ', '')}%"))
+            
+            result = cursor.fetchone()
+            if result:
+                book["has_content"] = True
+                book["content_id"] = result[0]
+            else:
+                book["has_content"] = False
+                book["content_id"] = None
+        except Exception as e:
+            print(f"查询书籍内容失败: {e}")
+            book["has_content"] = False
+            book["content_id"] = None
+    
+    conn.close()
     
     # 根据用户画像调整推荐理由
     for book in all_books:

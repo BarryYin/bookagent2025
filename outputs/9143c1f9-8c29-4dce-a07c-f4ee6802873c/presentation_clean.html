@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>未知书籍 - PPT演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1D1D1F;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* 开场页特殊样式 */
+        .slide[data-slide="0"] {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+        }
+        
+        .slide[data-slide="0"] h1 {
+            font-size: 5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 封面页样式 */
+        .cover-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .book-cover {
+            flex-shrink: 0;
+            width: 300px;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: perspective(1000px) rotateY(-15deg);
+            transition: transform 0.3s ease;
+        }
+        
+        .book-cover:hover {
+            transform: perspective(1000px) rotateY(-5deg) scale(1.05);
+        }
+        
+        .cover-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .cover-text {
+            flex: 1;
+            max-width: 500px;
+            text-align: left;
+        }
+        
+        .cover-text h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #1D1D1F;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cover-text h2 {
+            font-size: 1.8rem;
+            font-weight: 400;
+            color: #86868B;
+            margin-bottom: 30px;
+        }
+        
+        /* 默认书籍封面样式 */
+        .default-cover {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            position: relative;
+        }
+        
+        .default-cover-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .default-cover-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .default-cover-subtitle {
+            font-size: 1rem;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+        
+        .slide h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #1D1D1F;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide h2 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #86868B;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        
+        .slide p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            max-width: 800px;
+            color: #1D1D1F;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slide ul {
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .slide li {
+            margin-bottom: 15px;
+            padding-left: 10px;
+        }
+        
+        /* 侧边导航按钮 */
+        .side-navigation {
+            position: fixed;
+            top: 50%;
+            width: 100%;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1001;
+            pointer-events: none;
+            padding: 0 30px;
+            box-sizing: border-box;
+        }
+        
+        .side-nav-button {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1D1D1F;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .side-nav-button:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .side-nav-button:disabled {
+            background: rgba(255, 255, 255, 0.5);
+            color: #86868B;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 点状导航 */
+        .dots-container {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            z-index: 1001;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.2);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* 解说词面板 - 字幕样式 */
+        .narration-panel {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 900px;
+            background: none;
+            border-radius: 0;
+            padding: 10px 20px;
+            box-shadow: none;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: white;
+            z-index: 1000;
+            text-align: center;
+            border: none;
+        }
+        
+        .narration-content {
+            margin-bottom: 20px;
+            min-height: 40px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            background: none;
+            backdrop-filter: none;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            text-align: center;
+        }
+        
+        .current-sentence {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            animation: fadeIn 0.5s ease-in-out;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9), 
+                         0 0 10px rgba(255, 215, 0, 0.3);
+            font-weight: 600;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            display: inline-block;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 音频控制按钮 */
+        .audio-controls {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .audio-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            margin: 0 5px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .audio-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .audio-button.playing {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            animation: playingPulse 2s infinite;
+        }
+        
+        @keyframes playingPulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); }
+            50% { box-shadow: 0 6px 25px rgba(255, 107, 107, 0.5); }
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1D1D1F;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            font-weight: 500;
+            border-radius: 25px;
+            padding: 12px 20px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .back-home-button {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1D1D1F;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .back-home-button:hover {
+            background: rgba(255, 255, 255, 1);
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .back-home-button svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s ease;
+        }
+        
+        .back-home-button:hover svg {
+            transform: translateX(-2px);
+        }
+        
+        /* 增强动画效果 */
+        .side-nav-button:hover {
+            animation: pulse 0.6s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .dot {
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        .dot:hover {
+            transform: scale(1.4);
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .dot.active {
+            animation: dotPulse 2s infinite;
+        }
+        
+        @keyframes dotPulse {
+            0%, 100% { 
+                transform: scale(1.2);
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            }
+            50% { 
+                transform: scale(1.4);
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide active" data-slide="0">
+            <div class="cover-container">
+                <div class="book-cover">
+                    <div class="default-cover">
+                        <div class="default-cover-icon">📚</div>
+                        <div class="default-cover-title">未知书籍</div>
+                        <div class="default-cover-subtitle">书籍封面</div>
+                    </div>
+                </div>
+                <div class="cover-text">
+                    <h1>你当像鸟飞往你的山</h1>
+                    <h2>教育是一场自我救赎的旅程</h2>
+                </div>
+            </div>
+        </div>
+        <div class="slide" data-slide="1">
+            <h1>我也曾站在废墟之上</h1>
+            <h2>在黑暗中寻找光明的人，最懂那束光的意义</h2>
+            <p>小时候，我也曾在狭小的世界里仰望星空。是书本带我走出大山，看见更广阔的世界。<br><br>就像塔拉一样，我们都在用知识对抗命运，用阅读点亮人生。</p>
+        </div>
+        <div class="slide" data-slide="2">
+            <h1>废墟之上，教育为翼</h1>
+            <h2>一个女孩的逆风飞翔</h2>
+            <p>塔拉·韦斯特弗，一个从未上过学的女孩，却凭借自学考上大学，最终获得剑桥大学博士学位。<br><br>这不是神话，而是一个真实存在的英雄之旅。</p>
+        </div>
+        <div class="slide" data-slide="3">
+            <h1>垃圾场与象牙塔之间</h1>
+            <h2>跨越阶层的知识突围</h2>
+            <p>她在垃圾场长大，却走进了世界顶尖学府。<br><br>每一次考试都是突围，每一页笔记都是战斗。<br><br>她用知识为自己开辟了一条通往自由的道路。</p>
+        </div>
+        <div class="slide" data-slide="4">
+            <h1>信仰与理性的对话</h1>
+            <h2>古典智慧与现代觉醒的交锋</h2>
+            <p>古人说："知之者不如好之者，好之者不如乐之者。"<br><br>塔拉在信仰与理性之间挣扎，最终选择了属于自己的真理。<br><br>这是一场关于思想自由的深刻探讨。</p>
+        </div>
+        <div class="slide" data-slide="5">
+            <h1>塔拉的选择</h1>
+            <h2>一位作家的真实人生体验</h2>
+            <p>她写下这本书，不是为了控诉，也不是为了炫耀，而是为了理解。<br><br>理解那些无法被理解的过去，理解那个曾经选择沉默的自己。<br><br>她说："我曾经怯懦、崩溃、自我怀疑，内心里有什么东西腐烂了。"</p>
+        </div>
+        <div class="slide" data-slide="6">
+            <h1>今天的我们，是否也在逃离什么？</h1>
+            <h2>原生家庭与自我认同的现代困境</h2>
+            <p>有多少人，依然活在别人的期待里？有多少人，从未真正问过自己想要什么？<br><br>塔拉的故事，是一面镜子，照见我们内心深处尚未愈合的伤口。</p>
+        </div>
+        <div class="slide" data-slide="7">
+            <h1>教育即自由，自由即重生</h1>
+            <h2>你当像鸟飞往你的山</h2>
+            <p>这本书告诉我们：知识不仅是信息，更是力量；教育不仅是学习，更是成长。<br><br>愿你也能像那只鸟，不被定义，不被束缚，勇敢地飞往属于你的山。</p>
+        </div>
+    </div>
+    
+    <div class="slide-counter" id="slideCounter">1 / 8</div>
+    
+    <button class="back-home-button" onclick="window.history.back()">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z"/>
+        </svg>
+        返回首页
+    </button>
+    
+    <!-- 侧边导航 -->
+    <div class="side-navigation">
+        <button id="prevButton" class="side-nav-button" onclick="prevSlide()">‹</button>
+        <button id="nextButton" class="side-nav-button" onclick="nextSlide()">›</button>
+    </div>
+
+    <!-- 点状导航 -->
+    <div class="dots-container" id="dotsContainer"></div>
+
+    <!-- 解说词面板 -->
+    <div class="narration-panel" id="narrationPanel">
+        <div class="narration-content" id="narrationContent">
+            <!-- 字幕将在这里显示 -->
+        </div>
+        <div class="audio-controls">
+            <button id="playPauseButton" class="audio-button" onclick="toggleAudio()">
+                🔊 播放解说
+            </button>
+        </div>
+        <audio id="audioPlayer" style="display: none;"></audio>
+    </div>
+
+    <script>
+        // 解说词数据 - 将解说词按句子分割，用于逐句显示
+        const narrations = [
+            "当我第一次读到《你当像鸟飞往你的山》这本书的时候，我的心被深深地震撼了。这不仅仅是一个关于教育的故事，更是一场灵魂的觉醒之旅。塔拉·韦斯特弗，在一个拒绝现代文明的家庭中长大，却用知识为自己打开了一扇通往世界的窗户。她的故事让我想起了我自己年少时，也曾坐在昏暗的灯光下，翻阅着那些泛黄的书页，心中怀着对远方的向往。她不是神童，也没有超能力，她只是一个渴望自由的灵魂，用最朴素的方式，一步步走出大山。",
+            "我记得小时候，也是在一个不那么宽广的世界里，仰望着星空，想象着山那边的世界会是什么样子。就像塔拉一样，我们都在用知识对抗命运，用阅读点亮人生。她的起点并不比我们高，甚至可以说更低。但她选择了相信文字的力量，相信思想的自由。她告诉我：真正的勇气，不是无所畏惧，而是在恐惧面前依然选择前行。正如古人所说："山重水复疑无路，柳暗花明又一村。"她的每一步，都是在为自己的未来开路。",
+            "塔拉的故事，就像一场现代版的英雄之旅。她没有铠甲，没有利剑，只有对知识的渴望和对自由的执着。她在垃圾场长大，却走进了世界顶尖学府；她在偏见与压制中挣扎，却从未放弃对真理的追求。每一次考试都是突围，每一页笔记都是战斗。她用行动告诉我们：命运从来不是注定的，只要你愿意去改变。她不是神话，她是一个真实存在的人，一个敢于向命运说"不"的人。",
+            "在塔拉的世界里，知识是她唯一的武器。她用书籍为自己搭建起一座通往自由的桥梁。她不是一夜成名，也不是天赋异禀，她只是比别人多了一份坚持，多了一份信念。她曾在深夜的灯光下抄写笔记，也曾在图书馆里彻夜苦读。她的成功，是无数个日夜积累的结果。正如古人所言："宝剑锋从磨砺出，梅花香自苦寒来。"她用自己的经历证明了：教育，不仅仅是学习知识，更是培养独立思考的能力和面对困境的勇气。",
+            "塔拉在成长的过程中，始终面临着信仰与理性的冲突。她的家庭信仰极端保守，不允许质疑，也不允许自由。但她在求学的过程中，逐渐学会了用理性的眼光看待世界。这不是背叛，而是一种成长。正如孔子所说："学而不思则罔，思而不学则殆。"她学会了在信仰与理性之间找到平衡，学会了用批判性思维去审视一切。她的选择，不是对过去的否定，而是对自己的负责。她告诉我们：真正的自由，来自于内心的清醒与坚定。",
+            "塔拉写下这本书，不是为了控诉，也不是为了炫耀，而是为了理解。理解那些无法被理解的过去，理解那个曾经选择沉默的自己。她说："我曾经怯懦、崩溃、自我怀疑，内心里有什么东西腐烂了。"但她最终选择了直面这些伤痛，并用文字将其治愈。这不仅是一本回忆录，更是一场自我对话的过程。正如她所说："你可以用很多说法来称呼这个自我：转变、蜕变、虚伪，背叛。但我觉得，那是一种教育。"她的文字，让我们看到了人性的复杂与真实，也让我们明白：成长，就是不断与过去的自己和解。",
+            "有多少人，依然活在别人的期待里？有多少人，从未真正问过自己想要什么？塔拉的故事，是一面镜子，照见我们内心深处尚未愈合的伤口。她的挣扎，我们的影子；她的觉醒，我们的向往。我们都曾被困在某种框架中，不敢越雷池一步。但塔拉告诉我们：只有勇敢地撕开伪装，才能真正获得自由。正如她说："你可以爱一个人，但仍然选择和他说再见；你可以每天都想念一个人，但仍然庆幸他不在你的生命中。"这就是成长的代价，也是自由的代价。",
+            "这本书告诉我们：知识不仅是信息，更是力量；教育不仅是学习，更是成长。愿你也能像那只鸟，不被定义，不被束缚，勇敢地飞往属于你的山。塔拉的故事，是一个关于勇气、背叛、自我觉醒与救赎的真实故事。她用自己的经历诠释了什么叫做"教育即自由，自由即重生"。在这个浮躁的时代，我们需要这样一本有温度、有深度的书，提醒我们：无论出身如何，只要心中有光，就能照亮前行的路。正如书中所说："你当像鸟飞往你的山。""
+        ];
+        
+        const narrationSentences = narrations.map(narration => {
+            // 简单的句子分割（根据标点符号）
+            return narration.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
+        });
+
+        let currentSlide = 0;
+        let isPlaying = false;
+        let isAutoPlaying = false;
+        let currentSentenceIndex = 0;
+        let sentenceTimers = [];
+        const totalSlides = 8;
+
+        // 音频播放功能
+        function toggleAudio() {
+            const playPauseButton = document.getElementById('playPauseButton');
+            
+            if (isAutoPlaying) {
+                // 停止自动播放
+                stopAutoPlay();
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            } else {
+                // 开始自动播放整个PPT
+                startAutoPlay();
+                playPauseButton.textContent = '⏸️ 停止播放';
+                playPauseButton.classList.add('playing');
+            }
+        }
+        
+        function startAutoPlay() {
+            isAutoPlaying = true;
+            currentSlide = 0; // 从第一页开始
+            showSlide(0);
+            playCurrentSlide();
+        }
+        
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            isPlaying = false;
+            const audioPlayer = document.getElementById('audioPlayer');
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            clearSentenceTimers();
+            resetNarrationDisplay();
+        }
+        
+        function playCurrentSlide() {
+            if (!isAutoPlaying) return;
+            
+            const audioPlayer = document.getElementById('audioPlayer');
+            const sessionId = window.location.pathname.split('/')[2]; // 从URL中提取session_id
+            const slideNumber = (currentSlide + 1).toString().padStart(2, '0');
+            const audioPath = `/ppt_audio/${sessionId}_slide_${slideNumber}.mp3`;
+            
+            audioPlayer.src = audioPath;
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                startSentenceDisplay();
+            }).catch((error) => {
+                console.error('音频播放失败:', error);
+                // 如果音频播放失败，仍然显示字幕并在5秒后切换到下一页
+                startSentenceDisplay();
+                setTimeout(() => {
+                    if (isAutoPlaying) {
+                        goToNextSlide();
+                    }
+                }, 5000);
+            });
+        }
+        
+        function goToNextSlide() {
+            if (!isAutoPlaying) return;
+            
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlideForAutoPlay(currentSlide);
+                // 延迟一秒后播放下一页音频
+                setTimeout(() => {
+                    if (isAutoPlaying) {
+                        playCurrentSlide();
+                    }
+                }, 1000);
+            } else {
+                // 播放完成
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+                resetNarrationDisplay();
+            }
+        }
+        
+        function showSlideForAutoPlay(slideIndex) {
+            // 自动播放时的幻灯片切换
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[slideIndex].classList.add('active');
+            
+            updateNavigationButtons();
+            updateDots();
+            updateSlideCounter();
+            clearSentenceTimers();
+        }
+
+        // 逐句显示解说词 - 一次只显示一句
+        function startSentenceDisplay() {
+            const sentences = narrationSentences[currentSlide];
+            if (!sentences) return;
+
+            resetNarrationDisplay();
+            currentSentenceIndex = 0;
+
+            // 立即显示第一句
+            displayCurrentSentence(sentences[0]);
+
+            // 设置后续句子的显示时间
+            sentences.forEach((sentence, index) => {
+                if (index === 0) return; // 跳过第一句，已经显示了
+                
+                const delay = index * 3000; // 每句话间隔3秒
+                
+                const timer = setTimeout(() => {
+                    displayCurrentSentence(sentence);
+                }, delay);
+                
+                sentenceTimers.push(timer);
+            });
+        }
+
+        function displayCurrentSentence(sentence) {
+            const narrationContent = document.getElementById('narrationContent');
+            narrationContent.innerHTML = `<div class="current-sentence">${sentence}</div>`;
+        }
+
+        function resetNarrationDisplay() {
+            const narrationContent = document.getElementById('narrationContent');
+            narrationContent.innerHTML = '';
+            currentSentenceIndex = 0;
+        }
+
+        function clearSentenceTimers() {
+            sentenceTimers.forEach(timer => clearTimeout(timer));
+            sentenceTimers = [];
+        }
+
+        // 监听音频播放结束事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            if (audioPlayer) {
+                audioPlayer.addEventListener('ended', function() {
+                    isPlaying = false;
+                    if (isAutoPlaying) {
+                        // 自动播放模式下，音频结束后自动切换到下一页
+                        setTimeout(() => {
+                            goToNextSlide();
+                        }, 1000); // 1秒延迟，让用户看到最后一句字幕
+                    } else {
+                        // 手动播放模式下，只重置按钮状态
+                        const playPauseButton = document.getElementById('playPauseButton');
+                        if (playPauseButton) {
+                            playPauseButton.textContent = '🔊 播放解说';
+                            playPauseButton.classList.remove('playing');
+                        }
+                    }
+                });
+            }
+        });
+
+        // 幻灯片导航
+        function nextSlide() {
+            if (!isAutoPlaying && currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+
+        function prevSlide() {
+            if (!isAutoPlaying && currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+
+        function showSlide(slideIndex) {
+            // 如果正在自动播放，禁用手动切换
+            if (isAutoPlaying) return;
+            
+            // 停止当前播放的音频
+            if (isPlaying) {
+                stopAutoPlay();
+            }
+            
+            // 切换幻灯片
+            const slides = document.querySelectorAll('.slide');
+            slides[currentSlide].classList.remove('active');
+            slides[slideIndex].classList.add('active');
+            
+            currentSlide = slideIndex;
+            updateNavigationButtons();
+            updateDots();
+            updateSlideCounter();
+            resetNarrationDisplay();
+        }
+
+        function updateNavigationButtons() {
+            const prevButton = document.getElementById('prevButton');
+            const nextButton = document.getElementById('nextButton');
+            
+            prevButton.disabled = currentSlide === 0;
+            nextButton.disabled = currentSlide === totalSlides - 1;
+        }
+
+        function updateDots() {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        function updateSlideCounter() {
+            const counter = document.getElementById('slideCounter');
+            counter.textContent = `${currentSlide + 1} / ${totalSlides}`;
+        }
+
+        // 初始化点状导航
+        function initDots() {
+            const dotsContainer = document.getElementById('dotsContainer');
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => showSlide(i));
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'ArrowLeft':
+                    if (!isAutoPlaying) prevSlide();
+                    break;
+                case 'ArrowRight':
+                    if (!isAutoPlaying) nextSlide();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    toggleAudio();
+                    break;
+                case 'Escape':
+                    stopAutoPlay();
+                    break;
+            }
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initDots();
+            updateNavigationButtons();
+            updateSlideCounter();
+        });
+    </script>
+</body>
+</html>
