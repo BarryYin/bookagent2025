@@ -3636,17 +3636,157 @@ async def get_interview_session(session_id: str):
         print(f"获取会话信息失败: {e}")
         raise HTTPException(status_code=500, detail="获取会话信息失败")
 
+@app.get("/api/book-info")
+async def get_book_info(title: str, author: str = None):
+    """获取书籍扩展信息"""
+    try:
+        import sqlite3
+        import os
+        import json
+        
+        # 查询数据库中的PPT信息 (注意表名是ppts，不是presentations)
+        query = """
+        SELECT 
+            session_id, title, author, category_name, cover_url, created_at
+        FROM ppts 
+        WHERE title LIKE ? 
+        """
+        params = [f"%{title}%"]
+        
+        if author:
+            query += " AND author LIKE ?"
+            params.append(f"%{author}%")
+            
+        query += " ORDER BY created_at DESC LIMIT 1"
+        
+        conn = sqlite3.connect("users.db")
+        try:
+            cursor = conn.execute(query, params)
+            row = cursor.fetchone()
+            
+            if row:
+                session_id = row[0]
+                ppt_title = row[1]
+                ppt_author = row[2]
+                category_name = row[3]
+                cover_url = row[4]
+                created_at = row[5]
+                
+                # 检查对应的PPT文件是否存在
+                ppt_path = f"outputs/{session_id}/presentation.html"
+                data_path = f"outputs/{session_id}/data.json"
+                
+                ppt_exists = os.path.exists(ppt_path)
+                description = f"关于《{ppt_title}》的深度解读"
+                
+                # 如果data.json存在，尝试读取更详细的信息
+                if os.path.exists(data_path):
+                    try:
+                        with open(data_path, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            book_data = data.get('book_data', {})
+                            raw_content = book_data.get('raw_content', '')
+                            if 'content_summary' in raw_content:
+                                # 提取简介信息
+                                import re
+                                summary_match = re.search(r'"content_summary":\s*\[(.*?)\]', raw_content, re.DOTALL)
+                                if summary_match:
+                                    description = "这是一部经典文学作品..."
+                    except:
+                        pass
+                
+                return {
+                    "id": session_id,
+                    "title": ppt_title,
+                    "author": ppt_author or "未知作者",
+                    "category": category_name or "未分类",
+                    "description": description,
+                    "created_at": created_at,
+                    "cover_url": cover_url,
+                    "ppt_exists": ppt_exists,
+                    "ppt_url": f"/outputs/{session_id}/presentation.html" if ppt_exists else None,
+                    "interview_count": 1,  # 至少有一次访问记录
+                    "podcast_count": 0,
+                    "source": "library"
+                }
+            else:
+                # 如果数据库中没有，返回默认信息
+                return {
+                    "title": title,
+                    "author": author or "未知作者",
+                    "category": "文学作品",
+                    "description": f"关于《{title}》的深度访谈",
+                    "created_at": datetime.now(shanghai_tz).isoformat(),
+                    "ppt_exists": False,
+                    "ppt_url": None,
+                    "interview_count": 0,
+                    "podcast_count": 0,
+                    "source": "new"
+                }
+        finally:
+            conn.close()
+                
+    except Exception as e:
+        print(f"获取书籍信息失败: {e}")
+        # 返回默认信息而不是抛出错误
+        return {
+            "title": title,
+            "author": author or "未知作者",
+            "category": "未分类",
+            "description": f"关于《{title}》的深度访谈",
+            "created_at": datetime.now(shanghai_tz).isoformat(),
+            "ppt_exists": False,
+            "ppt_url": None,
+            "interview_count": 0,
+            "podcast_count": 0,
+            "source": "error"
+        }
+
 @app.get("/interview", response_class=HTMLResponse)
 async def interview_page(request: Request, book_title: str = None, book_author: str = None):
     """读后感访谈页面"""
+    # 尝试从数据库中查找对应的书籍信息
+    book_info = None
+    if book_title:
+        try:
+            import sqlite3
+            conn = sqlite3.connect('fogsight.db')
+            cursor = conn.cursor()
+            
+            # 查找书籍信息
+            cursor.execute("""
+                SELECT session_id, title, author, cover_url, category_name, created_at 
+                FROM presentations 
+                WHERE title LIKE ? OR (author LIKE ? AND title LIKE ?)
+                ORDER BY created_at DESC 
+                LIMIT 1
+            """, (f'%{book_title}%', f'%{book_author}%' if book_author else '%', f'%{book_title}%'))
+            
+            result = cursor.fetchone()
+            if result:
+                session_id, title, author, cover_url, category_name, created_at = result
+                book_info = {
+                    'session_id': session_id,
+                    'title': title,
+                    'author': author,
+                    'cover_url': cover_url,
+                    'category': category_name,
+                    'created_at': created_at,
+                    'found_in_library': True
+                }
+            conn.close()
+        except Exception as e:
+            print(f"查询书籍信息失败: {e}")
+    
     return templates.TemplateResponse(
         "interview.html", {
             "request": request,
             "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S"),
             "book_title": book_title,
             "book_author": book_author,
-            "book_cover": None,
-            "book_description": f"关于《{book_title}》的深度访谈"
+            "book_info": book_info,
+            "book_cover": book_info['cover_url'] if book_info else None,
+            "book_description": f"关于《{book_title}》的深度访谈" if book_title else "开始你的读后感访谈"
         }
     )
 

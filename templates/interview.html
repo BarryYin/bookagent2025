@@ -35,7 +35,8 @@
         
         .interview-container {
             display: flex;
-            height: 100vh;
+            height: calc(100vh - 60px);
+            margin-top: 60px;
             background: var(--bg-primary);
             animation: fadeIn 0.5s ease-out;
         }
@@ -352,44 +353,113 @@
         }
         
         .interview-input {
-            padding: 1rem;
+            padding: 1rem 1.5rem 1.5rem 1.5rem;
             border-top: 1px solid var(--border-color);
             background: var(--bg-primary);
+            min-height: 80px;
         }
         
         .interview-form {
             display: flex;
-            gap: 0.5rem;
+            align-items: flex-end;
+            gap: 0.75rem;
+            max-width: 100%;
         }
         
-        .interview-form input {
+        .input-wrapper {
             flex: 1;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
+            position: relative;
+        }
+        
+        .interview-form textarea {
+            width: 100%;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
             background: var(--bg-secondary);
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            transition: all 0.2s ease;
+            line-height: 1.4;
+            box-sizing: border-box;
+        }
+        
+        .interview-form textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+        
+        .interview-form textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.8;
         }
         
         .interview-form button {
-            padding: 0.75rem 1.5rem;
-            background: var(--accent-color);
+            padding: 12px 20px;
+            background: #007bff;
             color: white;
             border: none;
-            border-radius: 0.5rem;
+            border-radius: 20px;
             cursor: pointer;
+            font-size: 14px;
             font-weight: 500;
-            transition: background 0.2s;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            min-width: 60px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .interview-form button:hover {
-            background: var(--accent-hover);
+            background: #0056b3;
+            transform: translateY(-1px);
         }
         
         .interview-form button:disabled {
-            opacity: 0.5;
+            background: #ccc;
             cursor: not-allowed;
+            transform: none;
+        }
+        
+        .input-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .input-suggestions.show {
+            display: block;
+        }
+        
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .suggestion-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
         }
         
         .book-display {
@@ -587,21 +657,26 @@
 </head>
 
 <body>
-    <a href="/" class="back-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5"/>
-            <path d="M12 19l-7-7 7-7"/>
-        </svg>
-        返回首页
-    </a>
-    
-    <!-- 帮助提示按钮 -->
-    <div class="help-button" id="help-button" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
+    <!-- 顶部导航区 -->
+    <div class="top-nav" style="position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--bg-primary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h1 style="margin: 0; font-size: 1.3rem; color: var(--text-primary); font-weight: 600;">读后感访谈</h1>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <!-- 帮助提示按钮 -->
+            <button class="help-button" id="help-button" style="background: transparent; border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: var(--text-secondary);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </button>
+            <!-- 返回首页按钮 -->
+            <a href="/" class="back-button" style="background: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,123,255,0.2);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12h18m-9-9l-9 9 9 9"/>
+                </svg>
+                返回首页
+            </a>
+        </div>
     </div>
     
     <!-- 帮助提示弹窗 -->
@@ -647,12 +722,12 @@
             <div class="interview-input">
                 <form class="interview-form" id="interview-form">
                     <div class="input-wrapper">
-                        <input type="text" id="interview-input" placeholder="分享你的读后感或提出问题..." autocomplete="off" required>
+                        <textarea id="interview-input" placeholder="分享你的读后感或提出问题..." autocomplete="off" required rows="1"></textarea>
                         <div class="input-suggestions" id="input-suggestions"></div>
                     </div>
                     <button type="submit" id="send-button">
                         <span class="button-text">发送</span>
-                        <span class="button-loading" style="display: none;">发送中...</span>
+                        <span class="button-loading" style="display: none;">...</span>
                     </button>
                 </form>
             </div>
@@ -676,23 +751,10 @@
             </div>
             
             <div class="book-display" id="book-display">
-                <div class="book-cover" id="book-cover">
-                    {% if book_cover %}
-                    <img src="{{ book_cover }}" alt="{{ book_title }}">
-                    {% else %}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                    </svg>
-                    {% endif %}
-                </div>
-                
-                <div class="book-details">
-                    <h3 class="book-title">{{ book_title or '未知书名' }}</h3>
-                    <p class="book-author">{{ book_author or '未知作者' }}</p>
-                    <div class="book-description" id="book-description">
-                        {{ book_description or '暂无书籍简介' }}
-                    </div>
+                <!-- 初始状态：显示加载中 -->
+                <div style="text-align: center; padding: 2rem; color: #666;">
+                    <div style="font-size: 2rem; margin-bottom: 1rem;">📚</div>
+                    <p>正在加载书籍信息...</p>
                 </div>
             </div>
         </div>
@@ -709,6 +771,110 @@
         let currentSessionId = null;
         let isLoading = false;
         let messageCount = 0;
+        let currentBookInfo = null;
+        
+        // 页面加载时获取书籍信息
+        document.addEventListener('DOMContentLoaded', function() {
+            if (bookTitle && bookTitle.trim() !== '') {
+                loadBookInfo(bookTitle, bookAuthor);
+            }
+        });
+        
+        // 加载书籍信息
+        async function loadBookInfo(title, author = '') {
+            try {
+                const params = new URLSearchParams({ title });
+                if (author) params.append('author', author);
+                
+                const response = await fetch(`/api/book-info?${params}`);
+                const bookInfo = await response.json();
+                currentBookInfo = bookInfo;
+                
+                updateBookDisplay(bookInfo);
+            } catch (error) {
+                console.error('获取书籍信息失败:', error);
+            }
+        }
+        
+        // 更新书籍显示区域
+        function updateBookDisplay(bookInfo) {
+            const bookDisplay = document.getElementById('book-display');
+            
+            if (bookInfo.ppt_exists && bookInfo.ppt_url) {
+                // 显示PPT预览模式
+                bookDisplay.innerHTML = `
+                    <div style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="book-header" style="padding: 1rem; border-bottom: 1px solid #ddd; background: #f8f9fa;">
+                            <h3 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.1rem;">${bookInfo.title}</h3>
+                            <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">${bookInfo.author}</p>
+                            <div style="background: #e3f2fd; padding: 0.5rem; border-radius: 4px; font-size: 0.8rem; color: #1976d2;">
+                                ✅ 在图书馆中找到此书
+                            </div>
+                        </div>
+                        
+                        <div class="ppt-preview-container" style="flex: 1; position: relative;">
+                            <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+                                <button onclick="openPptFullscreen('${bookInfo.ppt_url}')" style="padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                                    全屏查看PPT
+                                </button>
+                            </div>
+                            <iframe src="${bookInfo.ppt_url}" style="width: 100%; height: 100%; border: none; border-radius: 0 0 8px 8px;"></iframe>
+                        </div>
+                        
+                        <div class="book-actions" style="padding: 0.75rem; border-top: 1px solid #ddd; background: #f8f9fa;">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button onclick="viewInLibrary()" style="flex: 1; padding: 0.5rem; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                                    在图书馆查看
+                                </button>
+                                <button onclick="findSimilarBooks()" style="flex: 1; padding: 0.5rem; background: #17a2b8; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                                    相似推荐
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 显示基本信息模式
+                bookDisplay.innerHTML = `
+                    <div class="book-cover" style="display: flex; justify-content: center; margin-bottom: 1rem;">
+                        <div style="width: 160px; height: 220px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">
+                            📚
+                        </div>
+                    </div>
+                    
+                    <div class="book-details">
+                        <h3 style="text-align: center; margin: 0 0 0.5rem 0; color: #333;">${bookInfo.title}</h3>
+                        <p style="text-align: center; margin: 0 0 1rem 0; color: #666;">${bookInfo.author}</p>
+                        
+                        <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+                            <h4 style="margin: 0 0 0.5rem 0; color: #856404; font-size: 1rem;">📚 暂未在图书馆找到</h4>
+                            <p style="margin: 0; font-size: 0.9rem; color: #856404;">
+                                这本书还没有收录到我们的图书馆中，但你可以开始访谈对话，我们会为你生成专属的读后感内容。
+                            </p>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                            <h4 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1rem;">💡 访谈提示</h4>
+                            <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem; color: #666; line-height: 1.6;">
+                                <li>分享你对书中情节的感受</li>
+                                <li>谈论最印象深刻的人物</li>
+                                <li>讨论书中的主题和思想</li>
+                                <li>表达你的感悟和收获</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="browseLibrary()" style="flex: 1; padding: 0.75rem; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">
+                                浏览图书馆
+                            </button>
+                            <button onclick="startInterview()" style="flex: 1; padding: 0.75rem; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">
+                                开始访谈
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
         
         // 添加输入提示功能
         const suggestedQuestions = [
@@ -1239,10 +1405,124 @@
             const podcastStyleDropdown = document.getElementById('podcast-style');
             if (podcastStyleDropdown) {
                 podcastStyleDropdown.addEventListener('change', function() {
-                    // 可以在这里添加风格预览或描述的逻辑
                     const selectedStyle = this.value;
                     console.log('选择的播客风格:', selectedStyle);
                 });
+            }
+            
+            // 自动调整textarea高度
+            interviewInput.addEventListener('input', autoResizeTextarea);
+        });
+        
+        // 查看PPT详情
+        function viewPptDetail(sessionId) {
+            window.open(`/ppt/${sessionId}`, '_blank');
+        }
+        
+        // 在图书馆查看
+        function viewInLibrary() {
+            window.open('/library', '_blank');
+        }
+        
+        // 浏览图书馆
+        function browseLibrary() {
+            window.location.href = '/library';
+        }
+        
+        // 开始访谈
+        function startInterview() {
+            const input = document.getElementById('interview-input');
+            input.focus();
+            input.placeholder = '开始分享你的读后感吧...';
+        }
+        
+        // 加载PPT预览
+        async function loadPptPreview(sessionId) {
+            try {
+                const response = await fetch(`/api/ppt-preview/${sessionId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const previewElement = document.getElementById('ppt-content');
+                    if (previewElement && data.slides && data.slides.length > 0) {
+                        const firstSlide = data.slides[0];
+                        previewElement.innerHTML = `
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>标题：</strong>${firstSlide.title || '无标题'}
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>内容：</strong>${(firstSlide.content || '').substring(0, 100)}${(firstSlide.content || '').length > 100 ? '...' : ''}
+                            </div>
+                            <div style="color: #666; font-size: 0.8rem;">
+                                共 ${data.slides.length} 页PPT
+                            </div>
+                        `;
+                    } else {
+                        previewElement.innerHTML = '<div style="color: #666;">暂无PPT内容</div>';
+                    }
+                } else {
+                    document.getElementById('ppt-content').innerHTML = '<div style="color: #999;">加载失败</div>';
+                }
+            } catch (error) {
+                console.error('加载PPT预览失败:', error);
+                const previewElement = document.getElementById('ppt-content');
+                if (previewElement) {
+                    previewElement.innerHTML = '<div style="color: #999;">加载失败</div>';
+                }
+            }
+        }
+        
+        // 打开PPT全屏查看
+        function openPptFullscreen(pptUrl) {
+            if (pptUrl) {
+                window.open(pptUrl, '_blank');
+            }
+        }
+        
+        // 在图书馆查看
+        function viewInLibrary() {
+            window.open('/library', '_blank');
+        }
+        
+        // 查找相似书籍
+        function findSimilarBooks() {
+            if (currentBookInfo) {
+                const category = currentBookInfo.category || '';
+                window.open(`/library?category=${encodeURIComponent(category)}`, '_blank');
+            } else {
+                window.open('/library', '_blank');
+            }
+        }
+        
+        // 浏览图书馆
+        function browseLibrary() {
+            window.open('/library', '_blank');
+        }
+        
+        // 开始访谈
+        function startInterview() {
+            const input = document.getElementById('interview-input');
+            if (input) {
+                input.focus();
+            }
+        }
+        
+        // 自动调整textarea高度
+        function autoResizeTextarea() {
+            const input = document.getElementById('interview-input');
+            if (input) {
+                input.style.height = 'auto';
+                const scrollHeight = input.scrollHeight;
+                const maxHeight = 120;
+                input.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+            }
+        }
+        
+        // 页面加载完成后的初始化
+        window.addEventListener('load', function() {
+            // 添加textarea自动调整高度
+            const textarea = document.getElementById('interview-input');
+            if (textarea) {
+                textarea.addEventListener('input', autoResizeTextarea);
             }
         });
     </script>
