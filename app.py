@@ -383,6 +383,15 @@ except Exception as e:
                 "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S")
             }
         )
+    
+    @app.get("/recommendation-standalone")
+    async def recommendation_standalone_page(request: Request):
+        """独立的引导推荐智能体页面（无需认证）"""
+        return templates.TemplateResponse(
+            "recommendation_standalone.html", {
+                "request": request
+            }
+        )
 
 # -----------------------------------------------------------------------
 # 6. 本地启动命令

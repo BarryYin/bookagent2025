@@ -707,412 +707,13 @@ async def step4_generate_html(slides: list, narrations: list, book_data: dict, m
     第4步：将画面和解说词转换为HTML格式（支持语音和方法论风格）
     """
     
-    # 根据方法论调整视觉风格
-    style_config = ""
-    if "dongyu_literature" in methodology:
-        style_config = """
-/* 董宇辉式文学风格 */
-:root {
-    --primary-color: #8B4513; /* 温暖的棕色 */
-    --secondary-color: #F5E6D3; /* 米白色 */
-    --accent-color: #D2691E; /* 橙棕色 */
-    --text-color: #2F1B14; /* 深棕色 */
-    --bg-gradient: linear-gradient(135deg, #F5E6D3 0%, #E6D2B3 100%);
-}
-.slide {
-    font-family: 'Georgia', '宋体', serif;
-    background: var(--bg-gradient);
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(139, 69, 19, 0.2);
-}
-.slide h1 { 
-    font-family: '华文行楷', 'Georgia', serif;
-    color: var(--primary-color);
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-}
-"""
-    elif "dongyu_autobiography" in methodology:
-        style_config = """
-/* 董宇辉式自传体风格 */
-:root {
-    --primary-color: #1E3A8A; /* 深蓝色 */
-    --secondary-color: #F1F5F9; /* 浅灰蓝 */
-    --accent-color: #3B82F6; /* 亮蓝色 */
-    --text-color: #1E293B; /* 深灰 */
-    --bg-gradient: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
-}
-.slide {
-    font-family: 'Arial', '微软雅黑', sans-serif;
-    background: var(--bg-gradient);
-    border-left: 5px solid var(--accent-color);
-}
-"""
-    elif "luozhenyu_efficiency" in methodology:
-        style_config = """
-/* 罗振宇式效率风格 */
-:root {
-    --primary-color: #EA580C; /* 强烈橙色 */
-    --secondary-color: #000000; /* 纯黑 */
-    --accent-color: #FBBF24; /* 金黄色 */
-    --text-color: #FFFFFF; /* 白色 */
-    --bg-gradient: linear-gradient(135deg, #000000 0%, #1F2937 100%);
-}
-.slide {
-    font-family: 'Arial Black', '微软雅黑', sans-serif;
-    background: var(--bg-gradient);
-    color: var(--text-color);
-    border: 2px solid var(--primary-color);
-}
-.slide h1 { 
-    color: var(--primary-color);
-    font-weight: 900;
-    text-transform: uppercase;
-}
-"""
-    else:
-        style_config = """
-/* 通用风格 */
-:root {
-    --primary-color: #007AFF;
-    --secondary-color: #F2F2F7;
-    --accent-color: #FF9500;
-    --text-color: #000000;
-    --bg-gradient: linear-gradient(135deg, #FFFFFF 0%, #F2F2F7 100%);
-}
-"""
-
-    # 语音支持配置
-    voice_script = ""
-    if enable_voice:
-        voice_script = """
-<!-- 语音合成支持 -->
-<script>
-class PPTVoicePlayer {
-    constructor() {
-        this.synth = window.speechSynthesis;
-        this.currentUtterance = null;
-        this.isPlaying = false;
-        this.currentSlide = 0;
-        this.initVoice();
-    }
-    
-    initVoice() {
-        // 等待语音加载
-        if (this.synth.getVoices().length === 0) {
-            this.synth.addEventListener('voiceschanged', () => {
-                this.setupVoice();
-            });
-        } else {
-            this.setupVoice();
-        }
-    }
-    
-    setupVoice() {
-        const voices = this.synth.getVoices();
-        // 优先选择中文语音
-        this.voice = voices.find(voice => 
-            voice.lang.includes('zh') || voice.name.includes('Chinese')
-        ) || voices[0];
-    }
-    
-    playNarration(text, emotion = 'normal') {
-        if (this.isPlaying) {
-            this.stopNarration();
-        }
-        
-        this.currentUtterance = new SpeechSynthesisUtterance(text);
-        this.currentUtterance.voice = this.voice;
-        this.currentUtterance.rate = 0.9; // 稍慢的语速
-        this.currentUtterance.pitch = emotion === 'emotional' ? 1.2 : 1.0;
-        this.currentUtterance.volume = 0.8;
-        
-        this.currentUtterance.onstart = () => {
-            this.isPlaying = true;
-            this.updatePlayButton(true);
-        };
-        
-        this.currentUtterance.onend = () => {
-            this.isPlaying = false;
-            this.updatePlayButton(false);
-        };
-        
-        this.synth.speak(this.currentUtterance);
-    }
-    
-    stopNarration() {
-        if (this.currentUtterance) {
-            this.synth.cancel();
-            this.isPlaying = false;
-            this.updatePlayButton(false);
-        }
-    }
-    
-    updatePlayButton(playing) {
-        const btn = document.querySelector('.voice-control');
-        if (btn) {
-            btn.textContent = playing ? '⏸️ 暂停' : '🔊 播放解说';
-            btn.classList.toggle('playing', playing);
-        }
-    }
-    
-    playCurrentSlide() {
-        const slideElement = document.querySelector(`.slide[data-slide="${this.currentSlide}"]`);
-        if (slideElement) {
-            const narrationText = slideElement.dataset.narration;
-            const emotion = slideElement.dataset.emotion || 'normal';
-            if (narrationText) {
-                this.playNarration(narrationText, emotion);
-            }
-        }
-    }
-}
-
-// 初始化语音播放器
-const voicePlayer = new PPTVoicePlayer();
-
-// 添加语音控制按钮事件
-document.addEventListener('DOMContentLoaded', function() {
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('voice-control')) {
-            if (voicePlayer.isPlaying) {
-                voicePlayer.stopNarration();
-            } else {
-                voicePlayer.playCurrentSlide();
-            }
-        }
-    });
-});
-</script>
-"""
-
-    system_prompt = f"""基于以下数据，生成一个完整的HTML格式PPT，采用指定方法论的设计风格：
-
-书籍数据：
-{json.dumps(book_data, ensure_ascii=False, indent=2)}
-
-PPT画面：
-{json.dumps(slides, ensure_ascii=False, indent=2)}
-
-解说词：
-{json.dumps(narrations, ensure_ascii=False, indent=2)}
-
-{style_config}
-
-**重要要求：必须实现真正的分页PPT效果，每次只显示一页内容，而不是把所有页面都显示在一个页面上！**
-
-## 正确的HTML结构要求：
-```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>书籍介绍PPT</title>
-    <style>
-        body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }}
-        .presentation-container {{ position: relative; width: 100vw; height: 100vh; overflow: hidden; }}
-        .slide {{ 
-            position: absolute; 
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.5s ease;
-        }}
-        .slide.active {{ opacity: 1; transform: translateX(0); }}
-        .slide.prev {{ transform: translateX(-100%); }}
-    </style>
-</head>
-<body>
-    <div class="presentation-container">
-        <!-- 每个slide都是独立的，通过JavaScript控制显示 -->
-        <div class="slide active" data-slide="0">第1页内容</div>
-        <div class="slide" data-slide="1">第2页内容</div>
-        <div class="slide" data-slide="2">第3页内容</div>
-        <!-- 更多页面... -->
-    </div>
-    <div class="navigation">
-        <button onclick="prevSlide()">←</button>
-        <div class="dots"></div>
-        <button onclick="nextSlide()">→</button>
-    </div>
-    <div class="narration-panel">解说词区域</div>
-    <script>
-        let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const totalSlides = slides.length;
-        
-        function showSlide(n) {{
-            slides.forEach(slide => slide.classList.remove('active', 'prev'));
-            if (n >= 0 && n < totalSlides) {{
-                slides[n].classList.add('active');
-                currentSlide = n;
-                updateNarration(n);
-                updateDots(n);
-            }}
-        }}
-        
-        function nextSlide() {{ showSlide(currentSlide + 1); }}
-        function prevSlide() {{ showSlide(currentSlide - 1); }}
-        
-        // 键盘导航
-        document.addEventListener('keydown', (e) => {{
-            if (e.key === 'ArrowRight') nextSlide();
-            if (e.key === 'ArrowLeft') prevSlide();
-        }});
-    </script>
-</body>
-</html>
-```
-
-## 关键实现要点：
-
-1. **分页显示逻辑**：
-   - 使用 `position: absolute` 让所有slide重叠
-   - 通过 `opacity` 和 `transform` 控制显示/隐藏
-   - 只有当前页面 `opacity: 1`，其他页面 `opacity: 0`
-
-2. **页面切换动画**：
-   - 使用 CSS `transition` 实现平滑切换
-   - 当前页面：`transform: translateX(0)`
-   - 下一页：`transform: translateX(100%)`  
-   - 上一页：`transform: translateX(-100%)`
-
-3. **JavaScript控制**：
-   - `currentSlide` 变量跟踪当前页面
-   - `showSlide(n)` 函数切换到指定页面
-   - 键盘事件监听（左右箭头键）
-   - 导航点击事件
-
-4. **苹果风格设计**：
-   - 纯白背景 (#FFFFFF)
-   - 苹果蓝强调色 (#007AFF)
-   - SF Pro 字体系列
-   - 圆角和阴影效果
-   - 毛玻璃效果
-
-5. **解说词同步**：
-   - 每次切换页面时更新解说词内容
-   - 解说词面板固定位置显示
-
-**请严格按照这个结构生成HTML，确保实现真正的分页效果，而不是滚动浏览所有内容！**
-
-**重要：必须生成完整的HTML文件，包含完整的JavaScript代码，确保文件以</html>结尾！**
-
-## 完整的工作示例模板：
-
-请基于以下完整的工作模板生成HTML，确保所有功能都能正常工作，并且HTML文件必须完整：
-
-```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>书籍PPT</title>
-    <style>
-        body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #FFFFFF; color: #1D1D1F; overflow: hidden; }}
-        .presentation-container {{ position: relative; width: 100vw; height: 100vh; overflow: hidden; }}
-        .slide {{ position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transform: translateX(100%); transition: all 0.5s ease; padding: 40px; box-sizing: border-box; text-align: center; }}
-        .slide.active {{ opacity: 1; transform: translateX(0); }}
-        .slide h1 {{ font-size: 4rem; font-weight: 300; margin-bottom: 20px; }}
-        .slide h2 {{ font-size: 2rem; font-weight: 400; color: #86868B; margin-bottom: 30px; }}
-        .slide p {{ font-size: 1.5rem; line-height: 1.6; max-width: 800px; }}
-        .navigation {{ position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; z-index: 1000; }}
-        .navigation button {{ background: #007AFF; color: white; border: none; padding: 12px 24px; margin: 0 15px; border-radius: 25px; cursor: pointer; font-size: 1.2rem; }}
-        .navigation button:disabled {{ background: #86868B; cursor: not-allowed; }}
-        .dot {{ width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.5); margin: 0 6px; cursor: pointer; }}
-        .dot.active {{ background: #007AFF; }}
-        .narration-panel {{ position: fixed; top: 30px; right: 30px; width: 350px; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); border-radius: 16px; padding: 20px; z-index: 1000; }}
-    </style>
-</head>
-<body>
-    <div class="presentation-container">
-        <!-- 根据slides数据生成每一页 -->
-    </div>
-    <div class="navigation">
-        <button id="prevButton" onclick="prevSlide()">← 上一页</button>
-        <div class="dots" id="dotsContainer"></div>
-        <button id="nextButton" onclick="nextSlide()">下一页 →</button>
-    </div>
-    <div class="narration-panel" id="narrationPanel">解说词区域</div>
-    <script>
-        let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const totalSlides = slides.length;
-        
-        // 生成导航点
-        const dotsContainer = document.getElementById('dotsContainer');
-        for (let i = 0; i < totalSlides; i++) {{
-            const dot = document.createElement('div');
-            dot.classList.add('dot');
-            if (i === 0) dot.classList.add('active');
-            dot.addEventListener('click', () => showSlide(i));
-            dotsContainer.appendChild(dot);
-        }}
-        
-        function showSlide(n) {{
-            if (n < 0 || n >= totalSlides) return;
-            slides.forEach(slide => slide.classList.remove('active'));
-            slides[n].classList.add('active');
-            currentSlide = n;
-            updateUI(n);
-        }}
-        
-        function nextSlide() {{ if (currentSlide < totalSlides - 1) showSlide(currentSlide + 1); }}
-        function prevSlide() {{ if (currentSlide > 0) showSlide(currentSlide - 1); }}
-        
-        function updateUI(n) {{
-            document.getElementById('prevButton').disabled = n === 0;
-            document.getElementById('nextButton').disabled = n === totalSlides - 1;
-            document.querySelectorAll('.dot').forEach((dot, i) => dot.classList.toggle('active', i === n));
-            // 更新解说词
-        }}
-        
-        document.addEventListener('keydown', (e) => {{
-            if (e.key === 'ArrowRight') nextSlide();
-            if (e.key === 'ArrowLeft') prevSlide();
-        }});
-        
-        updateUI(0);
-    </script>
-</body>
-</html>
-```
-
-**关键要求：**
-1. 必须生成完整的HTML文件，从<!DOCTYPE html>到</html>
-2. 必须使用 `position: absolute` 让所有slide重叠
-3. 只有当前slide有 `active` 类，其他都是 `opacity: 0`
-4. 导航按钮必须能正常工作
-5. 键盘导航必须响应
-6. 解说词必须同步更新
-7. 每页内容根据提供的数据动态生成
-8. JavaScript代码必须完整，包含所有必要的函数
-9. 确保HTML结构完整，没有未闭合的标签
-"""
-
-    if USE_QWEN:
-        response = await client.chat.completions.create(
-            model=QWEN_MODEL,
-            messages=[{"role": "user", "content": system_prompt}],
-            temperature=0.7
-        )
-        result = response.choices[0].message.content
-    else:
-        response = await client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": system_prompt}],
-            temperature=0.7
-        )
-        result = response.choices[0].message.content
-
-    # 不再使用AI生成，直接使用可靠的模板
-    return generate_reliable_ppt_html_internal(slides, narrations, book_data)
+    # 直接使用可靠的内置模板，不再调用AI
+    print(f"DEBUG: step4_generate_html直接调用generate_reliable_ppt_html_internal")
+    print(f"DEBUG: slides类型: {type(slides)}, 长度: {len(slides) if isinstance(slides, list) else 'N/A'}")
+    print(f"DEBUG: narrations类型: {type(narrations)}, 长度: {len(narrations) if isinstance(narrations, list) else 'N/A'}")
+    result = generate_reliable_ppt_html_internal(slides, narrations, book_data)
+    print(f"DEBUG: 生成的HTML长度: {len(result)}, 包含data-speech: {'data-speech' in result}")
+    return result
 
 async def llm_event_stream(
     topic: str,
@@ -1500,9 +1101,13 @@ def clean_html_content(html_content: str) -> str:
 def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     """生成可靠的PPT HTML（内置函数，确保完整性）"""
     
+    print(f"DEBUG: generate_reliable_ppt_html_internal 开始执行")
+    print(f"DEBUG: slides: {type(slides)}, narrations: {type(narrations)}")
+    
     # 解析book_data
     parsed_book_data = parse_ai_response(book_data)
     book_title = extract_book_title(parsed_book_data)
+    print(f"DEBUG: book_title: {book_title}")
     
     # 获取书籍封面
     cover_url = ""
@@ -1516,10 +1121,12 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     # 解析slides数据
     parsed_slides = parse_ai_response(slides)
     processed_slides = process_slides_data(parsed_slides, book_title)
+    print(f"DEBUG: processed_slides 长度: {len(processed_slides)}")
     
     # 解析narrations数据
     parsed_narrations = parse_ai_response(narrations)
     processed_narrations = process_narrations_data(parsed_narrations, book_title)
+    print(f"DEBUG: processed_narrations 长度: {len(processed_narrations)}")
     
     # 确保slides和narrations数量匹配
     while len(processed_narrations) < len(processed_slides):
@@ -1534,6 +1141,8 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
         narration_text = processed_narrations[i] if i < len(processed_narrations) else f'这是第{i+1}页的解说内容'
         # 清理解说词，移除特殊字符
         clean_narration = str(narration_text).replace('"', '&quot;').replace('\n', ' ').replace('\r', '')
+        
+        print(f"DEBUG: 生成第{i}页, data-speech长度: {len(clean_narration)}")
         
         # 如果是封面页，显示封面
         if i == 0:
@@ -1950,6 +1559,15 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     <div class="narration-panel" id="narrationPanel">
         <strong>解说词：</strong><br>
         {processed_narrations[0] if processed_narrations else '欢迎观看PPT演示'}
+        <div class="audio-controls" style="margin-top: 15px;">
+            <button id="playButton" onclick="toggleAudio()" style="background: #007AFF; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px;">
+                🔊 播放解说
+            </button>
+            <button id="stopButton" onclick="stopAudio()" style="background: #FF3B30; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; margin-left: 10px;">
+                ⏹️ 停止
+            </button>
+        </div>
+        <audio id="audioPlayer" style="display: none;"></audio>
     </div>
     
     <script>
@@ -2022,9 +1640,77 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
         
         function updateNarration(slideIndex) {{
             if (narrations[slideIndex]) {{
-                narrationPanel.innerHTML = `<strong>解说词：</strong><br>${{narrations[slideIndex]}}`;
+                narrationPanel.innerHTML = `
+                    <strong>解说词：</strong><br>${{narrations[slideIndex]}}
+                    <div class="audio-controls" style="margin-top: 15px;">
+                        <button id="playButton" onclick="toggleAudio()" style="background: #007AFF; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px;">
+                            🔊 播放解说
+                        </button>
+                        <button id="stopButton" onclick="stopAudio()" style="background: #FF3B30; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; margin-left: 10px;">
+                            ⏹️ 停止
+                        </button>
+                    </div>
+                    <audio id="audioPlayer" style="display: none;"></audio>
+                `;
             }}
         }}
+        
+        // 音频播放功能
+        let isPlaying = false;
+        
+        function toggleAudio() {{
+            const audioPlayer = document.getElementById('audioPlayer');
+            const playButton = document.getElementById('playButton');
+            
+            if (!audioPlayer) return;
+            
+            if (isPlaying) {{
+                audioPlayer.pause();
+                playButton.textContent = '🔊 播放解说';
+                isPlaying = false;
+            }} else {{
+                // 构建音频文件路径 - 基于session_id
+                const sessionId = window.location.pathname.split('/')[2]; // 从URL中提取session_id
+                const slideNumber = (currentSlide + 1).toString().padStart(2, '0');
+                const audioPath = `/ppt_audio/${{sessionId}}_slide_${{slideNumber}}.mp3`;
+                
+                audioPlayer.src = audioPath;
+                audioPlayer.play().then(() => {{
+                    playButton.textContent = '⏸️ 暂停';
+                    isPlaying = true;
+                }}).catch((error) => {{
+                    console.error('音频播放失败:', error);
+                    console.log('尝试的音频路径:', audioPath);
+                    alert('音频文件不存在或播放失败');
+                }});
+            }}
+        }}
+        
+        function stopAudio() {{
+            const audioPlayer = document.getElementById('audioPlayer');
+            const playButton = document.getElementById('playButton');
+            
+            if (audioPlayer) {{
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+                playButton.textContent = '🔊 播放解说';
+                isPlaying = false;
+            }}
+        }}
+        
+        // 监听音频播放结束事件
+        document.addEventListener('DOMContentLoaded', function() {{
+            // 为动态创建的audio元素添加事件监听器
+            document.addEventListener('ended', function(e) {{
+                if (e.target.id === 'audioPlayer') {{
+                    const playButton = document.getElementById('playButton');
+                    if (playButton) {{
+                        playButton.textContent = '🔊 播放解说';
+                        isPlaying = false;
+                    }}
+                }}
+            }}, true);
+        }});
         
         function updateSlideCounter(n) {{
             currentSlideNum.textContent = n + 1;
@@ -3216,6 +2902,28 @@ async def serve_cover_image(filename: str):
         # 如果文件不存在，返回404
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=404, content={"error": f"Cover image not found: {decoded_filename}"})
+
+@app.get("/ppt_audio/{filename}")
+async def serve_audio_file(filename: str):
+    """提供音频文件服务"""
+    try:
+        from fastapi.responses import FileResponse
+        import os
+        
+        audio_file_path = os.path.join("ppt_audio", filename)
+        
+        # 检查文件是否存在
+        if not os.path.exists(audio_file_path):
+            raise HTTPException(status_code=404, detail=f"音频文件未找到: {filename}")
+        
+        return FileResponse(
+            path=audio_file_path,
+            media_type="audio/mpeg",
+            headers={"Cache-Control": "public, max-age=3600"}
+        )
+    except Exception as e:
+        print(f"提供音频文件失败: {e}")
+        raise HTTPException(status_code=500, detail="音频文件服务错误")
 
 # -----------------------------------------------------------------------
 # 分类管理API端点

@@ -81,23 +81,88 @@
     <script>
         // 初始化推荐会话
         document.addEventListener('DOMContentLoaded', function() {
-            initializeRecommendationSystem();
+            checkAuthAndInitialize();
         });
+
+        async function checkAuthAndInitialize() {
+            try {
+                // 使用现有系统的认证检查端点
+                const authResponse = await fetch('/api/user');
+                
+                if (authResponse.ok) {
+                    const authData = await authResponse.json();
+                    if (authData.success && authData.user) {
+                        // 用户已登录，初始化推荐系统
+                        await initializeRecommendationSystem();
+                        return;
+                    }
+                }
+                
+                // 用户未登录，显示登录提示
+                showAuthRequired();
+                
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showAuthRequired();
+            }
+        }
+
+        function showAuthRequired() {
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML = `
+                <div class="message agent-message">
+                    <div class="message-avatar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                            <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                        </svg>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">
+                            <p>🔐 需要登录才能使用引导推荐功能</p>
+                            <p>请先登录您的账户，这样我就能根据您的阅读历史提供个性化推荐了。</p>
+                            <button onclick="window.location.href='/'" style="margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                返回首页登录
+                            </button>
+                        </div>
+                        <div class="message-time">${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                </div>
+            `;
+            
+            // 禁用输入框
+            document.getElementById('chat-input').disabled = true;
+            document.getElementById('send-button').disabled = true;
+            document.getElementById('session-status').textContent = '需要登录';
+        }
 
         async function initializeRecommendationSystem() {
             try {
                 const response = await fetch('/api/recommendation/start', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
+                    credentials: 'include', // 包含cookies
                     body: JSON.stringify({})
                 });
+                
+                if (response.status === 401) {
+                    showAuthRequired();
+                    return;
+                }
                 
                 if (response.ok) {
                     const data = await response.json();
                     addMessage('agent', data.message);
                     updateUserProfile(data.user_profile);
+                    
+                    // 显示用户信息
+                    if (data.user_info) {
+                        document.getElementById('session-status').textContent = 
+                            `欢迎，${data.user_info.username}！已分析您的阅读偏好`;
+                    }
                 } else {
                     addMessage('agent', '抱歉，推荐系统暂时无法使用。请稍后再试。');
                 }
@@ -106,6 +171,8 @@
                 addMessage('agent', '连接失败，请检查网络后重试。');
             }
         }
+
+
 
         function addMessage(type, text) {
             const messagesContainer = document.getElementById('chat-messages');
@@ -140,14 +207,23 @@
         }
 
         // 发送消息功能
-        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        
+        // 监听输入框变化，启用/禁用发送按钮
+        chatInput.addEventListener('input', function() {
+            const hasText = this.value.trim().length > 0;
+            sendButton.disabled = !hasText;
+        });
+        
+        chatInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
         });
 
-        document.getElementById('send-button').addEventListener('click', sendMessage);
+        sendButton.addEventListener('click', sendMessage);
 
         async function sendMessage() {
             const input = document.getElementById('chat-input');
@@ -157,24 +233,33 @@
             
             addMessage('user', message);
             input.value = '';
+            document.getElementById('send-button').disabled = true;
             
             try {
                 const response = await fetch('/api/recommendation/chat', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
+                    credentials: 'include', // 包含cookies
                     body: JSON.stringify({
-                        message: message,
-                        user_id: 1
+                        message: message
                     })
                 });
+                
+                if (response.status === 401) {
+                    addMessage('agent', '认证已过期，请重新登录。');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                    return;
+                }
                 
                 if (response.ok) {
                     const data = await response.json();
                     addMessage('agent', data.message);
                     
-                    if (data.recommendations) {
+                    if (data.recommendations && data.recommendations.length > 0) {
                         updateRecommendations(data.recommendations);
                     }
                 } else {
