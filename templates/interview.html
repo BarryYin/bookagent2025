@@ -11,10 +11,33 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* 全局动画定义 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideInUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
         .interview-container {
             display: flex;
             height: 100vh;
             background: var(--bg-primary);
+            animation: fadeIn 0.5s ease-out;
         }
         
         .interview-left {
@@ -174,6 +197,14 @@
         .chat-message {
             margin: 15px 0;
             padding: 0 20px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .chat-message.animated {
+            opacity: 1;
+            transform: translateY(0);
         }
         
         .message-content {
@@ -497,6 +528,61 @@
             margin-bottom: 1rem;
             opacity: 0.5;
         }
+        
+        /* 播客风格选择器样式 */
+        .podcast-style-selector {
+            margin-top: 10px;
+        }
+        
+        .podcast-style-dropdown {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 250px;
+            cursor: pointer;
+        }
+        
+        /* 移动端适配优化 */
+        @media (max-width: 768px) {
+            .interview-container {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .interview-left, .interview-right {
+                flex: none;
+                width: 100%;
+            }
+            
+            .interview-right {
+                order: -1;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            
+            .book-cover {
+                width: 120px;
+                height: 180px;
+            }
+            
+            .book-display {
+                padding: 1rem;
+            }
+            
+            .podcast-script pre {
+                max-height: 200px;
+                overflow-y: auto;
+            }
+            
+            .social-share .share-buttons {
+                flex-wrap: wrap;
+            }
+        }
     </style>
 </head>
 
@@ -508,6 +594,33 @@
         </svg>
         返回首页
     </a>
+    
+    <!-- 帮助提示按钮 -->
+    <div class="help-button" id="help-button" style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+    </div>
+    
+    <!-- 帮助提示弹窗 -->
+    <div id="help-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 8px; padding: 20px; max-width: 500px; width: 90%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); position: relative; animation: fadeIn 0.3s ease-out;">
+            <button id="close-help" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+            <h3 style="margin-top: 0;">读后感访谈使用指南</h3>
+            <p>欢迎使用读后感访谈功能！这里是一些使用技巧：</p>
+            <ul style="padding-left: 20px; line-height: 1.6;">
+                <li><strong>分享感受</strong> - 告诉智能体你对书中情节、人物或主题的感受</li>
+                <li><strong>提出问题</strong> - 询问书中你不理解或想深入探讨的部分</li>
+                <li><strong>对话阶段</strong> - 对话分为破冰、深挖、碰撞和创作四个阶段</li>
+                <li><strong>生成播客</strong> - 在充分交流后，可以生成个性化的读后感播客</li>
+                <li><strong>选择风格</strong> - 可以选择不同的播客风格，展现不同的表达方式</li>
+                <li><strong>分享内容</strong> - 生成播客后可以下载或分享给他人</li>
+            </ul>
+            <p style="margin-bottom: 0;">快捷键：Ctrl+Enter 或 Cmd+Enter 发送消息</p>
+        </div>
+    </div>
 
     <div class="interview-container">
         <!-- 左侧：访谈对话区域 -->
@@ -551,6 +664,17 @@
                 <h2 class="interview-title">书籍信息</h2>
             </div>
             
+            <div class="podcast-style-selector" id="podcast-style-selector" style="display: none; padding: 15px; background: #f8f9fa; margin: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); animation: fadeIn 0.5s ease-out;">
+                <h4 style="margin-top: 0; margin-bottom: 10px; font-size: 16px;">选择播客风格</h4>
+                <select id="podcast-style" class="podcast-style-dropdown">
+                    <option value="conversational">对话式播客 - 轻松自然的交流</option>
+                    <option value="narrative">叙事式播客 - 故事化表达</option>
+                    <option value="analytical">分析式播客 - 深度解读</option>
+                    <option value="personal">个人感悟式播客 - 情感分享</option>
+                </select>
+                <p style="margin-top: 8px; font-size: 13px; color: #666;">不同风格会影响播客的表达方式和内容结构</p>
+            </div>
+            
             <div class="book-display" id="book-display">
                 <div class="book-cover" id="book-cover">
                     {% if book_cover %}
@@ -584,6 +708,58 @@
         let bookAuthor = "{{ book_author or '' }}";
         let currentSessionId = null;
         let isLoading = false;
+        let messageCount = 0;
+        
+        // 添加输入提示功能
+        const suggestedQuestions = [
+            "这本书最打动我的情节是...",
+            "我认为作者想要表达的主题是...",
+            "这本书让我思考的问题是...",
+            "我不太理解书中的...",
+            "如果我是书中的主角，我会...",
+            "这本书与我的生活经历有什么联系...",
+            "我最喜欢书中的哪个角色，为什么..."
+        ];
+        
+        // 初始化输入提示
+        function initSuggestions() {
+            const suggestionsContainer = document.getElementById('input-suggestions');
+            suggestionsContainer.innerHTML = '';
+            
+            suggestedQuestions.forEach(question => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = question;
+                item.addEventListener('click', () => {
+                    interviewInput.value = question;
+                    suggestionsContainer.classList.remove('show');
+                    interviewInput.focus();
+                    sendButton.disabled = false;
+                });
+                suggestionsContainer.appendChild(item);
+            });
+            
+            // 显示/隐藏提示
+            interviewInput.addEventListener('focus', () => {
+                if (interviewInput.value.trim() === '' && messageCount < 4) {
+                    suggestionsContainer.classList.add('show');
+                }
+            });
+            
+            interviewInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    suggestionsContainer.classList.remove('show');
+                }, 200);
+            });
+            
+            interviewInput.addEventListener('input', () => {
+                if (interviewInput.value.trim() === '' && messageCount < 4) {
+                    suggestionsContainer.classList.add('show');
+                } else {
+                    suggestionsContainer.classList.remove('show');
+                }
+            });
+        }
         
         // 添加消息到聊天区域
         function addMessage(content, type = 'user', stage = null) {
@@ -779,6 +955,29 @@
             }
         }
         
+        // 分享功能
+        function shareToWeChat() {
+            // 实际项目中可以接入微信分享API
+            alert('微信分享功能即将上线，敬请期待！');
+        }
+        
+        function shareToWeibo() {
+            // 实际项目中可以接入微博分享API
+            const shareUrl = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent(`我刚刚创建了关于《${bookTitle}》的读后感播客，快来听听吧！`);
+            window.open(`http://service.weibo.com/share/share.php?url=${shareUrl}&title=${title}`);
+        }
+        
+        function copyShareLink() {
+            const shareUrl = window.location.href;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('链接已复制到剪贴板！');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制链接。');
+            });
+        }
+        
         // 生成播客
         async function generatePodcast() {
             if (!currentSessionId) {
@@ -789,13 +988,17 @@
             try {
                 addMessage('正在生成播客内容...', 'system');
                 
+                // 获取选择的播客风格
+                const podcastStyle = document.getElementById('podcast-style').value;
+                
                 const response = await fetch('/api/interview/generate-podcast', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        session_id: currentSessionId
+                        session_id: currentSessionId,
+                        podcast_style: podcastStyle
                     })
                 });
                 
@@ -827,7 +1030,7 @@
             let audioHtml = '';
             if (audioData && audioData.merged_audio) {
                 audioHtml = `
-                    <div class="podcast-audio-player" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <div class="podcast-audio-player" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: fadeIn 0.5s ease-out;">
                         <h4>🎵 播客音频</h4>
                         <audio controls style="width: 100%; margin: 10px 0;">
                             <source src="/${audioData.merged_audio}" type="audio/mpeg">
@@ -848,8 +1051,25 @@
                     <pre>${script}</pre>
                 </div>
                 <div class="download-buttons" style="margin-top: 15px;">
-                    <button onclick="downloadPodcastScript()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">下载脚本</button>
-                    ${audioData && audioData.merged_audio ? `<a href="/${audioData.merged_audio}" download style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block;">下载音频</a>` : ''}
+                    <button onclick="downloadPodcastScript()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; transition: all 0.3s ease;">下载脚本</button>
+                    ${audioData && audioData.merged_audio ? `<a href="/${audioData.merged_audio}" download style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.3s ease;">下载音频</a>` : ''}
+                </div>
+                <div class="social-share" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <h4>分享播客</h4>
+                    <div class="share-buttons" style="display: flex; gap: 10px;">
+                        <button onclick="shareToWeChat()" style="padding: 8px 16px; background: #07C160; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855"></path></svg>
+                            微信
+                        </button>
+                        <button onclick="shareToWeibo()" style="padding: 8px 16px; background: #E6162D; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855"></path></svg>
+                            微博
+                        </button>
+                        <button onclick="copyShareLink()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path><path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></svg>
+                            复制链接
+                        </button>
+                    </div>
                 </div>
             `;
             interviewChat.appendChild(scriptDiv);
@@ -876,11 +1096,14 @@
             buttonContainer.style.marginTop = '20px';
             buttonContainer.style.textAlign = 'center';
             buttonContainer.innerHTML = `
-                <button onclick="generatePodcast()" style="padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <button onclick="generatePodcast()" style="padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     🎙️ 生成播客
                 </button>
             `;
             interviewChat.appendChild(buttonContainer);
+            
+            // 显示播客风格选择器
+            document.getElementById('podcast-style-selector').style.display = 'block';
         }
         
         // 事件监听
@@ -889,17 +1112,138 @@
             sendMessage();
         });
         
+        // 添加消息到聊天区域（增强版）
+        function addMessage(content, type = 'user', stage = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            
+            let stageIndicator = '';
+            if (stage && type === 'assistant') {
+                const stageClass = `stage-${stage}`;
+                const stageNames = {
+                    'ice_break': '破冰',
+                    'deep_dive': '深挖',
+                    'perspective_clash': '碰撞',
+                    'creative_inspiration': '创作'
+                };
+                const stageName = stageNames[stage] || stage;
+                stageIndicator = `<span class="stage-indicator ${stageClass}">${stageName}</span>`;
+            }
+            
+            if (type === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-avatar">👤</div>
+                        <div class="message-bubble">${content}</div>
+                    </div>
+                `;
+            } else if (type === 'assistant') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-avatar">🎙️</div>
+                        <div class="message-bubble">${content}${stageIndicator}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-avatar">📝</div>
+                        <div class="message-bubble system">${content}</div>
+                    </div>
+                `;
+            }
+            
+            interviewChat.appendChild(messageDiv);
+            interviewChat.scrollTop = interviewChat.scrollHeight;
+            
+            // 更新消息计数
+            messageCount++;
+            
+            // 检查是否需要显示播客按钮
+            if (messageCount >= 6 && !document.querySelector('button[onclick="generatePodcast()"]')) {
+                addPodcastButton();
+            }
+            
+            // 添加动画效果
+            setTimeout(() => {
+                messageDiv.classList.add('animated');
+            }, 10);
+        }
+        
+        // 帮助提示功能
+        function setupHelpModal() {
+            const helpButton = document.getElementById('help-button');
+            const helpModal = document.getElementById('help-modal');
+            const closeHelp = document.getElementById('close-help');
+            
+            helpButton.addEventListener('click', () => {
+                helpModal.style.display = 'flex';
+                setTimeout(() => {
+                    helpModal.style.opacity = '1';
+                }, 10);
+            });
+            
+            closeHelp.addEventListener('click', () => {
+                helpModal.style.opacity = '0';
+                setTimeout(() => {
+                    helpModal.style.display = 'none';
+                }, 300);
+            });
+            
+            // 点击模态框外部关闭
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) {
+                    helpModal.style.opacity = '0';
+                    setTimeout(() => {
+                        helpModal.style.display = 'none';
+                    }, 300);
+                }
+            });
+        }
+        
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', () => {
             initializeInterview();
+            initSuggestions();
+            setupHelpModal();
             
-            // 在对话几次后显示播客按钮
-            setTimeout(() => {
-                const messageCount = interviewChat.querySelectorAll('.chat-message').length;
-                if (messageCount >= 6) {
-                    addPodcastButton();
+            // 添加键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+Enter 或 Cmd+Enter 发送消息
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!sendButton.disabled) {
+                        sendMessage();
+                    }
                 }
-            }, 1000);
+                
+                // Esc 键关闭帮助弹窗
+                if (e.key === 'Escape') {
+                    const helpModal = document.getElementById('help-modal');
+                    if (helpModal.style.display === 'flex') {
+                        helpModal.style.opacity = '0';
+                        setTimeout(() => {
+                            helpModal.style.display = 'none';
+                        }, 300);
+                    }
+                }
+            });
+            
+            // 添加输入框自动增高
+            interviewInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            
+            // 添加播客风格选择器的变化事件
+            const podcastStyleDropdown = document.getElementById('podcast-style');
+            if (podcastStyleDropdown) {
+                podcastStyleDropdown.addEventListener('change', function() {
+                    // 可以在这里添加风格预览或描述的逻辑
+                    const selectedStyle = this.value;
+                    console.log('选择的播客风格:', selectedStyle);
+                });
+            }
         });
     </script>
 </body>

@@ -1061,15 +1061,16 @@
                     if (done) break;
 
                     const chunk = decoder.decode(value);
-                    const lines = chunk.split('\\n');
+                    const lines = chunk.split('\n');
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             try {
                                 const data = JSON.parse(line.slice(6));
+                                console.log('收到数据:', data); // 调试日志
                                 handleGenerationProgress(data);
                             } catch (e) {
-                                console.error('解析数据失败:', e);
+                                console.error('解析数据失败:', e, 'raw line:', line);
                             }
                         }
                     }
@@ -1082,7 +1083,11 @@
 
         // 显示生成进度 - 简化版本，直接跳转
         function showGenerationProgress() {
-            // 显示简单的加载提示
+            // 隐藏配置界面
+            document.querySelector('.generation-wizard').style.display = 'none';
+            document.querySelector('.header').style.display = 'none';
+            
+            // 重置容器样式为进度页面专用
             const container = document.querySelector('.container');
             container.innerHTML = `
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; color: white;">
@@ -1106,15 +1111,138 @@
 
         // 处理生成进度
         function handleGenerationProgress(data) {
-            const progressLog = document.getElementById('progressLog');
+            console.log('收到进度数据:', data);
+            
+            let progressLog = document.getElementById('progressLog');
+            
+            // 如果没有日志容器，创建一个居中的忙碌感界面
+            if (!progressLog) {
+                const container = document.querySelector('.container');
+                const logHTML = `
+                    <div style="
+                        position: fixed; 
+                        top: 0; 
+                        left: 0; 
+                        width: 100%; 
+                        height: 100%; 
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        display: flex; 
+                        flex-direction: column; 
+                        align-items: center; 
+                        justify-content: center; 
+                        z-index: 1000;
+                        overflow: hidden;
+                    " id="busyContainer">
+                        <!-- 动态背景效果 -->
+                        <div style="
+                            position: absolute;
+                            top: -50%;
+                            left: -50%;
+                            width: 200%;
+                            height: 200%;
+                            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+                            background-size: 50px 50px;
+                            animation: moveBackground 20s linear infinite;
+                        "></div>
+                        
+                        <!-- 主要内容 -->
+                        <div style="
+                            text-align: center; 
+                            color: white; 
+                            z-index: 10; 
+                            max-width: 80%; 
+                            position: relative;
+                        ">
+                            <div style="font-size: 4rem; margin-bottom: 1rem; animation: pulse 2s infinite;">🚀</div>
+                            <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.3);">正在生成您的书籍介绍...</h2>
+                            <p style="font-size: 1.2rem; opacity: 0.9; margin-bottom: 2rem;">请稍候，我们正在为您打造专业的内容</p>
+                            
+                            <!-- 加载动画 -->
+                            <div style="
+                                width: 60px; 
+                                height: 60px; 
+                                border: 4px solid rgba(255,255,255,0.3); 
+                                border-top: 4px solid white; 
+                                border-radius: 50%; 
+                                animation: spin 1s linear infinite;
+                                margin: 0 auto 3rem;
+                            "></div>
+                        </div>
+                        
+                        <!-- 日志区域 -->
+                        <div style="
+                            position: absolute;
+                            bottom: 0;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            width: 60%;
+                            max-width: 800px;
+                            background: rgba(0,0,0,0.4);
+                            backdrop-filter: blur(10px);
+                            max-height: 250px;
+                            overflow-y: auto;
+                            padding: 20px;
+                            border-radius: 10px 10px 0 0;
+                            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+                            font-size: 13px;
+                            line-height: 1.4;
+                        " id="progressLog">
+                            <div style="color: #4caf50; font-weight: bold; margin-bottom: 10px;">🔄 实时生成日志</div>
+                        </div>
+                    </div>
+                    
+                    <style>
+                        @keyframes moveBackground {
+                            0% { transform: translate(0, 0); }
+                            100% { transform: translate(50px, 50px); }
+                        }
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                        @keyframes pulse {
+                            0%, 100% { transform: scale(1); opacity: 1; }
+                            50% { transform: scale(1.1); opacity: 0.8; }
+                        }
+                        @keyframes slideInFromRight {
+                            from { opacity: 0; transform: translateX(20px); }
+                            to { opacity: 1; transform: translateX(0); }
+                        }
+                        #progressLog::-webkit-scrollbar {
+                            width: 6px;
+                        }
+                        #progressLog::-webkit-scrollbar-track {
+                            background: rgba(255,255,255,0.1);
+                        }
+                        #progressLog::-webkit-scrollbar-thumb {
+                            background: rgba(255,255,255,0.3);
+                            border-radius: 3px;
+                        }
+                    </style>
+                `;
+                document.body.insertAdjacentHTML('beforeend', logHTML);
+                progressLog = document.getElementById('progressLog');
+            }
+            
+            if (data.log) {
+                // 添加日志消息
+                const logEntry = document.createElement('div');
+                logEntry.style.cssText = 'margin-bottom: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); animation: slideInFromRight 0.3s ease;';
+                logEntry.innerHTML = `
+                    <span style="color: #888; font-size: 11px;">${new Date().toLocaleTimeString()}</span>
+                    <span style="margin-left: 15px; color: #e0e0e0;">${data.log}</span>
+                `;
+                progressLog.appendChild(logEntry);
+                progressLog.scrollTop = progressLog.scrollHeight;
+            }
             
             if (data.status) {
                 // 添加状态消息
                 const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry';
+                logEntry.style.cssText = 'margin-bottom: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); animation: slideInFromRight 0.3s ease;';
                 logEntry.innerHTML = `
-                    <span class="log-time" style="writing-mode: horizontal-tb;">${new Date().toLocaleTimeString()}</span>
-                    <span class="log-message" style="writing-mode: horizontal-tb;">${data.status}</span>
+                    <span style="color: #888; font-size: 11px;">${new Date().toLocaleTimeString()}</span>
+                    <span style="margin-left: 15px; color: #4caf50; font-weight: 500;">${data.status}</span>
                 `;
                 progressLog.appendChild(logEntry);
                 progressLog.scrollTop = progressLog.scrollHeight;
@@ -1126,15 +1254,133 @@
             }
             
             if (data.session_id) {
-                // 生成完成，跳转到结果页面
-                setTimeout(() => {
-                    window.location.href = `/ppt-preview/${data.session_id}`;
-                }, 2000);
+                // 生成完成，显示成功标志和链接
+                showGenerationComplete(data.session_id);
             }
             
             if (data.error) {
                 showGenerationError(data.error);
             }
+        }
+
+        // 显示生成完成
+        function showGenerationComplete(sessionId) {
+            console.log('生成完成:', sessionId);
+            
+            let progressLog = document.getElementById('progressLog');
+            let busyContainer = document.getElementById('busyContainer');
+            
+            // 防止重复调用
+            if (busyContainer && busyContainer.classList.contains('completed')) {
+                return;
+            }
+            
+            if (progressLog && busyContainer) {
+                // 标记为已完成
+                busyContainer.classList.add('completed');
+                
+                // 添加成功日志
+                const successEntry = document.createElement('div');
+                successEntry.style.cssText = 'margin: 15px 0; padding: 15px; background: rgba(76, 175, 80, 0.3); border-radius: 8px; border-left: 4px solid #4caf50; animation: slideInFromRight 0.5s ease;';
+                successEntry.innerHTML = `
+                    <div style="color: #4caf50; font-weight: bold; font-size: 14px;">🎉 生成完成！</div>
+                    <div style="margin-top: 8px; color: #e0e0e0;">您的专业书籍介绍已经准备就绪</div>
+                `;
+                progressLog.appendChild(successEntry);
+                
+                // 修改主界面标题和图标
+                const mainTitle = busyContainer.querySelector('h2');
+                const mainIcon = busyContainer.querySelector('div[style*="font-size: 4rem"]');
+                const loadingSpinner = busyContainer.querySelector('div[style*="animation: spin"]');
+                
+                if (mainTitle) mainTitle.textContent = '✨ 生成完成！';
+                if (mainIcon) {
+                    mainIcon.textContent = '🎉';
+                    mainIcon.style.animation = 'pulse 1s infinite';
+                }
+                if (loadingSpinner) loadingSpinner.style.display = 'none';
+                
+                // 检查是否已经存在按钮，避免重复添加
+                let existingButtons = busyContainer.querySelector('.action-buttons');
+                if (!existingButtons) {
+                    // 添加操作按钮到主界面
+                    const actionButtons = document.createElement('div');
+                    actionButtons.className = 'action-buttons';
+                    actionButtons.style.cssText = 'margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;';
+                    actionButtons.innerHTML = `
+                        <button onclick="window.open('/ppt-preview/${sessionId}', '_blank')" style="
+                            background: linear-gradient(135deg, #4caf50, #45a049); 
+                            color: white; 
+                            border: none; 
+                            padding: 12px 24px; 
+                            border-radius: 8px; 
+                            cursor: pointer; 
+                            font-size: 16px; 
+                            font-weight: 500;
+                            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+                            transition: transform 0.2s ease;
+                        " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            🚀 立即查看演示
+                        </button>
+                        <button onclick="copyLink('${sessionId}')" style="
+                            background: rgba(255,255,255,0.2); 
+                            color: white; 
+                            border: 2px solid rgba(255,255,255,0.5); 
+                            padding: 12px 24px; 
+                            border-radius: 8px; 
+                            cursor: pointer; 
+                            font-size: 16px; 
+                            font-weight: 500;
+                            transition: all 0.2s ease;
+                        " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            📋 复制链接
+                        </button>
+                    `;
+                    
+                    // 插入到主界面
+                    const mainContent = busyContainer.children[1];
+                    if (mainContent) {
+                        mainContent.appendChild(actionButtons);
+                    }
+                }
+                
+                // 在日志中添加分享链接信息
+                const linkEntry = document.createElement('div');
+                linkEntry.style.cssText = 'margin: 10px 0; padding: 10px; background: rgba(33, 150, 243, 0.2); border-radius: 6px; font-size: 12px;';
+                linkEntry.innerHTML = `
+                    <div style="color: #2196f3; font-weight: bold; margin-bottom: 5px;">📎 分享链接</div>
+                    <div style="color: #e0e0e0; word-break: break-all; font-size: 11px;">
+                        ${window.location.origin}/ppt-preview/${sessionId}
+                    </div>
+                `;
+                progressLog.appendChild(linkEntry);
+                progressLog.scrollTop = progressLog.scrollHeight;
+            } else {
+                // 如果没有日志容器，直接跳转
+                setTimeout(() => {
+                    window.location.href = `/ppt-preview/${sessionId}`;
+                }, 1000);
+            }
+        }
+
+        // 复制分享链接
+        function copyLink(sessionId) {
+            const link = `${window.location.origin}/ppt-preview/${sessionId}`;
+            navigator.clipboard.writeText(link).then(() => {
+                // 临时显示复制成功提示
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ 已复制';
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+                // 降级方案：显示链接供用户手动复制
+                alert(`请手动复制链接：${link}`);
+            });
         }
 
         // 更新进度步骤
@@ -1385,6 +1631,118 @@
                     color: rgba(255, 255, 255, 0.9);
                     font-size: 1rem;
                     line-height: 1.4;
+                }
+                
+                .log-entry.success-entry {
+                    background: rgba(76, 175, 80, 0.2);
+                    border-radius: 10px;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    border-left: 4px solid #4caf50;
+                }
+                
+                .success-message {
+                    color: #4caf50 !important;
+                    font-weight: 600;
+                }
+                
+                .completion-actions {
+                    background: rgba(255, 255, 255, 0.15);
+                    border-radius: 15px;
+                    padding: 2rem;
+                    margin: 1rem 0;
+                    text-align: center;
+                    border: 2px solid rgba(76, 175, 80, 0.3);
+                    animation: slideInUp 0.6s ease-out;
+                }
+                
+                .completion-header h3 {
+                    color: white;
+                    font-size: 1.5rem;
+                    margin-bottom: 0.5rem;
+                    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                }
+                
+                .completion-header p {
+                    color: rgba(255, 255, 255, 0.9);
+                    margin-bottom: 1.5rem;
+                    font-size: 1rem;
+                }
+                
+                .completion-buttons {
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                    margin-bottom: 1.5rem;
+                    flex-wrap: wrap;
+                }
+                
+                .completion-buttons .btn {
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 8px;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 1rem;
+                    font-weight: 500;
+                    transition: all 0.3s ease;
+                    text-decoration: none;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                
+                .completion-buttons .btn-primary {
+                    background: linear-gradient(135deg, #4caf50, #45a049);
+                    color: white;
+                    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+                }
+                
+                .completion-buttons .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+                }
+                
+                .completion-buttons .btn-outline {
+                    background: transparent;
+                    border: 2px solid rgba(255, 255, 255, 0.5);
+                    color: white;
+                }
+                
+                .completion-buttons .btn-outline:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-color: rgba(255, 255, 255, 0.8);
+                }
+                
+                .completion-buttons .btn-secondary {
+                    background: rgba(255, 255, 255, 0.2);
+                    color: white;
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                }
+                
+                .completion-buttons .btn-secondary:hover {
+                    background: rgba(255, 255, 255, 0.3);
+                }
+                
+                .completion-info {
+                    text-align: left;
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 0.9rem;
+                    line-height: 1.5;
+                }
+                
+                .completion-info strong {
+                    color: white;
+                }
+                
+                .result-link {
+                    color: #4caf50 !important;
+                    text-decoration: none;
+                    font-weight: 500;
+                    word-break: break-all;
+                }
+                
+                .result-link:hover {
+                    text-decoration: underline;
                 }
                 
                 .generation-error {

@@ -1175,11 +1175,15 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
     slides_html = ""
     for i, slide in enumerate(processed_slides):
         active_class = "active" if i == 0 else ""
+        # 获取对应的解说词，并进行HTML转义
+        narration_text = processed_narrations[i] if i < len(processed_narrations) else ""
+        # HTML转义处理引号和特殊字符
+        narration_text = str(narration_text).replace('"', '&quot;').replace('\n', ' ').replace('\r', '')
         
         if i == 0:
             # 封面页
             slides_html += f'''
-                <div class="slide {active_class}">
+                <div class="slide {active_class}" data-speech="{narration_text}">
                     <h1>{slide.get('title', book_title)}</h1>
                     <p>{slide.get('content', '欢迎来到本书的精彩解读。')}</p>
                 </div>'''
@@ -1187,7 +1191,7 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data):
             # 内容页
             content = slide.get('content', '').replace('\n', '<br>')
             slides_html += f'''
-                <div class="slide {active_class}">
+                <div class="slide {active_class}" data-speech="{narration_text}">
                     <h2>{slide.get('title', f'第{i+1}页')}</h2>
                     <p>{content}</p>
                 </div>'''
