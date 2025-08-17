@@ -9,6 +9,7 @@ import hashlib
 import base64
 from typing import Optional, Dict, Any
 import logging
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,8 @@ class BookCoverSearcher:
     """书籍封面搜索器"""
     
     def __init__(self):
-        self.timeout = 10.0
-        self.max_retries = 3
+        self.timeout = 15.0  # 增加超时以应对网络波动
+        self.max_retries = 2
     
     async def search_cover(self, title: str, author: str = None, isbn: str = None) -> Dict[str, Any]:
         """
@@ -31,11 +32,12 @@ class BookCoverSearcher:
         """
         logger.info(f"开始搜索书籍封面: {title} by {author}")
         
-        # 按优先级尝试不同的搜索方法
+        # 按优先级尝试不同的搜索方法，优先使用豆瓣网页抓取
         search_methods = [
+            self._search_douban_scrape,
             self._search_google_books,
-            self._search_douban_books,
             self._search_open_library,
+            self._search_douban_books, # 旧的API方法作为最后备用
         ]
         
         for method in search_methods:
@@ -51,6 +53,63 @@ class BookCoverSearcher:
         # 如果所有方法都失败，返回默认封面
         logger.info("未找到封面，使用默认封面")
         return self._generate_default_cover(title, author)
+
+    async def _search_douban_scrape(self, title: str, author: str = None, isbn: str = None) -> Optional[Dict[str, Any]]:
+        """通过抓取豆瓣搜索页面来查找封面，对中文书籍更有效"""
+        logger.info(f"尝试通过抓取豆瓣网页搜索: {title}")
+        try:
+            search_text = title
+            if author:
+                search_text += f" {author}"
+            
+            url = "https://search.douban.com/book/subject_search"
+            params = {"search_text": search_text, "cat": "1001"}
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+
+            async with httpx.AsyncClient(headers=headers, follow_redirects=True) as client:
+                response = await client.get(url, params=params, timeout=self.timeout)
+                response.raise_for_status()
+
+                soup = BeautifulSoup(response.text, 'lxml')
+                
+                # 查找第一个搜索结果项
+                result_item = soup.find("div", class_="item-root")
+                if not result_item:
+                    logger.info("在豆瓣网页抓取中未找到结果项")
+                    return None
+
+                # 提取封面图片
+                cover_img = result_item.find("img")
+                if not cover_img or not cover_img.get('src'):
+                    logger.info("在豆瓣网页抓取中未找到封面图片")
+                    return None
+                
+                cover_url = cover_img['src']
+                
+                # 豆瓣的图片URL有时是小图，替换为大图
+                cover_url = cover_url.replace("/s/", "/l/").replace("small", "large")
+
+                # 提取元数据
+                title_element = result_item.find("div", class_="title-text")
+                book_title = title_element.text.strip() if title_element else title
+
+                meta_element = result_item.find("div", class_="meta")
+                book_meta = meta_element.text.strip() if meta_element else ""
+                
+                return {
+                    "cover_url": cover_url,
+                    "source": "Douban (Scrape)",
+                    "is_default": False,
+                    "metadata": {
+                        "title": book_title,
+                        "meta": book_meta,
+                    }
+                }
+        except Exception as e:
+            logger.error(f"豆瓣网页抓取失败: {e}")
+            return None
     
     async def _search_google_books(self, title: str, author: str = None, isbn: str = None) -> Optional[Dict[str, Any]]:
         """使用Google Books API搜索"""

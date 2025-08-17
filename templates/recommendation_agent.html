@@ -12,38 +12,21 @@
 </head>
 <body>
     <div class="recommendation-container">
-        <nav class="top-nav">
-            <div class="nav-left">
-                <a href="/" class="nav-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 12H5"/>
-                        <path d="M12 19l-7-7 7-7"/>
-                    </svg>
-                    返回首页
-                </a>
-            </div>
-            <div class="nav-right">
-                <div id="user-section" class="user-section" style="display: none;">
-                    <span id="username-display" class="username-display"></span>
-                    <button id="logout-button" class="logout-button" title="登出">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                            <polyline points="16,17 21,12 16,7"/>
-                            <line x1="21" y1="12" x2="9" y2="12"/>
-                        </svg>
-                    </button>
-                </div>
-                <div id="auth-buttons" class="auth-buttons">
-                    <a href="/login" class="auth-link login-link">登录</a>
-                    <a href="/register" class="auth-link register-link">注册</a>
-                </div>
-            </div>
-        </nav>
-
         <header class="recommendation-header">
-            <h1>私人阅读顾问</h1>
-            <div class="header-info">
-                <span id="session-status">正在检查登录状态...</span>
+            <div class="header-content">
+                <h1>私人阅读顾问</h1>
+                <div class="header-right">
+                    <div class="header-info">
+                        <span id="session-status">正在检查登录状态...</span>
+                    </div>
+                    <a href="/" class="back-home-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5"/>
+                            <path d="M12 19l-7-7 7-7"/>
+                        </svg>
+                        返回首页
+                    </a>
+                </div>
             </div>
         </header>
 
@@ -91,7 +74,7 @@
                 <div id="recommendations-list" class="recommendations-list">
                     <div class="loading-state">
                         <div class="loading-spinner"></div>
-                        <p>正在分析你的阅读偏好...</p>
+                        <p>正在为您推荐优质书籍...</p>
                     </div>
                 </div>
             </div>
@@ -100,83 +83,341 @@
 
     <script src="/static/recommendation_agent.js"></script>
     <script>
-        // 用户认证相关功能 - 与recommendation_agent.js保持一致
-        async function checkAuthStatus() {
+        // 页面加载完成后直接初始化推荐系统并加载书籍
+        async function initializeRecommendationWithBooks() {
             try {
-                const response = await fetch('/api/user', {
+                // 更新状态
+                document.getElementById('session-status').textContent = '正在为您推荐书籍...';
+                
+                // 直接获取推荐书籍
+                const response = await fetch('/api/recommendations', {
                     credentials: 'include'
                 });
                 
                 if (response.ok) {
                     const data = await response.json();
-                    
-                    if (data.success && data.user) {
-                        // 用户已登录
-                        showUserSection(data.user);
+                    if (data.recommendations && data.recommendations.length > 0) {
+                        // 显示推荐书籍
+                        await updateRecommendationsWithHTML(data.recommendations);
+                        document.getElementById('session-status').textContent = '已为您推荐优质书籍';
+                        
+                        // 添加初始消息
+                        addWelcomeMessage();
                     } else {
-                        showAuthButtons();
+                        // 如果没有推荐，加载默认推荐
+                        await loadDefaultRecommendations();
                     }
                 } else {
-                    showAuthButtons();
+                    // 加载默认推荐
+                    await loadDefaultRecommendations();
                 }
             } catch (error) {
-                console.log('用户未登录');
-                showAuthButtons();
+                console.error('初始化推荐系统失败:', error);
+                await loadDefaultRecommendations();
             }
         }
 
-        function showUserSection(user) {
-            const userSection = document.getElementById('user-section');
-            const authButtons = document.getElementById('auth-buttons');
-            const usernameDisplay = document.getElementById('username-display');
+        // 添加欢迎消息
+        function addWelcomeMessage() {
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML = `
+                <div class="message agent-message">
+                    <div class="message-avatar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                            <line x1="9" y1="9" x2="9.01" y2="9"/>
+                            <line x1="15" y1="9" x2="15.01" y2="9"/>
+                        </svg>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">
+                            您好！我是您的私人阅读顾问。右侧已为您推荐了一些优质书籍，您可以直接查看。
+                            <br><br>
+                            如果您有特定的阅读需求或想了解某类书籍，请随时告诉我！
+                        </div>
+                        <div class="message-time">${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 加载默认推荐书籍
+        async function loadDefaultRecommendations() {
+            const defaultBooks = [
+                {
+                    title: "百年孤独",
+                    author: "加西亚·马尔克斯",
+                    category: "文学",
+                    difficulty: "进阶",
+                    reason: "魔幻现实主义经典之作，探索孤独与人性的深度佳作"
+                },
+                {
+                    title: "悲惨世界",
+                    author: "维克多·雨果",
+                    category: "文学",
+                    difficulty: "进阶",
+                    reason: "法国文学巨著，展现人性光辉与社会变迁的史诗级作品"
+                },
+                {
+                    title: "乌合之众",
+                    author: "古斯塔夫·勒庞",
+                    category: "心理学",
+                    difficulty: "普通",
+                    reason: "群体心理学经典，帮您理解群体行为与心理机制"
+                }
+            ];
             
-            if (userSection && authButtons && usernameDisplay) {
-                userSection.style.display = 'flex';
-                authButtons.style.display = 'none';
-                usernameDisplay.textContent = user.username;
-            }
+            await updateRecommendationsWithHTML(defaultBooks);
+            document.getElementById('session-status').textContent = '已为您推荐优质书籍';
+            addWelcomeMessage();
         }
 
-        function showAuthButtons() {
-            const userSection = document.getElementById('user-section');
-            const authButtons = document.getElementById('auth-buttons');
+        // 更新推荐书籍（包含HTML链接检查）
+        async function updateRecommendationsWithHTML(recommendations) {
+            const container = document.getElementById('recommendations-list');
+            const countEl = document.getElementById('recommendation-count');
             
-            if (userSection && authButtons) {
-                userSection.style.display = 'none';
-                authButtons.style.display = 'flex';
+            container.innerHTML = '';
+            countEl.textContent = `${recommendations.length}本书`;
+            
+            for (const book of recommendations) {
+                // 检查是否有已生成的HTML内容
+                let htmlInfo = await checkHTMLExists(book.title, book.author);
+                let hasPPT = false;
+                let pptUrl = '';
+                
+                if (htmlInfo) {
+                    hasPPT = true;
+                    pptUrl = htmlInfo.html_url;
+                }
+                
+                // 尝试获取封面图片
+                let coverUrl = `/covers/${book.title}_${book.author}.jpg`;
+                
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card';
+                
+                // 检查封面图片是否存在
+                const coverExists = await checkImageExists(coverUrl);
+                
+                bookCard.innerHTML = `
+                    <div class="book-card-content">
+                        <div class="book-cover">
+                            ${coverExists ? 
+                                `<img src="${coverUrl}" alt="${book.title}" />` : 
+                                `<div class="book-cover-placeholder">📚</div>`
+                            }
+                        </div>
+                        <div class="book-info">
+                            <h4>${book.title}</h4>
+                            <p class="book-author">${book.author}</p>
+                            <p class="book-reason">${book.reason || book.description || '优质推荐书籍'}</p>
+                            <div class="book-meta">
+                                <span class="category-tag">${book.category || book.category_name || '未分类'}</span>
+                                <span class="difficulty-tag">${book.difficulty || '普通'}</span>
+                                ${hasPPT ? '<span class="available-tag">已有介绍</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="book-actions">
+                        ${hasPPT ? 
+                            `<button class="book-action-btn primary" onclick="window.open('${pptUrl}', '_blank')">查看介绍PPT</button>` : 
+                            `<button class="book-action-btn" onclick="generateBookIntro('${book.title}', '${book.author}')">生成介绍</button>`
+                        }
+                        <button class="book-action-btn" onclick="searchInLibrary('${book.title}', '${book.author}')">在图书馆查找</button>
+                    </div>
+                `;
+                container.appendChild(bookCard);
             }
         }
 
-        async function logout() {
+        // 检查是否有HTML内容
+        async function checkHTMLExists(title, author) {
             try {
-                const response = await fetch('/api/logout', {
+                // 使用搜索API而不是遍历所有PPT
+                const searchResponse = await fetch(`/api/generated-ppts?search=${encodeURIComponent(title)}&limit=50`);
+                if (searchResponse.ok) {
+                    const result = await searchResponse.json();
+                    const data = result.ppts || []; // 提取ppts数组
+                    
+                    console.log(`🔍 搜索书籍: "${title}" (${author})`);
+                    console.log(`📚 搜索到 ${data.length} 个相关PPT文件`);
+                    
+                    // 输出搜索到的PPT文件
+                    data.forEach((item, index) => {
+                        console.log(`${index + 1}. "${item.title}" - ${item.html_url}`);
+                    });
+                    
+                    // 由于使用搜索API，大部分匹配已经由服务器完成
+                    // 只需要找到最佳匹配即可
+                    const matchedBook = data.find(item => {
+                        if (!item.title) return false;
+                        
+                        // 清理函数：移除空格、标点符号、书名号等
+                        function cleanText(text) {
+                            return text.replace(/[\s\-_\.,，。《》""''（）()、·]/g, '').toLowerCase();
+                        }
+                        
+                        // 清理标题
+                        const cleanTitle = cleanText(title);
+                        const cleanItemTitle = cleanText(item.title);
+                        
+                        // 精确匹配优先
+                        if (cleanTitle === cleanItemTitle) {
+                            console.log(`✅ 精确匹配: "${title}" -> "${item.title}"`);
+                            return true;
+                        }
+                        
+                        // 包含匹配
+                        const titleMatch = cleanItemTitle.includes(cleanTitle) || cleanTitle.includes(cleanItemTitle);
+                        
+                        if (titleMatch) {
+                            console.log(`✅ 包含匹配: "${title}" -> "${item.title}"`);
+                        }
+                        
+                        return titleMatch;
+                    });
+                    
+                    if (matchedBook) {
+                        console.log(`✅ 找到匹配的书籍: "${title}" (${author}) -> "${matchedBook.title}"`);
+                        console.log(`📁 文件路径: ${matchedBook.html_url}`);
+                    } else {
+                        console.log(`❌ 未找到匹配: "${title}" (${author})`);
+                    }
+                    return matchedBook;
+                }
+                return null;
+            } catch (error) {
+                console.error('检查HTML内容失败:', error);
+                return null;
+            }
+        }
+
+        // 检查图片是否存在
+        async function checkImageExists(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                return response.ok;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 在图书馆中搜索
+        function searchInLibrary(title, author) {
+            window.location.href = `/library?search=${encodeURIComponent(title)}`;
+        }
+
+        // 生成图书介绍
+        function generateBookIntro(title, author) {
+            window.location.href = `/generate?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}`;
+        }
+
+        // 添加消息到聊天界面
+        function addMessage(type, text) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        ${type === 'agent' ? 
+                            '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>' :
+                            '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'
+                        }
+                    </svg>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">${text}</div>
+                    <div class="message-time">${timeString}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 启用聊天输入功能
+        function enableChatInput() {
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-button');
+            
+            // 监听输入框变化
+            chatInput.addEventListener('input', function() {
+                const hasText = this.value.trim().length > 0;
+                sendButton.disabled = !hasText;
+                
+                // 自动调整文本框高度
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            // 监听回车键
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // 绑定发送按钮
+            sendButton.addEventListener('click', sendMessage);
+        }
+
+        // 发送消息功能
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addMessage('user', message);
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('send-button').disabled = true;
+            
+            try {
+                const response = await fetch('/api/recommendation/chat', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                    }
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        message: message
+                    })
                 });
                 
                 if (response.ok) {
-                    // 登出成功，返回首页
-                    window.location.href = '/';
+                    const data = await response.json();
+                    addMessage('agent', data.message);
+                    
+                    if (data.recommendations && data.recommendations.length > 0) {
+                        await updateRecommendationsWithHTML(data.recommendations);
+                    }
+                } else {
+                    addMessage('agent', '抱歉，暂时无法回复。请稍后再试。');
                 }
             } catch (error) {
-                console.error('登出失败:', error);
+                console.error('Failed to send message:', error);
+                addMessage('agent', '发送失败，请检查网络后重试。');
             }
         }
 
-        // 页面加载时检查用户认证状态
+        // 页面加载完成后直接初始化推荐系统
         document.addEventListener('DOMContentLoaded', function() {
-            // 稍微延迟执行，确保页面元素都加载完成
-            setTimeout(() => {
-                checkAuthStatus();
-            }, 50);
+            // 初始化聊天功能
+            enableChatInput();
             
-            // 绑定登出按钮事件
-            const logoutButton = document.getElementById('logout-button');
-            if (logoutButton) {
-                logoutButton.addEventListener('click', logout);
-            }
+            // 延迟一点时间确保页面渲染完成后加载推荐
+            setTimeout(() => {
+                initializeRecommendationWithBooks();
+            }, 100);
         });
     </script>
     <script>
