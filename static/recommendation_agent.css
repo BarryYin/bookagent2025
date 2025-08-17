@@ -256,6 +256,62 @@
     margin-left: 0.5rem;
 }
 
+/* AI思考状态指示器 */
+.thinking-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #667eea;
+    font-size: 0.9rem;
+    font-style: italic;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 12px;
+    border-left: 3px solid #667eea;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.thinking-status::before {
+    content: '🤔';
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+/* 来源信息样式 */
+.source-info {
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 8px;
+    color: #667eea;
+    font-size: 0.8rem;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.source-info small {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
 .chat-input-container {
     padding: 1.5rem;
     border-top: 1px solid #eee;

@@ -4018,14 +4018,15 @@ async def recommendation_chat_stream(request: RecommendationChatRequest, user: U
         print(error_message)
         yield f"data: {json.dumps({'error': error_message}, ensure_ascii=False)}\n\n"
 
-@app.post("/api/recommendation/chat")
-async def api_recommendation_chat(request: RecommendationChatRequest, user: UserResponse = Depends(verify_token)):
-    """
-    引导式推荐的流式聊天API.
-    """
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的认证令牌")
-    return StreamingResponse(recommendation_chat_stream(request, user), media_type="text/event-stream")
+# 注释掉重复的API路由，使用下面的workflow集成版本
+# @app.post("/api/recommendation/chat") 
+# async def api_recommendation_chat(request: RecommendationChatRequest, user: UserResponse = Depends(verify_token)):
+#     """
+#     引导式推荐的流式聊天API.
+#     """
+#     if not user:
+#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的认证令牌")
+#     return StreamingResponse(recommendation_chat_stream(request, user), media_type="text/event-stream")
 
 @app.get("/api/recommendations/enhanced")
 async def get_enhanced_recommendations(request: Request, limit: int = 10):
@@ -4193,9 +4194,71 @@ async def start_recommendation_session(request: Request):
             "error": "enhanced_failed"
         }
 
+# 临时无认证版本的API用于测试
+@app.post("/api/recommendation/chat/test")
+async def chat_with_recommendation_agent_test(request: Request):
+    """与推荐智能体对话 - 无认证测试版本"""
+    try:
+        # 获取请求数据
+        body = await request.json()
+        message = body.get('message', '')
+        history = body.get('history', [])
+        
+        if not message:
+            raise HTTPException(status_code=400, detail="消息内容不能为空")
+        
+        # 优先使用workflow模型，失败时降级到原有模型
+        try:
+            from workflow_chat_api import handle_recommendation_chat
+            
+            # 使用workflow模型处理对话
+            workflow_response = await handle_recommendation_chat(
+                user_input=message,
+                user_id="test_user",  # 测试用户ID
+                history=history
+            )
+            
+            if workflow_response.get("success"):
+                print(f"✅ Workflow模型响应成功: {message[:50]}...")
+                print(f"📝 实际消息内容: {workflow_response.get('message', '')[:100]}...")
+                
+                return {
+                    "success": True,
+                    "message": workflow_response.get('message', ''),
+                    "recommendations": [],
+                    "turn": len(history) + 1,
+                    "should_recommend": workflow_response.get('should_recommend', False),
+                    "source": "workflow_model"
+                }
+            else:
+                print(f"⚠️ Workflow模型失败，返回错误信息")
+                return {
+                    "success": False,
+                    "message": workflow_response.get('message', '抱歉，我现在无法回复您的消息。'),
+                    "error": workflow_response.get('error', 'Unknown error'),
+                    "source": "workflow_model_error"
+                }
+                
+        except Exception as workflow_e:
+            print(f"Workflow模型处理失败: {workflow_e}")
+            return {
+                "success": False,
+                "message": "抱歉，我现在有点困惑。能再说一遍你的需求吗？",
+                "error": str(workflow_e),
+                "source": "error"
+            }
+        
+    except Exception as e:
+        print(f"API处理失败: {e}")
+        return {
+            "success": False,
+            "message": "抱歉，我现在有点困惑。能再说一遍你的需求吗？",
+            "error": str(e)
+        }
+
 @app.post("/api/recommendation/chat")
 async def chat_with_recommendation_agent(request: Request):
-    """与推荐智能体对话"""
+    """与推荐智能体对话 - 集成workflow模型"""
     user = await get_current_user(request)
     if not user:
         raise HTTPException(status_code=401, detail="请先登录")
@@ -4204,23 +4267,66 @@ async def chat_with_recommendation_agent(request: Request):
         # 获取请求数据
         body = await request.json()
         message = body.get('message', '')
+        history = body.get('history', [])
         
         if not message:
             raise HTTPException(status_code=400, detail="消息内容不能为空")
         
-        # 使用增强版推荐智能体
-        from guided_recommendation_agent import GuidedRecommendationAgent
-        
-        agent = GuidedRecommendationAgent()
-        response = await agent.continue_conversation(user.id, message)
-        
-        return {
-            "success": True,
-            "message": response.get('message', ''),
-            "recommendations": response.get('recommendations', []),
-            "turn": response.get('turn', 0),
-            "should_recommend": response.get('should_recommend', False)
-        }
+        # 优先使用workflow模型，失败时降级到原有模型
+        try:
+            from workflow_chat_api import handle_recommendation_chat
+            
+            # 使用workflow模型处理对话
+            workflow_response = await handle_recommendation_chat(
+                user_input=message,
+                user_id=str(user.id),
+                history=history
+            )
+            
+            if workflow_response.get("success"):
+                print(f"✅ Workflow模型响应成功: {message[:50]}...")
+                
+                # 如果workflow返回的响应中包含推荐信息，尝试获取具体推荐
+                recommendations = []
+                if workflow_response.get("should_recommend"):
+                    try:
+                        # 集成现有推荐系统获取具体书籍
+                        from guided_recommendation_agent import GuidedRecommendationAgent
+                        agent = GuidedRecommendationAgent()
+                        rec_response = await agent.continue_conversation(user.id, message)
+                        recommendations = rec_response.get('recommendations', [])
+                    except Exception as rec_e:
+                        print(f"推荐系统集成失败: {rec_e}")
+                
+                return {
+                    "success": True,
+                    "message": workflow_response.get('message', ''),
+                    "recommendations": recommendations,
+                    "turn": len(history) + 1,
+                    "should_recommend": workflow_response.get('should_recommend', False),
+                    "source": "workflow_model"
+                }
+            else:
+                print(f"⚠️ Workflow模型失败，降级到原有模型")
+                raise Exception("Workflow model failed")
+                
+        except Exception as workflow_e:
+            print(f"Workflow模型处理失败: {workflow_e}")
+            
+            # 降级到原有的推荐智能体
+            from guided_recommendation_agent import GuidedRecommendationAgent
+            
+            agent = GuidedRecommendationAgent()
+            response = await agent.continue_conversation(user.id, message)
+            
+            return {
+                "success": True,
+                "message": response.get('message', ''),
+                "recommendations": response.get('recommendations', []),
+                "turn": response.get('turn', 0),
+                "should_recommend": response.get('should_recommend', False),
+                "source": "fallback_model"
+            }
         
     except Exception as e:
         print(f"对话处理失败: {e}")

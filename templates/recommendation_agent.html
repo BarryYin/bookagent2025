@@ -444,7 +444,7 @@
         let chatHistory = [];
 
         // 添加消息到聊天界面
-        function addMessage(type, text) {
+        function addMessage(type, text, isThinking = false) {
             const messagesContainer = document.getElementById('chat-messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}-message`;
@@ -452,11 +452,6 @@
             const now = new Date();
             const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
             
-            // 使用innerHTML来允许渲染Markdown等富文本
-            const textElement = document.createElement('div');
-            textElement.className = 'message-text';
-            textElement.innerHTML = text; // initial text
-
             messageDiv.innerHTML = `
                 <div class="message-avatar">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -467,7 +462,8 @@
                     </svg>
                 </div>
                 <div class="message-content">
-                    <div class="message-text-wrapper"></div>
+                    <div class="message-text">${text}</div>
+                    ${isThinking ? '<div class="thinking-status">AI正在思考中...</div>' : ''}
                     <div class="message-time">${timeString}</div>
                 </div>
             `;
@@ -475,8 +471,23 @@
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            // 返回对文本元素的引用，以便流式更新
-            return textElement;
+            // 返回消息元素的引用，以便后续更新
+            return messageDiv;
+        }
+
+        // 更新AI消息内容
+        function updateAgentMessage(messageElement, newText, isComplete = false) {
+            const textElement = messageElement.querySelector('.message-text');
+            const thinkingElement = messageElement.querySelector('.thinking-status');
+            
+            if (textElement) {
+                textElement.innerHTML = newText.replace(/\n/g, '<br>');
+            }
+            
+            // 如果完成了回复，移除思考状态
+            if (isComplete && thinkingElement) {
+                thinkingElement.remove();
+            }
         }
 
         // 启用聊天输入功能
@@ -506,26 +517,31 @@
             sendButton.addEventListener('click', sendMessage);
         }
 
-        // 发送消息功能（流式处理版本）
+        // 发送消息功能（改进版本）
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
             
             if (!message) return;
             
-            // 1. 将用户消息添加到UI和历史记录
+            // 1. 显示用户消息
+            console.log('📤 用户发送消息:', message);
             addMessage('user', message);
             chatHistory.push({ role: 'user', content: message });
 
+            // 2. 清空输入框并禁用发送按钮
             input.value = '';
             input.style.height = 'auto';
             document.getElementById('send-button').disabled = true;
 
-            // 2. 为Agent的响应创建一个占位符
-            const agentMessageElement = addMessage('agent', '<div class="typing-indicator"></div>');
+            // 3. 创建AI思考状态的消息
+            const agentMessageElement = addMessage('agent', '正在为您分析并推荐...', true);
             let agentResponseText = "";
 
             try {
+                console.log('🚀 开始调用推荐API...');
+                
+                // 4. 发送请求到后端
                 const response = await fetch('/api/recommendation/chat', {
                     method: 'POST',
                     headers: {
@@ -538,55 +554,66 @@
                     })
                 });
 
+                console.log('📡 API响应状态:', response.status);
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.detail || '服务器响应错误');
                 }
 
-                // 3. 处理流式响应
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n\n').filter(line => line.startsWith('data:'));
-
-                    for (const line of lines) {
-                        const jsonStr = line.substring(5);
-                        try {
-                            const data = JSON.parse(jsonStr);
-                            if (data.error) {
-                                throw new Error(data.error);
-                            }
-                            if (data.event && data.event === '[DONE]') {
-                                // 流结束
-                                chatHistory.push({ role: 'assistant', content: agentResponseText });
-                                return;
-                            }
-                            if (data.token) {
-                                agentResponseText += data.token;
-                                // 使用innerHTML来渲染Markdown换行等
-                                agentMessageElement.innerHTML = agentResponseText.replace(/\n/g, '<br>');
-                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                            }
-                        } catch (e) {
-                            console.error('解析JSON失败:', jsonStr, e);
-                        }
+                // 5. 处理成功响应
+                const responseData = await response.json();
+                console.log('📊 API响应数据:', responseData);
+                
+                if (responseData.success) {
+                    // 显示AI回复
+                    agentResponseText = responseData.message || '';
+                    updateAgentMessage(agentMessageElement, agentResponseText, true);
+                    
+                    // 添加到历史记录
+                    chatHistory.push({ role: 'assistant', content: agentResponseText });
+                    
+                    // 如果有推荐书籍，更新推荐列表
+                    if (responseData.recommendations && responseData.recommendations.length > 0) {
+                        console.log('📚 更新推荐书籍列表:', responseData.recommendations.length);
+                        await updateRecommendationsWithHTML(responseData.recommendations);
                     }
+                    
+                    // 显示模型来源信息
+                    if (responseData.source) {
+                        console.log(`🤖 响应来源: ${responseData.source}`);
+                        
+                        // 在界面上显示来源信息（可选）
+                        const sourceInfo = document.createElement('div');
+                        sourceInfo.className = 'source-info';
+                        sourceInfo.innerHTML = `<small>💡 由 ${responseData.source === 'workflow_model' ? '智能工作流' : '推荐引擎'} 提供</small>`;
+                        agentMessageElement.querySelector('.message-content').appendChild(sourceInfo);
+                    }
+                    
+                } else {
+                    // 处理错误响应
+                    console.error('❌ API返回错误:', responseData.error);
+                    agentResponseText = responseData.message || '抱歉，我现在无法回复您的消息。';
+                    updateAgentMessage(agentMessageElement, agentResponseText, true);
                 }
 
             } catch (error) {
-                console.error('Failed to send message:', error);
+                console.error('❌ 消息发送失败:', error);
                 const errorMessage = typeof error === 'object' && error.message ? error.message : '网络连接错误';
-                agentMessageElement.innerHTML = `抱歉，出错了: ${errorMessage}`;
+                updateAgentMessage(agentMessageElement, `抱歉，出错了: ${errorMessage}`, true);
             } finally {
+                // 6. 滚动到底部并重新启用输入
                 const messagesContainer = document.getElementById('chat-messages');
                 if (messagesContainer) {
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
+                
+                // 延迟一点时间再启用发送按钮，避免重复发送
+                setTimeout(() => {
+                    document.getElementById('send-button').disabled = false;
+                }, 500);
+                
+                console.log('✅ 消息处理完成');
             }
         }
 

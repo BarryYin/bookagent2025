@@ -12,7 +12,7 @@ headers = {
 }
 
 data = {
-    "flow_id": "7362777714092728320",
+    "flow_id": "7362838041572466690",
     "uid": "123",
     "parameters": {"AGENT_USER_INPUT": "能帮我推荐几本好书吗"},
     "ext": {"bot_id": "adjfidjf", "caller": "workflow"},
