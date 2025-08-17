@@ -9,6 +9,7 @@ import hashlib
 import base64
 from typing import Optional, Dict, Any
 import logging
+import re
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -55,61 +56,100 @@ class BookCoverSearcher:
         return self._generate_default_cover(title, author)
 
     async def _search_douban_scrape(self, title: str, author: str = None, isbn: str = None) -> Optional[Dict[str, Any]]:
-        """通过抓取豆瓣搜索页面来查找封面，对中文书籍更有效"""
-        logger.info(f"尝试通过抓取豆瓣网页搜索: {title}")
+        """通过抓取豆瓣搜索页面并解析其内置JSON数据来查找封面"""
+        logger.info(f"尝试通过解析豆瓣网页JSON搜索: {title}")
         try:
             search_text = title
-            if author:
-                search_text += f" {author}"
+            # 豆瓣搜索对作者的权重不高，有时反而影响结果，所以优先只用标题
+            # if author:
+            #     search_text += f" {author}"
             
             url = "https://search.douban.com/book/subject_search"
             params = {"search_text": search_text, "cat": "1001"}
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'
             }
 
             async with httpx.AsyncClient(headers=headers, follow_redirects=True) as client:
                 response = await client.get(url, params=params, timeout=self.timeout)
                 response.raise_for_status()
+                html_content = response.text
 
-                soup = BeautifulSoup(response.text, 'lxml')
-                
-                # 查找第一个搜索结果项
-                result_item = soup.find("div", class_="item-root")
-                if not result_item:
-                    logger.info("在豆瓣网页抓取中未找到结果项")
+                # 使用正则表达式提取页面内嵌的JSON数据
+                match = re.search(r'window\.__DATA__ = (\{.*?\});', html_content)
+                if not match:
+                    logger.warning("在豆瓣页面中未找到 window.__DATA__ JSON数据")
                     return None
 
-                # 提取封面图片
-                cover_img = result_item.find("img")
-                if not cover_img or not cover_img.get('src'):
-                    logger.info("在豆瓣网页抓取中未找到封面图片")
+                data = json.loads(match.group(1))
+                items = data.get('items', [])
+                if not items:
+                    logger.info("豆瓣返回的JSON数据中没有搜索结果 (items)")
                     return None
-                
-                cover_url = cover_img['src']
-                
-                # 豆瓣的图片URL有时是小图，替换为大图
-                cover_url = cover_url.replace("/s/", "/l/").replace("small", "large")
 
-                # 提取元数据
-                title_element = result_item.find("div", class_="title-text")
-                book_title = title_element.text.strip() if title_element else title
+                # 寻找最佳匹配
+                best_match = self._find_best_douban_match(items, title, author)
+                if not best_match:
+                    logger.info(f"在豆瓣返回的 {len(items)} 个结果中未找到'{title}'的匹配项")
+                    return None
 
-                meta_element = result_item.find("div", class_="meta")
-                book_meta = meta_element.text.strip() if meta_element else ""
-                
+                cover_url = best_match.get('cover_url')
+                if not cover_url:
+                    logger.info("找到的豆瓣匹配项中没有封面URL")
+                    return None
+
+                # 豆瓣的图片URL有时是小图(m/s)，替换为大图(l)
+                cover_url = cover_url.replace("/m/", "/l/").replace("/s/", "/l/")
+
                 return {
                     "cover_url": cover_url,
-                    "source": "Douban (Scrape)",
+                    "source": "Douban (JSON)",
                     "is_default": False,
                     "metadata": {
-                        "title": book_title,
-                        "meta": book_meta,
+                        "title": best_match.get('title'),
+                        "abstract": best_match.get('abstract'),
+                        "rating": best_match.get('rating'),
+                        "douban_id": best_match.get('id')
                     }
                 }
-        except Exception as e:
-            logger.error(f"豆瓣网页抓取失败: {e}")
+        except json.JSONDecodeError as e:
+            logger.error(f"解析豆瓣JSON数据失败: {e}")
             return None
+        except Exception as e:
+            logger.error(f"豆瓣网页解析过程失败: {e}")
+            return None
+
+    def _find_best_douban_match(self, items: list, target_title: str, target_author: str = None) -> Optional[dict]:
+        """在从豆瓣JSON返回的列表中找到最匹配的书籍"""
+        # 移除所有非中文字符以便更准确地匹配
+        clean_target_title = re.sub(r'[\W_a-zA-Z0-9]', '', target_title)
+
+        for item in items:
+            if item.get('tpl_name') != 'search_subject':
+                continue
+
+            title = item.get('title', '')
+            abstract = item.get('abstract', '')
+
+            # 同样清理豆瓣结果的标题
+            clean_title = re.sub(r'[\W_a-zA-Z0-9]', '', title)
+
+            # 检查标题是否足够匹配
+            if clean_target_title in clean_title:
+                # 如果提供了作者，进一步检查作者是否匹配
+                if target_author:
+                    if target_author in abstract:
+                        return item # 标题和作者都匹配
+                else:
+                    return item # 只提供了标题，且匹配
+        
+        # 如果精确匹配失败，退而求其次，返回第一个看起来像书的结果
+        for item in items:
+            if item.get('tpl_name') == 'search_subject':
+                return item
+
+        return None
     
     async def _search_google_books(self, title: str, author: str = None, isbn: str = None) -> Optional[Dict[str, Any]]:
         """使用Google Books API搜索"""

@@ -833,50 +833,6 @@
                 document.head.appendChild(style);
             }
         }
-                    downloadLink.style.display = 'none';
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                    
-                    // 显示成功消息 - 区分缓存和新生成
-                    const statusMessage = data.cached ? 
-                        `视频已存在，直接使用缓存！\n文件：${data.filename}\n大小：${data.file_size}\n时长：${data.duration}秒` :
-                        `视频生成成功！\n文件：${data.filename}\n大小：${data.file_size}\n时长：${data.duration}秒`;
-                    
-                    alert(statusMessage);
-                    
-                    // 3秒后恢复按钮状态
-                    setTimeout(() => {
-                        exportButton.innerHTML = originalText;
-                        exportButton.disabled = false;
-                        exportButton.style.opacity = '1';
-                    }, 3000);
-                } else {
-                    // 失败
-                    exportButton.innerHTML = '❌ 生成失败';
-                    alert('视频生成失败：' + (data.error || '未知错误'));
-                    
-                    // 3秒后恢复按钮状态
-                    setTimeout(() => {
-                        exportButton.innerHTML = originalText;
-                        exportButton.disabled = false;
-                        exportButton.style.opacity = '1';
-                    }, 3000);
-                }
-            })
-            .catch(error => {
-                console.error('导出视频错误:', error);
-                exportButton.innerHTML = '❌ 生成失败';
-                alert('网络错误：' + error.message);
-                
-                // 3秒后恢复按钮状态
-                setTimeout(() => {
-                    exportButton.innerHTML = originalText;
-                    exportButton.disabled = false;
-                    exportButton.style.opacity = '1';
-                }, 3000);
-            });
-        }
     </script>
 </body>
 </html>
