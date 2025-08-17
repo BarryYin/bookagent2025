@@ -85,12 +85,18 @@ async def track_ppt_views(request: Request, call_next):
         path_parts = request.url.path.split("/")
         if len(path_parts) >= 3:
             session_id = path_parts[2]
-            # 记录访问次数
+            # 记录访问次数 - 使用增强版
             try:
-                from models import user_manager
-                user_manager.record_book_view(session_id)
+                from auto_sync_hooks import record_book_view_enhanced
+                record_book_view_enhanced(session_id)
             except Exception as e:
-                print(f"记录访问次数失败: {e}")
+                # 如果增强版失败，回退到原版
+                try:
+                    from models import user_manager
+                    user_manager.record_book_view(session_id)
+                    print(f"使用原版访问记录: {e}")
+                except Exception as e2:
+                    print(f"记录访问次数失败: {e2}")
     
     return response
 
@@ -972,7 +978,59 @@ async def llm_event_stream(
     yield f'data: {json.dumps({"event":"[DONE]", "session_id": session_id, "output_path": f"outputs/{session_id}/"}, ensure_ascii=False)}\n\n'
 
 # -----------------------------------------------------------------------
-# 5. 文件保存功能
+# 5. 数据验证和清理函数
+# -----------------------------------------------------------------------
+def validate_and_clean_title(title: str, topic: str = "") -> str:
+    """验证和清理书名，防止格式错误"""
+    if not title:
+        return "未知书名"
+    
+    # 如果标题包含完整的生成请求内容，提取实际书名
+    if len(title) > 100 or "请为书籍《" in title or "书籍基本信息" in title:
+        # 尝试从内容中提取书名
+        patterns = [
+            r'书名：(.+?)(?:\n|-|作者)',
+            r'《(.+?)》',
+            r'- 书名：(.+?)(?:\n|-)',
+            r'书籍基本信息：.*?书名：(.+?)(?:\n|-)',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, title, re.DOTALL)
+            if match:
+                extracted_title = match.group(1).strip()
+                extracted_title = re.sub(r'[*\n\r]', '', extracted_title).strip()
+                if extracted_title and len(extracted_title) < 100:
+                    return extracted_title
+        
+        # 如果无法提取，尝试从topic中获取
+        if topic and '《' in topic and '》' in topic:
+            title_match = re.search(r'《([^》]+)》', topic)
+            if title_match:
+                return title_match.group(1).strip()
+        
+        return "未知书名"
+    
+    # 清理格式字符
+    title = re.sub(r'[*\n\r]', '', title).strip()
+    return title if title else "未知书名"
+
+def validate_and_clean_author(author: str) -> str:
+    """验证和清理作者名，防止格式错误"""
+    if not author:
+        return "未知作者"
+    
+    # 清理格式字符
+    author = re.sub(r'[*\n\r]', '', author).strip()
+    
+    # 如果作者名过长，可能是错误的
+    if len(author) > 50:
+        return "未知作者"
+    
+    return author if author else "未知作者"
+
+# -----------------------------------------------------------------------
+# 6. 文件保存功能
 # -----------------------------------------------------------------------
 async def save_ppt_to_database(session_id: str, user_id: int, topic: str):
     """保存PPT信息到数据库"""
@@ -1030,6 +1088,10 @@ async def save_ppt_to_database(session_id: str, user_id: int, topic: str):
             # 如果封面URL是default_cover，生成默认封面
             if cover_url == "default_cover":
                 cover_url = get_default_book_cover(title)
+            
+            # 验证和清理数据
+            title = validate_and_clean_title(title, topic)
+            author = validate_and_clean_author(author)
             
             # 保存到数据库
             from models import user_manager
@@ -1131,6 +1193,20 @@ async def save_generated_content(session_id: str, content: dict):
         
     except Exception as e:
         print(f"⚠️ 添加到分类数据库失败: {e}")
+    
+    # 自动同步到统计系统
+    try:
+        from auto_sync_hooks import auto_sync_book_to_stats
+        
+        # 准备同步数据
+        sync_book_data = content.get('book_data', {}).copy()
+        sync_book_data['topic'] = content.get('topic', '')
+        
+        # 执行自动同步
+        auto_sync_book_to_stats(session_id, sync_book_data)
+        
+    except Exception as e:
+        print(f"⚠️ 自动同步到统计系统失败: {e}")
     
     print(f"内容已保存到: {output_dir}/")
     return output_dir
@@ -1277,11 +1353,20 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
                 </div>'''
         else:
             # 内容页
-            content = slide.get('content', '').replace('\n', '<br>')
+            content = slide.get('content', '')
+            # 处理content可能是列表的情况
+            if isinstance(content, list):
+                content_html = '<ul>'
+                for item in content:
+                    content_html += f'<li>{str(item)}</li>'
+                content_html += '</ul>'
+            else:
+                content_html = f'<p>{str(content).replace(chr(10), "<br>")}</p>'
+                
             slides_html += f'''
                 <div class="slide {active_class}" data-speech="{narration_text}">
                     <h2>{slide.get('title', f'第{i+1}页')}</h2>
-                    <p>{content}</p>
+                    {content_html}
                 </div>'''
     
     

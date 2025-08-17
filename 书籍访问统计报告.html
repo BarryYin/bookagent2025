@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书籍访问统计报告</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            padding: 30px;
+        }
+        
+        .section h2 {
+            color: #333;
+            border-bottom: 3px solid #4facfe;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .access-level {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        
+        .level-high { background: #28a745; }
+        .level-medium { background: #ffc107; color: #333; }
+        .level-low { background: #6c757d; }
+        .level-zero { background: #dc3545; }
+        
+        .chart-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .chart-box {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .distribution-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            transition: width 0.8s ease;
+        }
+        
+        .update-time {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 FogSight 书籍访问统计报告</h1>
+            <p>实时数据分析 · 智能洞察</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">34</div>
+                <div class="stat-label">总书籍数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">78</div>
+                <div class="stat-label">总PPT数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">21</div>
+                <div class="stat-label">总访问次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">0.6</div>
+                <div class="stat-label">平均访问量/本</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📊 访问量分布</h2>
+            <div class="chart-container">
+                <div class="chart-box">
+                    <h3>访问级别统计</h3>
+                    <div class="distribution-item">
+                        <span>🔴 无访问 (0次)</span>
+                        <strong>27本 (79.4%)</strong>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 79.4%; background: #dc3545;"></div>
+                    </div>
+                    
+                    <div class="distribution-item">
+                        <span>🟡 低访问 (1-10次)</span>
+                        <strong>7本 (20.6%)</strong>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 20.6%; background: #ffc107;"></div>
+                    </div>
+                    
+                    <div class="distribution-item">
+                        <span>🟢 中访问 (11-50次)</span>
+                        <strong>0本 (0%)</strong>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%; background: #28a745;"></div>
+                    </div>
+                    
+                    <div class="distribution-item">
+                        <span>🔥 高访问 (>50次)</span>
+                        <strong>0本 (0%)</strong>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%; background: #007bff;"></div>
+                    </div>
+                </div>
+                
+                <div class="chart-box">
+                    <h3>关键指标</h3>
+                    <div class="distribution-item">
+                        <span>平均每本书访问量</span>
+                        <strong>0.6次</strong>
+                    </div>
+                    <div class="distribution-item">
+                        <span>平均每个PPT访问量</span>
+                        <strong>0.3次</strong>
+                    </div>
+                    <div class="distribution-item">
+                        <span>最高单本访问量</span>
+                        <strong>9次</strong>
+                    </div>
+                    <div class="distribution-item">
+                        <span>有访问记录的书籍</span>
+                        <strong>7本 (20.6%)</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🏆 最受欢迎书籍 TOP 10</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>书籍名称</th>
+                            <th>作者</th>
+                            <th>访问次数</th>
+                            <th>访问级别</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>🥇 1</td>
+                            <td>曾国藩传 - Bookagent 智能演示</td>
+                            <td>未知作者</td>
+                            <td><strong>9</strong></td>
+                            <td><span class="access-level level-low">低频访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>🥈 2</td>
+                            <td>未知书籍 - PPT演示</td>
+                            <td>未知作者</td>
+                            <td><strong>5</strong></td>
+                            <td><span class="access-level level-low">低频访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>🥉 3</td>
+                            <td>FogSight AI 智能演示</td>
+                            <td>未知作者</td>
+                            <td><strong>2</strong></td>
+                            <td><span class="access-level level-low">低频访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>PPT_bd6d19c4</td>
+                            <td>未知作者</td>
+                            <td><strong>2</strong></td>
+                            <td><span class="access-level level-low">低频访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>史蒂夫·乔布斯传 - PPT演示</td>
+                            <td>未知作者</td>
+                            <td><strong>1</strong></td>
+                            <td><span class="access-level level-low">低频访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>测试书籍 - PPT演示</td>
+                            <td>未知作者</td>
+                            <td><strong>1</strong></td>
+                            <td><span class="access-level level-low">低频访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td>边城 - PPT演示</td>
+                            <td>未知作者</td>
+                            <td><strong>1</strong></td>
+                            <td><span class="access-level level-low">低频访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>8</td>
+                            <td>书籍PPT</td>
+                            <td>未知作者</td>
+                            <td>0</td>
+                            <td><span class="access-level level-zero">未访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>9</td>
+                            <td>书籍PPT - 活着</td>
+                            <td>未知作者</td>
+                            <td>0</td>
+                            <td><span class="access-level level-zero">未访问</span></td>
+                        </tr>
+                        <tr>
+                            <td>10</td>
+                            <td>人生海海 - PPT演示</td>
+                            <td>未知作者</td>
+                            <td>0</td>
+                            <td><span class="access-level level-zero">未访问</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📈 数据洞察</h2>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3>🔍 关键发现</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>低活跃度：</strong> 79.4% 的书籍（27本）从未被访问过，显示用户参与度较低</li>
+                    <li><strong>集中化趋势：</strong> 访问量主要集中在少数几本书上，最高访问量仅为9次</li>
+                    <li><strong>内容质量：</strong> "曾国藩传"系列表现最佳，说明历史人物传记类内容更受欢迎</li>
+                    <li><strong>技术测试：</strong> 多个测试类PPT占据了部分访问量，影响真实数据</li>
+                </ul>
+                
+                <h3>💡 优化建议</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>内容推广：</strong> 针对零访问书籍制定推广策略，提高曝光度</li>
+                    <li><strong>用户引导：</strong> 优化首页推荐算法，将热门内容置顶展示</li>
+                    <li><strong>数据清理：</strong> 清理测试数据，确保统计结果的准确性</li>
+                    <li><strong>内容分析：</strong> 研究高访问量内容特征，指导后续内容创作</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="update-time">
+            📅 数据更新时间: <span id="updateTime"></span>
+        </div>
+    </div>
+    
+    <script>
+        // 设置当前时间
+        document.getElementById('updateTime').textContent = new Date().toLocaleString('zh-CN');
+        
+        // 添加动画效果
+        window.addEventListener('load', function() {
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(number => {
+                const finalValue = parseInt(number.textContent);
+                let currentValue = 0;
+                const increment = finalValue / 50;
+                
+                const timer = setInterval(() => {
+                    currentValue += increment;
+                    if (currentValue >= finalValue) {
+                        currentValue = finalValue;
+                        clearInterval(timer);
+                    }
+                    number.textContent = Math.floor(currentValue);
+                }, 20);
+            });
+        });
+    </script>
+</body>
+</html>

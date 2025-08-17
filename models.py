@@ -645,22 +645,24 @@ class UserManager:
             return False
 
     def get_user_preferences(self, user_id: int) -> dict:
-        """获取用户偏好（基于个人书架中的书籍分类）"""
+        """获取用户偏好（基于个人书架中书籍的浏览次数加权统计）"""
         try:
             conn = sqlite3.connect(DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
+            
+            # 使用 SUM(view_count + 1) 作为加权统计，浏览次数越多的书，权重越高
             cursor.execute("""
-                SELECT category_name, COUNT(*) as count 
+                SELECT category_name, SUM(view_count + 1) as weight
                 FROM ppts 
-                WHERE user_id = ? 
+                WHERE user_id = ? AND category_name IS NOT NULL
                 GROUP BY category_name 
-                ORDER BY count DESC
+                ORDER BY weight DESC
             """, (user_id,))
             
             preferences = {}
             for row in cursor.fetchall():
-                category_name, count = row
-                preferences[category_name] = count
+                preferences[row['category_name']] = row['weight']
             
             conn.close()
             return preferences
@@ -668,47 +670,25 @@ class UserManager:
             print(f"获取用户偏好时出错: {e}")
             return {}
 
-    def get_popular_books_by_category(self, category_name: str, exclude_user_id: int = None, limit: int = 10) -> list:
+    def get_popular_books_by_category(self, category_name: str, limit: int = 10) -> list:
         """获取指定分类的热门书籍（按浏览次数排序）"""
         try:
             conn = sqlite3.connect(DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            
-            # 构建查询条件
-            where_clause = "WHERE category_name = ?"
-            params = [category_name]
-            
-            if exclude_user_id is not None:
-                where_clause += " AND user_id != ?"
-                params.append(exclude_user_id)
             
             query = f"""
                 SELECT session_id, title, author, cover_url, category_name, 
-                       category_color, category_icon, created_at,
-                       (SELECT COUNT(*) FROM ppts p2 WHERE p2.category_name = ppts.category_name) as category_count
+                       category_color, category_icon, created_at, view_count
                 FROM ppts 
-                {where_clause}
-                ORDER BY category_count DESC, created_at DESC
+                WHERE category_name = ?
+                ORDER BY view_count DESC, created_at DESC
                 LIMIT ?
             """
-            params.append(limit)
             
-            cursor.execute(query, params)
+            cursor.execute(query, (category_name, limit))
             
-            books = []
-            for row in cursor.fetchall():
-                books.append({
-                    'session_id': row[0],
-                    'title': row[1],
-                    'author': row[2],
-                    'cover_url': row[3],
-                    'category_name': row[4],
-                    'category_color': row[5],
-                    'category_icon': row[6],
-                    'created_at': row[7],
-                    'popularity_score': row[8]
-                })
-            
+            books = [dict(row) for row in cursor.fetchall()]
             conn.close()
             return books
         except Exception as e:
@@ -716,74 +696,84 @@ class UserManager:
             return []
 
     def get_recommendations_for_user(self, user_id: int, limit: int = 10) -> list:
-        """为用户生成推荐书籍"""
+        """为用户生成推荐书籍, 包含多层备用逻辑确保永不为空."""
         try:
-            # 获取用户偏好
+            # 1. 获取用户书架上所有书籍的ID，用于后续过滤
+            user_books_on_shelf = self.get_user_ppts(user_id, limit=1000) # 获取用户所有书
+            shelf_session_ids = {book['session_id'] for book in user_books_on_shelf.get('ppts', [])}
+
+            # 2. 获取用户偏好
             preferences = self.get_user_preferences(user_id)
             
-            if not preferences:
-                # 如果用户没有偏好，返回所有分类的热门书籍
+            final_recommendations = []
+
+            # 3. 主要逻辑：基于偏好推荐
+            if preferences:
+                potential_recommendations = []
+                total_weight = sum(preferences.values())
+                for category, weight in preferences.items():
+                    category_limit = max(3, int((weight / total_weight) * limit * 1.5))
+                    books = self.get_popular_books_by_category(category, category_limit)
+                    potential_recommendations.extend(books)
+                
+                # 过滤掉用户已有的书籍
+                for book in potential_recommendations:
+                    if len(final_recommendations) >= limit: break
+                    if book['session_id'] not in shelf_session_ids:
+                        final_recommendations.append(book)
+
+            # 4. 备用逻辑1：如果个性化推荐结果为空（比如偏好分类下没有新书），启动“探索”模式
+            if not final_recommendations:
+                print(f"Personalized recommendations failed for user {user_id}. Triggering Fallback 1: Exploration.")
                 conn = sqlite3.connect(DATABASE_PATH)
+                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT DISTINCT category_name 
-                    FROM ppts 
-                    WHERE user_id != ?
-                    ORDER BY category_name
-                """, (user_id,))
+                    SELECT session_id, title, author, cover_url, category_name, view_count, created_at
+                    FROM ppts
+                    WHERE category_name NOT IN (SELECT DISTINCT category_name FROM ppts WHERE user_id = ?)
+                    ORDER BY view_count DESC, created_at DESC
+                    LIMIT ?
+                """, (user_id, limit * 2))
                 
-                categories = [row[0] for row in cursor.fetchall()]
-                recommendations = []
-                
-                for category in categories:
-                    books = self.get_popular_books_by_category(category, user_id, limit // len(categories))
-                    recommendations.extend(books)
-                
+                fallback_books = [dict(row) for row in cursor.fetchall()]
                 conn.close()
-                return recommendations[:limit]
-            
-            # 根据用户偏好生成推荐
-            recommendations = []
-            total_weight = sum(preferences.values())
-            
-            for category, count in preferences.items():
-                # 计算该分类的推荐数量（基于用户偏好权重）
-                category_limit = max(1, int((count / total_weight) * limit))
                 
-                books = self.get_popular_books_by_category(category, user_id, category_limit)
-                recommendations.extend(books)
-            
-            # 如果推荐数量不足，补充其他分类的热门书籍
-            if len(recommendations) < limit:
-                remaining_limit = limit - len(recommendations)
-                
-                # 获取用户没有的书籍分类
+                for book in fallback_books:
+                    if len(final_recommendations) >= limit: break
+                    if book['session_id'] not in shelf_session_ids:
+                        final_recommendations.append(book)
+
+            # 5. 备用逻辑2：如果“探索”模式也失败（比如用户已涉足所有分类），启动“全站热门”模式
+            if not final_recommendations:
+                print(f"Fallback 1 failed for user {user_id}. Triggering Fallback 2: Global Hot.")
                 conn = sqlite3.connect(DATABASE_PATH)
+                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT DISTINCT category_name 
-                    FROM ppts 
-                    WHERE user_id != ? 
-                    AND category_name NOT IN (
-                        SELECT DISTINCT category_name 
-                        FROM ppts 
-                        WHERE user_id = ?
-                    )
-                """, (user_id, user_id))
+                    SELECT session_id, title, author, cover_url, category_name, view_count, created_at
+                    FROM ppts
+                    ORDER BY view_count DESC, created_at DESC
+                    LIMIT ?
+                """, (limit * 5,)) # 拉取足够多的数据以供过滤
                 
-                other_categories = [row[0] for row in cursor.fetchall()]
-                
-                for category in other_categories:
-                    if len(recommendations) >= limit:
-                        break
-                    
-                    books = self.get_popular_books_by_category(category, user_id, remaining_limit)
-                    recommendations.extend(books)
-                    remaining_limit = limit - len(recommendations)
-                
+                global_hot_books = [dict(row) for row in cursor.fetchall()]
                 conn.close()
-            
-            return recommendations[:limit]
+
+                for book in global_hot_books:
+                    if len(final_recommendations) >= limit: break
+                    if book['session_id'] not in shelf_session_ids:
+                        final_recommendations.append(book)
+
+            # 6. 去重并返回
+            seen_ids = set()
+            unique_recommendations = []
+            for book in final_recommendations:
+                if book['session_id'] not in seen_ids:
+                    unique_recommendations.append(book)
+                    seen_ids.add(book['session_id'])
+
+            return unique_recommendations[:limit]
             
         except Exception as e:
             print(f"生成推荐时出错: {e}")
