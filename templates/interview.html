@@ -708,6 +708,9 @@
             <div class="interview-book-info">
                 <h3 class="book-title" id="book-title">{{ book_title or '未知书名' }}</h3>
                 <p class="book-author" id="book-author">{{ book_author or '未知作者' }}</p>
+                <div class="interview-progress" style="margin-top: 10px; padding: 8px 12px; background: #e3f2fd; border-radius: 6px; font-size: 14px; color: #1976d2;">
+                    <span class="progress-text">🤖 双AI协作访谈准备中...</span>
+                </div>
             </div>
             
             <div class="interview-chat" id="interview-chat">
@@ -1060,7 +1063,7 @@
             }
         }
         
-        // 发送消息
+        // 发送消息 - 双AI协作版本
         async function sendMessage() {
             const message = interviewInput.value.trim();
             if (!message || isLoading || !currentSessionId) return;
@@ -1097,16 +1100,31 @@
                 // 移除加载指示器
                 removeLoadingIndicator();
                 
-                if (data.response) {
-                    addMessage(data.response, 'assistant', data.stage);
+                // 处理不同类型的响应
+                if (data.type === 'question') {
+                    // 对话AI提出的问题
+                    addMessage(data.question, 'assistant');
                     
-                    // 检查是否需要显示播客按钮
-                    const messageCount = interviewChat.querySelectorAll('.chat-message').length;
-                    if (messageCount >= 6 && !document.querySelector('button[onclick="generatePodcast()"]')) {
+                    // 更新进度显示
+                    updateProgress(data.current_question, data.total_questions);
+                    
+                } else if (data.type === 'completion') {
+                    // 访谈完成，显示完成消息和播客生成按钮
+                    addMessage(data.message, 'assistant');
+                    
+                    if (data.ready_for_podcast) {
                         addPodcastButton();
                     }
+                    
+                } else if (data.response) {
+                    // 兼容旧版本响应格式
+                    addMessage(data.response, 'assistant');
+                    
+                } else if (data.error) {
+                    addMessage(`错误：${data.error}`, 'system');
+                    
                 } else {
-                    addMessage('抱歉，出现了错误，请稍后重试。', 'system');
+                    addMessage('抱歉，出现了未知错误，请稍后重试。', 'system');
                 }
                 
             } catch (error) {
@@ -1116,6 +1134,20 @@
             } finally {
                 isLoading = false;
                 sendButton.disabled = false;
+            }
+        }
+        
+        // 更新访谈进度显示
+        function updateProgress(current, total) {
+            const progressElement = document.querySelector('.interview-progress .progress-text');
+            if (progressElement) {
+                if (current === 0) {
+                    progressElement.textContent = `💬 对话AI：准备开始访谈（0/${total}个问题）`;
+                } else if (current < total) {
+                    progressElement.textContent = `💬 对话AI：第${current}个问题（共${total}个）`;
+                } else {
+                    progressElement.textContent = `✅ 访谈完成！播客AI待命（${total}个问题已完成）`;
+                }
             }
         }
         
@@ -1142,7 +1174,7 @@
             sendMessage();
         });
         
-        // 初始化访谈会话
+        // 初始化双AI协作访谈会话
         async function initializeInterview() {
             if (!bookTitle) {
                 addMessage('请先选择一本书籍进行访谈', 'system');
@@ -1170,7 +1202,12 @@
                 currentSessionId = data.session_id;
                 
                 // 添加开场白
-                addMessage(data.opening_message, 'assistant', data.stage);
+                addMessage(data.opening_message, 'assistant');
+                
+                // 初始化进度显示
+                if (data.total_questions) {
+                    updateProgress(data.current_question || 0, data.total_questions);
+                }
                 
                 // 清空初始状态
                 const emptyState = interviewChat.querySelector('.empty-state');
@@ -1178,9 +1215,47 @@
                     emptyState.style.display = 'none';
                 }
                 
+                // 自动开始第一个问题
+                setTimeout(() => {
+                    sendFirstMessage();
+                }, 1000);
+                
             } catch (error) {
                 console.error('Error initializing interview:', error);
                 addMessage('初始化访谈失败，请刷新页面重试', 'system');
+            }
+        }
+        
+        // 发送第一条消息触发第一个问题
+        async function sendFirstMessage() {
+            if (!currentSessionId) return;
+            
+            try {
+                const response = await fetch('/api/interview/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        message: '开始访谈'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to get first question');
+                }
+                
+                const data = await response.json();
+                
+                if (data.type === 'question') {
+                    addMessage(data.question, 'assistant');
+                    updateProgress(data.current_question, data.total_questions);
+                }
+                
+            } catch (error) {
+                console.error('Error getting first question:', error);
+                addMessage('获取第一个问题失败，请手动输入一条消息开始对话', 'system');
             }
         }
         
@@ -1207,18 +1282,15 @@
             });
         }
         
-        // 生成播客
+        // 生成播客 - 双AI协作版本
         async function generatePodcast() {
             if (!currentSessionId) {
-                addMessage('请先进行一些对话再生成播客', 'system');
+                addMessage('请先完成访谈再生成播客', 'system');
                 return;
             }
             
             try {
-                addMessage('正在生成播客内容...', 'system');
-                
-                // 获取选择的播客风格
-                const podcastStyle = document.getElementById('podcast-style').value;
+                addMessage('📻 播客AI正在为您制作个人读后感播客，请稍候...', 'system');
                 
                 const response = await fetch('/api/interview/generate-podcast', {
                     method: 'POST',
@@ -1226,8 +1298,7 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        session_id: currentSessionId,
-                        podcast_style: podcastStyle
+                        session_id: currentSessionId
                     })
                 });
                 
@@ -1237,12 +1308,18 @@
                 
                 const data = await response.json();
                 
-                if (data.podcast_structure) {
-                    addMessage(`播客生成完成！标题：${data.podcast_structure.title}`, 'system');
-                    addMessage(`总时长：${Math.floor(data.podcast_structure.total_duration / 60)}分${data.podcast_structure.total_duration % 60}秒`, 'system');
+                if (data.success) {
+                    addMessage(`🎉 播客生成成功！`, 'system');
+                    addMessage(`📖 书籍：《${data.book_title}》作者：${data.book_author}`, 'system');
                     
-                    // 显示播客内容（包含音频）
-                    displayPodcastContent(data.podcast_script, data.audio_generation);
+                    // 显示播客内容
+                    displayDualAIPodcastContent(data);
+                    
+                } else if (data.error) {
+                    addMessage(`❌ 播客生成失败：${data.error}`, 'system');
+                    
+                } else {
+                    addMessage('❓ 播客生成失败，返回格式异常', 'system');
                 }
                 
             } catch (error) {
@@ -1251,7 +1328,60 @@
             }
         }
         
-        // 显示播客内容
+        // 显示双AI播客内容
+        function displayDualAIPodcastContent(data) {
+            const scriptDiv = document.createElement('div');
+            scriptDiv.className = 'podcast-script';
+            
+            let audioHtml = '';
+            if (data.audio_url) {
+                audioHtml = `
+                    <div class="podcast-audio-player" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: fadeIn 0.5s ease-out;">
+                        <h4>🎵 AI生成的播客音频</h4>
+                        <audio controls style="width: 100%; margin: 10px 0;">
+                            <source src="${data.audio_url}" type="audio/mpeg">
+                            您的浏览器不支持音频播放。
+                        </audio>
+                        <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                            由星火大模型生成 | 本地保存路径：${data.local_file || '未保存'}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            scriptDiv.innerHTML = `
+                <h3>🎙️ 个人读后感播客</h3>
+                ${audioHtml}
+                <div class="script-content">
+                    <h4>播客内容</h4>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
+                        ${data.script || '播客内容生成中...'}
+                    </div>
+                </div>
+                <div class="download-buttons" style="margin-top: 15px;">
+                    ${data.audio_url ? `<a href="${data.audio_url}" download style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; transition: all 0.3s ease; margin-right: 10px;">下载音频</a>` : ''}
+                    <button onclick="downloadPodcastScript()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; transition: all 0.3s ease;">复制内容</button>
+                </div>
+                <div class="social-share" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <h4>分享你的读后感播客</h4>
+                    <div class="share-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="shareToWeChat()" style="padding: 8px 16px; background: #07C160; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <span>📱</span> 微信
+                        </button>
+                        <button onclick="shareToWeibo()" style="padding: 8px 16px; background: #E6162D; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <span>📢</span> 微博
+                        </button>
+                        <button onclick="copyShareLink()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <span>🔗</span> 复制链接
+                        </button>
+                    </div>
+                </div>
+            `;
+            interviewChat.appendChild(scriptDiv);
+            interviewChat.scrollTop = interviewChat.scrollHeight;
+        }
+        
+        // 显示播客内容（兼容旧版本）
         function displayPodcastContent(script, audioData = null) {
             const scriptDiv = document.createElement('div');
             scriptDiv.className = 'podcast-script';

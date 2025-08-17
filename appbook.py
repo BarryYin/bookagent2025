@@ -4469,8 +4469,8 @@ async def check_book_in_bookshelf(
 # -----------------------------------------------------------------------
 # 访谈功能API路由
 # -----------------------------------------------------------------------
-from interview_dialogue import get_dialogue_engine
-from interview_content_processor import get_podcast_generator
+# 使用新的双AI协作引擎
+from dual_ai_interview_engine import get_dual_ai_engine
 
 class InterviewStartRequest(BaseModel):
     """访谈开始请求"""
@@ -4489,9 +4489,9 @@ class InterviewGenerateRequest(BaseModel):
 
 @app.post("/api/interview/start")
 async def start_interview(request: InterviewStartRequest):
-    """开始访谈"""
+    """开始双AI协作访谈"""
     try:
-        engine = get_dialogue_engine()
+        engine = get_dual_ai_engine()
         result = engine.start_interview(
             request.book_title,
             request.book_author,
@@ -4504,9 +4504,9 @@ async def start_interview(request: InterviewStartRequest):
 
 @app.post("/api/interview/message")
 async def send_interview_message(request: InterviewMessageRequest):
-    """发送访谈消息"""
+    """发送访谈消息 - 双AI协作"""
     try:
-        engine = get_dialogue_engine()
+        engine = get_dual_ai_engine()
         result = await engine.process_user_message(
             request.session_id,
             request.message
@@ -4518,10 +4518,10 @@ async def send_interview_message(request: InterviewMessageRequest):
 
 @app.post("/api/interview/generate-podcast")
 async def generate_interview_podcast(request: InterviewGenerateRequest):
-    """生成访谈播客"""
+    """生成访谈播客 - 双AI协作"""
     try:
-        generator = get_podcast_generator()
-        result = await generator.generate_podcast_content(request.session_id)
+        engine = get_dual_ai_engine()
+        result = await engine.generate_podcast(request.session_id)
         return result
     except Exception as e:
         print(f"生成播客失败: {e}")
@@ -4529,16 +4529,15 @@ async def generate_interview_podcast(request: InterviewGenerateRequest):
 
 @app.get("/api/interview/session/{session_id}")
 async def get_interview_session(session_id: str):
-    """获取访谈会话信息"""
+    """获取访谈会话信息 - 双AI协作"""
     try:
-        from interview_user_model import get_session
-        session = get_session(session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="会话不存在")
+        engine = get_dual_ai_engine()
+        result = engine.get_session_status(session_id)
         
-        engine = get_dialogue_engine()
-        summary = engine.get_session_summary(session_id)
-        return summary
+        if "error" in result:
+            raise HTTPException(status_code=404, detail=result["error"])
+        
+        return result
     except HTTPException:
         raise
     except Exception as e:
