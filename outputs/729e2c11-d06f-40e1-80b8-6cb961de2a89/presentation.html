@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社会动物 - Bookagent 智能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, 
+                #667eea 0%, 
+                #764ba2 25%, 
+                #f093fb 50%, 
+                #f5576c 75%, 
+                #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .presentation-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        /* 左侧导航 */
+        .nav-sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-section {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-button {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button.playing {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .slide-counter {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: auto;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .slide-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .slide {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 60px;
+            max-width: 900px;
+            width: 100%;
+            min-height: 600px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .slide h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            text-align: center;
+            line-height: 1.3;
+            font-weight: 600;
+        }
+
+        .slide h2 {
+            font-size: 2em;
+            margin-bottom: 25px;
+            color: #34495e;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .slide p {
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: #555;
+            text-align: justify;
+        }
+
+        .slide ul {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+
+        .slide li {
+            font-size: 1.1em;
+            line-height: 1.7;
+            margin-bottom: 12px;
+            color: #666;
+        }
+
+        /* 右侧导航 */
+        .nav-right {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-arrow {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-size: 20px;
+            margin: 0 auto;
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 字幕区域 */
+        .narration-display {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            color: #FFD700;
+            padding: 25px 40px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.6;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .sentence {
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            font-weight: 500;
+        }
+
+        .sentence.active {
+            opacity: 1;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .nav-sidebar {
+                width: 200px;
+            }
+            
+            .slide {
+                padding: 40px;
+                max-width: 700px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .presentation-container {
+                flex-direction: column;
+            }
+            
+            .nav-sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 15px;
+            }
+            
+            .nav-right {
+                width: 100%;
+                flex-direction: row;
+                justify-content: center;
+                height: auto;
+                padding: 15px;
+            }
+            
+            .slide {
+                padding: 30px;
+                margin: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 左侧导航栏 -->
+        <div class="nav-sidebar">
+            <div class="logo-section">
+                <div class="logo-title">Bookagent</div>
+            </div>
+            
+            <button id="playPauseButton" class="nav-button" onclick="toggleAudio()">
+                🔊 播放解说
+            </button>
+            
+            <button id="exportVideoButton" class="nav-button" onclick="exportVideo()" style="background: rgba(255, 200, 100, 0.2); margin-top: 10px;">
+                🎬 导出视频
+            </button>
+            
+            <button id="backButton" class="nav-button" onclick="goBack()" style="background: rgba(255, 255, 255, 0.2);">
+                ← 返回主页
+            </button>
+            
+            <div class="slide-counter">
+                <div id="slideCounter">第 1 页 / 8 页</div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="slide-container">
+                
+                <div class="slide active" data-speech="《社会动物》这本书，就像一面镜子，照出了我们内心那个常常被忽视的自己。作者大卫·布鲁克斯告诉我们，我们以为自己是理性的决策者，但其实，90%的行为都由潜意识驱动。在这本书里，你会遇见两个“自我”：一个是写在简历上的“简历自我”，追求成功、光鲜、理性；另一个是藏在心底的“生活自我”，渴望爱与被爱，追求真实与温暖。就像董宇辉老师常说的那样：“我们不是活给别人看的，而是活给那个真实的自己。”">
+                    <div style="text-align: center; padding: 2rem;">
+                        <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem; color: #1D1D1F;">社会动物</h1>
+                        <div style="width: 80px; height: 3px; background: linear-gradient(to right, #667eea, #764ba2); margin: 2rem auto; border-radius: 2px;"></div>
+                        <p style="font-size: 1.2rem; color: #666; font-style: italic;">欢迎来到本书的精彩解读</p>
+                    </div>
+                </div>
+                <div class="slide " data-speech="那时候我拼命地提升学历、职位、KPI，以为只要这些数字漂亮了，人生就圆满了。但有一天我突然停下脚步，问自己：‘我快乐吗？’答案是沉默。直到我翻开《社会动物》，才明白：真正的幸福，不在那些冷冰冰的指标里，而在那些被我们忽略的情感细节里。就像书中所说，我们常常活成了别人眼中的样子，而不是真实的自己。">
+                    <h2>我也曾是个‘简历狂人’</h2>
+                    <p>曾经我也把全部精力放在提升简历亮点上：学历、职位、KPI……但有一天我问自己：这真的是我想要的生活吗？<br><br>直到我读到这本书，我才明白，真正的幸福，藏在那些被忽略的情感细节里。</p>
+                </div>
+                <div class="slide " data-speech="《社会动物》就是用一对虚构情侣的成长轨迹，串联起我们每个人从童年到老年的心理演化过程。他们的故事，是我们每个人的故事。他们的迷茫，是我们每个人的迷茫；他们的爱，也是我们每个人的爱。正如董宇辉老师所说：“故事的意义，不在于情节有多曲折，而在于它是否映照了你我。”这本书，就是一面镜子，映照出我们未曾察觉的情感世界。">
+                    <h2>一场跨越一生的爱情故事</h2>
+                    <p>作者用一对虚构情侣的成长轨迹，串联起人类从童年到老年的心理演化过程。他们的故事，是我们每个人的故事。<br><br>这不是小说，而是一面镜子，映照出我们未曾察觉的情感世界。</p>
+                </div>
+                <div class="slide " data-speech="书中描写了一个关键时刻：男主角面临理性与情感的抉择。他的大脑还在分析利弊，心却早已给出了答案。这正是人性最真实的一面——情感驱动行为，直觉胜过逻辑。就像我们生活中那些看似冲动的决定，往往是最真实的自己在说话。正如书中所说：‘情感才是人类行为的真正主宰。’">
+                    <h2>那一次，他选择了她</h2>
+                    <p>书中描述了一个关键时刻：男主角面临理性与情感的抉择。他的大脑还在分析利弊，心却早已给出了答案。<br><br>这正是人性最真实的一面——情感驱动行为，直觉胜过逻辑。</p>
+                </div>
+                <div class="slide " data-speech="这句话的意思是，最高层次的认知不是知道，而是热爱。而今天，《社会动物》用科学的语言告诉我们同样的道理：情感才是智慧的核心。古人的智慧，在现代科学中得到了印证。这让我想起董宇辉老师常讲的一句话：‘真正的知识，是能温暖人心的。’这本书，正是这样的知识。">
+                    <h2>古人早已看透这一切</h2>
+                    <p>两千年前，孔子就指出：最高层次的认知不是知道，而是热爱。<br><br>今天，《社会动物》用科学的语言告诉我们同样的道理：情感才是智慧的核心。</p>
+                </div>
+                <div class="slide " data-speech="他曾长期关注公共政策与社会结构，但在人生的某个阶段，他意识到：真正决定命运的，是那些看不见的情感与潜意识。于是他写下了这本书，试图还原一个完整的人。这让我想起一句话：‘每一个深刻的作品背后，都有一个真诚的灵魂。’他不是在写书，而是在寻找我们每个人内心深处的答案。">
+                    <h2>一个寻找人性真相的旅人</h2>
+                    <p>作为《纽约时报》专栏作家，布鲁克斯曾长期关注公共政策与社会结构。但在人生的某个阶段，他意识到：真正决定命运的，是那些看不见的情感与潜意识。<br><br>于是他写下了这本书，试图还原一个完整的人。</p>
+                </div>
+                <div class="slide " data-speech="在这个信息爆炸的时代，我们每天都在刷手机、发消息、点赞评论，但内心却越来越孤独。《社会动物》提醒我们：只有回归真实的情感纽带，才能找到内心的归属感。就像董宇辉老师说的那样：‘真正的连接，源于心灵，而不是屏幕。’这本书，就是在提醒我们：别丢了人与人之间最珍贵的东西。">
+                    <h2>我们为何越来越孤独？</h2>
+                    <p>在这个信息爆炸的时代，我们看似连接一切，实则彼此疏离。<br><br>《社会动物》提醒我们：只有回归真实的情感纽带，才能找到内心的归属感。</p>
+                </div>
+                <div class="slide " data-speech="读完这本书，你会明白：人生的意义不在于简历上的光鲜数字，而在于你如何爱人、如何被爱。愿你在成为“社会动物”的路上，始终记得那个柔软而真实的自己。就像书里说的那样：‘真正的成功，是内在的丰盈与和谐。’希望这本书，能成为你人生路上的一束光，照亮你前行的方向。">
+                    <h2>成为更好的自己，从理解自己开始</h2>
+                    <p>读完这本书，你会明白：人生的意义不在于简历上的光鲜数字，而在于你如何爱人、如何被爱。<br><br>愿你在成为“社会动物”的路上，始终记得那个柔软而真实的自己。</p>
+                </div>
+            </div>
+
+            <!-- 字幕显示区域 -->
+            <div class="narration-display">
+                <div id="currentNarration">点击"播放解说"开始自动播放演示</div>
+            </div>
+        </div>
+
+        <!-- 右侧导航 -->
+        <div class="nav-right">
+            <button class="nav-arrow" id="prevBtn" onclick="prevSlide()">❮</button>
+            <button class="nav-arrow" id="nextBtn" onclick="nextSlide()">❯</button>
+        </div>
+    </div>
+
+    <!-- 音频播放器 -->
+    <audio id="audioPlayer" preload="auto"></audio>
+
+    <script>
+        // 全局变量
+        let currentSlide = 0;
+        let totalSlides = 8;
+        let isAutoPlaying = false;
+        let isPlaying = false;
+        let sentenceTimers = [];
+
+        // 解说词数据
+        const narrationData = [
+        {
+            "sentences": ["《社会动物》这本书，就像一面镜子，照出了我们内心那个常常被忽视的自己。", "作者大卫·布鲁克斯告诉我们，我们以为自己是理性的决策者，但其实，90%的行为都由潜意识驱动。", "在这本书里，你会遇见两个“自我”：一个是写在简历上的“简历自我”，追求成功、光鲜、理性；另一个是藏在心底的“生活自我”，渴望爱与被爱，追求真实与温暖。", "就像董宇辉老师常说的那样：“我们不是活给别人看的，而是活给那个真实的自己。", "”。"],
+            "timings": [0, 6, 12, 18, 24]
+        },
+        {
+            "sentences": ["那时候我拼命地提升学历、职位、KPI，以为只要这些数字漂亮了，人生就圆满了。", "但有一天我突然停下脚步，问自己：‘我快乐吗？’答案是沉默。", "直到我翻开《社会动物》，才明白：真正的幸福，不在那些冷冰冰的指标里，而在那些被我们忽略的情感细节里。", "就像书中所说，我们常常活成了别人眼中的样子，而不是真实的自己。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["《社会动物》就是用一对虚构情侣的成长轨迹，串联起我们每个人从童年到老年的心理演化过程。", "他们的故事，是我们每个人的故事。", "他们的迷茫，是我们每个人的迷茫；他们的爱，也是我们每个人的爱。", "正如董宇辉老师所说：“故事的意义，不在于情节有多曲折，而在于它是否映照了你我。", "”这本书，就是一面镜子，映照出我们未曾察觉的情感世界。"],
+            "timings": [0, 6, 12, 18, 24]
+        },
+        {
+            "sentences": ["书中描写了一个关键时刻：男主角面临理性与情感的抉择。", "他的大脑还在分析利弊，心却早已给出了答案。", "这正是人性最真实的一面——情感驱动行为，直觉胜过逻辑。", "就像我们生活中那些看似冲动的决定，往往是最真实的自己在说话。", "正如书中所说：‘情感才是人类行为的真正主宰。", "’。"],
+            "timings": [0, 6, 12, 18, 24, 30]
+        },
+        {
+            "sentences": ["这句话的意思是，最高层次的认知不是知道，而是热爱。", "而今天，《社会动物》用科学的语言告诉我们同样的道理：情感才是智慧的核心。", "古人的智慧，在现代科学中得到了印证。", "这让我想起董宇辉老师常讲的一句话：‘真正的知识，是能温暖人心的。", "’这本书，正是这样的知识。"],
+            "timings": [0, 6, 12, 18, 24]
+        },
+        {
+            "sentences": ["他曾长期关注公共政策与社会结构，但在人生的某个阶段，他意识到：真正决定命运的，是那些看不见的情感与潜意识。", "于是他写下了这本书，试图还原一个完整的人。", "这让我想起一句话：‘每一个深刻的作品背后，都有一个真诚的灵魂。", "’他不是在写书，而是在寻找我们每个人内心深处的答案。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["在这个信息爆炸的时代，我们每天都在刷手机、发消息、点赞评论，但内心却越来越孤独。", "《社会动物》提醒我们：只有回归真实的情感纽带，才能找到内心的归属感。", "就像董宇辉老师说的那样：‘真正的连接，源于心灵，而不是屏幕。", "’这本书，就是在提醒我们：别丢了人与人之间最珍贵的东西。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["读完这本书，你会明白：人生的意义不在于简历上的光鲜数字，而在于你如何爱人、如何被爱。", "愿你在成为“社会动物”的路上，始终记得那个柔软而真实的自己。", "就像书里说的那样：‘真正的成功，是内在的丰盈与和谐。", "’希望这本书，能成为你人生路上的一束光，照亮你前行的方向。"],
+            "timings": [0, 6, 12, 18]
+        }
+    ];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSlideCounter();
+            updateNavigationButtons();
+        });
+
+        // 音频播放功能
+        function toggleAudio() {
+            const playPauseButton = document.getElementById('playPauseButton');
+            
+            if (isAutoPlaying) {
+                // 停止自动播放
+                stopAutoPlay();
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            } else {
+                // 开始自动播放整个PPT
+                startAutoPlay();
+                playPauseButton.textContent = '⏸️ 停止播放';
+                playPauseButton.classList.add('playing');
+            }
+        }
+        
+        function startAutoPlay() {
+            isAutoPlaying = true;
+            // 从当前页开始播放，而不是重置到第一页
+            // currentSlide 保持当前值
+            showSlide(currentSlide);
+            playCurrentSlide();
+        }
+        
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            isPlaying = false;
+            const audioPlayer = document.getElementById('audioPlayer');
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            clearSentenceTimers();
+            resetNarrationDisplay();
+        }
+        
+        function playCurrentSlide() {
+            if (!isAutoPlaying) return;
+            
+            const audioPlayer = document.getElementById('audioPlayer');
+            const sessionId = window.location.pathname.split('/')[2]; // 从URL中提取session_id
+            const slideNumber = (currentSlide + 1).toString().padStart(2, '0');
+            const audioPath = `/ppt_audio/${sessionId}_slide_${slideNumber}.mp3`;
+            
+            audioPlayer.src = audioPath;
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                startSentenceDisplay();
+            }).catch((error) => {
+                console.error('音频播放失败:', error);
+                // 如果音频播放失败，仍然显示字幕并在5秒后切换到下一页
+                startSentenceDisplay();
+                setTimeout(() => {
+                    if (isAutoPlaying) {
+                        goToNextSlide();
+                    }
+                }, 5000);
+            });
+        }
+
+        // 导航功能
+        function nextSlide() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+            goToNextSlide();
+        }
+        
+        function prevSlide() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+            goToPrevSlide();
+        }
+        
+        function goToNextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+                if (isAutoPlaying) {
+                    setTimeout(() => playCurrentSlide(), 500);
+                }
+            } else if (isAutoPlaying) {
+                // 到达最后一页，停止自动播放
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+        }
+        
+        function goToPrevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+                if (isAutoPlaying) {
+                    setTimeout(() => playCurrentSlide(), 500);
+                }
+            }
+        }
+
+        function showSlide(slideIndex) {
+            const slides = document.querySelectorAll('.slide');
+            
+            // 隐藏所有幻灯片
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 显示目标幻灯片
+            if (slides[slideIndex]) {
+                slides[slideIndex].classList.add('active');
+                currentSlide = slideIndex;
+            }
+            
+            updateSlideCounter();
+            updateNavigationButtons();
+            if (!isAutoPlaying) {
+                resetNarrationDisplay();
+            }
+        }
+
+        function updateSlideCounter() {
+            const counter = document.getElementById('slideCounter');
+            if (counter) {
+                counter.textContent = `第 ${currentSlide + 1} 页 / ${totalSlides} 页`;
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            if (prevBtn) {
+                prevBtn.disabled = currentSlide === 0;
+            }
+            if (nextBtn) {
+                nextBtn.disabled = currentSlide === totalSlides - 1;
+            }
+        }
+
+        // 字幕显示功能
+        function startSentenceDisplay() {
+            const slideData = narrationData[currentSlide];
+            if (!slideData) return;
+            
+            clearSentenceTimers();
+            
+            slideData.sentences.forEach((sentence, index) => {
+                const delay = slideData.timings[index] * 1000;
+                const timer = setTimeout(() => {
+                    if (isAutoPlaying || isPlaying) {
+                        displaySentence(sentence);
+                    }
+                }, delay);
+                sentenceTimers.push(timer);
+            });
+
+            // 音频结束后自动切换到下一页
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.onended = () => {
+                if (isAutoPlaying) {
+                    setTimeout(() => goToNextSlide(), 1000);
+                }
+            };
+        }
+
+        function displaySentence(sentence) {
+            const narrationDiv = document.getElementById('currentNarration');
+            if (narrationDiv) {
+                narrationDiv.innerHTML = `<span class="sentence active">${sentence}</span>`;
+            }
+        }
+
+        function clearSentenceTimers() {
+            sentenceTimers.forEach(timer => clearTimeout(timer));
+            sentenceTimers = [];
+        }
+
+        function resetNarrationDisplay() {
+            const narrationDiv = document.getElementById('currentNarration');
+            if (narrationDiv) {
+                narrationDiv.innerHTML = '点击"播放解说"开始自动播放演示';
+            }
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (event.key === 'ArrowRight') {
+                nextSlide();
+            } else if (event.key === ' ') {
+                event.preventDefault();
+                toggleAudio();
+            }
+        });
+
+        // 返回主页功能
+        function goBack() {
+            // 返回到主应用页面
+            window.location.href = '/';
+        }
+
+        // 导出视频功能
+        function exportVideo() {
+            const exportButton = document.getElementById('exportVideoButton');
+            const originalText = exportButton.innerHTML;
+            
+            // 获取当前HTML文件的路径和session_id
+            const currentPath = window.location.pathname;
+            const sessionId = currentPath.split('/')[2]; // 从URL中提取session_id
+            const htmlFileName = 'presentation.html';
+            
+            // 更新按钮状态
+            exportButton.innerHTML = '⏳ 准备中...';
+            exportButton.disabled = true;
+            exportButton.style.opacity = '0.6';
+            
+            // 发送POST请求到后端API
+            fetch('/api/export-video', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    html_file: htmlFileName,
+                    audio_prefix: sessionId + '_slide'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.cached) {
+                        // 视频已存在 - 直接提供下载
+                        exportButton.innerHTML = '✅ 使用缓存';
+                        showVideoDownload(data);
+                    } else if (data.status === 'started') {
+                        // 后台任务已启动 - 开始轮询状态
+                        exportButton.innerHTML = '🔄 生成中 (0%)';
+                        pollVideoStatus(data.task_id, exportButton);
+                        
+                        // 显示提示信息
+                        showNotification('✨ 视频生成已开始！您可以继续使用其他功能，完成后会自动通知您。', 'info');
+                    } else if (data.status === 'processing') {
+                        // 已有任务在进行
+                        exportButton.innerHTML = '🔄 生成中...';
+                        pollVideoStatus(data.task_id || sessionId + '_' + sessionId + '_slide', exportButton);
+                    }
+                } else {
+                    // 失败
+                    exportButton.innerHTML = '❌ 生成失败';
+                    showNotification('视频生成失败: ' + data.error, 'error');
+                    setTimeout(() => {
+                        exportButton.innerHTML = originalText;
+                        exportButton.disabled = false;
+                        exportButton.style.opacity = '1';
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error('导出视频错误:', error);
+                exportButton.innerHTML = '❌ 请求失败';
+                showNotification('网络请求失败，请检查网络连接', 'error');
+                setTimeout(() => {
+                    exportButton.innerHTML = originalText;
+                    exportButton.disabled = false;
+                    exportButton.style.opacity = '1';
+                }, 3000);
+            });
+        }
+
+        function pollVideoStatus(taskId, button) {
+            const poll = () => {
+                fetch(`/api/export-video-status/${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'processing') {
+                        // 更新进度
+                        const progress = data.progress || 0;
+                        button.innerHTML = `🔄 生成中 (${progress}%)`;
+                        setTimeout(poll, 2000); // 2秒后再次轮询
+                    } else if (data.status === 'completed') {
+                        // 生成完成
+                        button.innerHTML = '✅ 生成完成';
+                        showVideoDownload(data);
+                        showNotification('🎉 视频生成完成！', 'success');
+                    } else if (data.status === 'failed') {
+                        // 生成失败
+                        button.innerHTML = '❌ 生成失败';
+                        showNotification('视频生成失败: ' + data.error, 'error');
+                        setTimeout(() => {
+                            button.innerHTML = '🎬 导出视频';
+                            button.disabled = false;
+                            button.style.opacity = '1';
+                        }, 3000);
+                    }
+                })
+                .catch(error => {
+                    console.error('轮询状态错误:', error);
+                    button.innerHTML = '❌ 状态查询失败';
+                    setTimeout(() => {
+                        button.innerHTML = '🎬 导出视频';
+                        button.disabled = false;
+                        button.style.opacity = '1';
+                    }, 3000);
+                });
+            };
+            
+            // 开始轮询
+            setTimeout(poll, 1000);
+        }
+
+        function showVideoDownload(data) {
+            // 创建下载链接
+            const downloadLink = document.createElement('a');
+            downloadLink.href = data.video_url;
+            downloadLink.download = data.filename;
+            downloadLink.click();
+            
+            // 显示视频信息
+            const infoDiv = document.createElement('div');
+            infoDiv.style.marginTop = '10px';
+            infoDiv.style.padding = '10px';
+            infoDiv.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+            infoDiv.style.borderRadius = '8px';
+            infoDiv.style.fontSize = '14px';
+            infoDiv.innerHTML = `
+                <div style="color: #4caf50; font-weight: bold;">📹 视频信息</div>
+                <div>文件名: ${data.filename}</div>
+                <div>大小: ${data.file_size}</div>
+                <div>时长: ${data.duration}秒</div>
+            `;
+            
+            // 添加到按钮下方
+            const button = document.getElementById('exportVideoButton');
+            button.parentNode.insertBefore(infoDiv, button.nextSibling);
+            
+            // 恢复按钮状态
+            setTimeout(() => {
+                button.innerHTML = '🎬 导出视频';
+                button.disabled = false;
+                button.style.opacity = '1';
+            }, 3000);
+        }
+
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-size: 14px;
+                max-width: 400px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideInFromRight 0.3s ease;
+            `;
+            
+            // 根据类型设置颜色
+            if (type === 'success') {
+                notification.style.backgroundColor = '#4caf50';
+            } else if (type === 'error') {
+                notification.style.backgroundColor = '#f44336';
+            } else {
+                notification.style.backgroundColor = '#2196f3';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 自动移除
+            setTimeout(() => {
+                notification.style.animation = 'slideOutToRight 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+            
+            // 添加动画样式
+            if (!document.getElementById('notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideInFromRight {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOutToRight {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+    </script>
+</body>
+</html>

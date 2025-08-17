@@ -314,6 +314,8 @@
             window.location.href = `/generate?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}`;
         }
 
+        let chatHistory = [];
+
         // 添加消息到聊天界面
         function addMessage(type, text) {
             const messagesContainer = document.getElementById('chat-messages');
@@ -323,6 +325,11 @@
             const now = new Date();
             const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
             
+            // 使用innerHTML来允许渲染Markdown等富文本
+            const textElement = document.createElement('div');
+            textElement.className = 'message-text';
+            textElement.innerHTML = text; // initial text
+
             messageDiv.innerHTML = `
                 <div class="message-avatar">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -333,13 +340,16 @@
                     </svg>
                 </div>
                 <div class="message-content">
-                    <div class="message-text">${text}</div>
+                    <div class="message-text-wrapper"></div>
                     <div class="message-time">${timeString}</div>
                 </div>
             `;
             
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // 返回对文本元素的引用，以便流式更新
+            return textElement;
         }
 
         // 启用聊天输入功能
@@ -369,43 +379,83 @@
             sendButton.addEventListener('click', sendMessage);
         }
 
-        // 发送消息功能
+        // 发送消息功能（流式处理版本）
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
             
             if (!message) return;
             
+            // 1. 将用户消息添加到UI和历史记录
             addMessage('user', message);
+            chatHistory.push({ role: 'user', content: message });
+
             input.value = '';
             input.style.height = 'auto';
             document.getElementById('send-button').disabled = true;
-            
+
+            // 2. 为Agent的响应创建一个占位符
+            const agentMessageElement = addMessage('agent', '<div class="typing-indicator"></div>');
+            let agentResponseText = "";
+
             try {
                 const response = await fetch('/api/recommendation/chat', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
                     },
-                    credentials: 'include',
                     body: JSON.stringify({
-                        message: message
+                        message: message,
+                        history: chatHistory.slice(0, -1) // 发送除当前消息外的历史
                     })
                 });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    addMessage('agent', data.message);
-                    
-                    if (data.recommendations && data.recommendations.length > 0) {
-                        await updateRecommendationsWithHTML(data.recommendations);
-                    }
-                } else {
-                    addMessage('agent', '抱歉，暂时无法回复。请稍后再试。');
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || '服务器响应错误');
                 }
+
+                // 3. 处理流式响应
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n\n').filter(line => line.startsWith('data:'));
+
+                    for (const line of lines) {
+                        const jsonStr = line.substring(5);
+                        try {
+                            const data = JSON.parse(jsonStr);
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+                            if (data.event && data.event === '[DONE]') {
+                                // 流结束
+                                chatHistory.push({ role: 'assistant', content: agentResponseText });
+                                return;
+                            }
+                            if (data.token) {
+                                agentResponseText += data.token;
+                                // 使用innerHTML来渲染Markdown换行等
+                                agentMessageElement.innerHTML = agentResponseText.replace(/\n/g, '<br>');
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            }
+                        } catch (e) {
+                            console.error('解析JSON失败:', jsonStr, e);
+                        }
+                    }
+                }
+
             } catch (error) {
                 console.error('Failed to send message:', error);
-                addMessage('agent', '发送失败，请检查网络后重试。');
+                agentMessageElement.innerHTML = `抱歉，出错了: ${error.message}`;
+            } finally {
+                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
         }
 

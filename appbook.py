@@ -404,16 +404,32 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
             book_data['category_icon'] = '📖'
             book_data['category_confidence'] = 0.0
         
-        # 搜索书籍封面（暂时简化，避免阻塞）
+        # 搜索书籍封面
         try:
             # 从解析的数据中提取书名和作者
             if isinstance(book_data, dict) and 'raw_content' not in book_data:
                 book_title = book_data.get('book_title', topic)
                 author = book_data.get('author', '')
             else:
-                # 从raw_content中提取信息
+                # 从raw_content中提取信息，优先从topic中提取简单书名
                 book_title = topic
                 author = ''
+                
+                # 如果topic包含方法论上下文，尝试提取真正的书名
+                if "【方法论上下文】" in topic:
+                    # 提取方法论上下文之前的部分作为书名
+                    clean_title = topic.split("【方法论上下文】")[0].strip()
+                    # 进一步清理，提取书名号中的内容
+                    import re
+                    title_match = re.search(r'《([^》]+)》', clean_title)
+                    if title_match:
+                        book_title = title_match.group(1)
+                    else:
+                        # 如果没有书名号，使用第一行作为书名
+                        first_line = clean_title.split('\n')[0].strip()
+                        if first_line and len(first_line) < 50:  # 合理的书名长度
+                            book_title = first_line
+                
                 if 'raw_content' in book_data:
                     content = str(book_data['raw_content'])
                     # 尝试从内容中提取作者信息
@@ -421,13 +437,16 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
                     if author_match:
                         author = author_match.group(1)
             
-            # 暂时使用默认封面（避免网络调用阻塞）
-            print(f"📸 暂时使用默认封面: {book_title}")
-            book_data['cover_url'] = get_default_book_cover(book_title)
+            # 搜索封面
+            print(f"📸 正在搜索书籍封面: {book_title} by {author}")
+            cover_url = await search_book_cover(book_title, author)
+            book_data['cover_url'] = cover_url
             
         except Exception as cover_error:
-            print(f"封面处理失败: {cover_error}")
-            book_data['cover_url'] = get_default_book_cover(topic)
+            print(f"搜索封面失败: {cover_error}")
+            # 使用清理后的书名生成默认封面
+            clean_title = topic.split("【方法论上下文】")[0].strip() if "【方法论上下文】" in topic else topic
+            book_data['cover_url'] = get_default_book_cover(clean_title)
         
         return book_data
             
@@ -2060,50 +2079,6 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
                 document.head.appendChild(style);
             }}
         }}
-                    downloadLink.style.display = 'none';
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                    
-                    // 显示成功消息 - 区分缓存和新生成
-                    const statusMessage = data.cached ? 
-                        `视频已存在，直接使用缓存！\\n文件：${{data.filename}}\\n大小：${{data.file_size}}\\n时长：${{data.duration}}秒` :
-                        `视频生成成功！\\n文件：${{data.filename}}\\n大小：${{data.file_size}}\\n时长：${{data.duration}}秒`;
-                    
-                    alert(statusMessage);
-                    
-                    // 3秒后恢复按钮状态
-                    setTimeout(() => {{
-                        exportButton.innerHTML = originalText;
-                        exportButton.disabled = false;
-                        exportButton.style.opacity = '1';
-                    }}, 3000);
-                }} else {{
-                    // 失败
-                    exportButton.innerHTML = '❌ 生成失败';
-                    alert('视频生成失败：' + (data.error || '未知错误'));
-                    
-                    // 3秒后恢复按钮状态
-                    setTimeout(() => {{
-                        exportButton.innerHTML = originalText;
-                        exportButton.disabled = false;
-                        exportButton.style.opacity = '1';
-                    }}, 3000);
-                }}
-            }})
-            .catch(error => {{
-                console.error('导出视频错误:', error);
-                exportButton.innerHTML = '❌ 生成失败';
-                alert('网络错误：' + error.message);
-                
-                // 3秒后恢复按钮状态
-                setTimeout(() => {{
-                    exportButton.innerHTML = originalText;
-                    exportButton.disabled = false;
-                    exportButton.style.opacity = '1';
-                }}, 3000);
-            }});
-        }}
     </script>
 </body>
 </html>'''
@@ -2452,6 +2427,9 @@ async def enhanced_llm_event_stream(
             book_data['methodology'] = methodology
             book_data['voice_style'] = voice_style
             book_data['video_style'] = video_style
+            # 确保书名正确设置
+            if not book_data.get('book_title') and not book_data.get('title'):
+                book_data['title'] = book_info.get('title', topic)
         
         book_title = book_info.get('title', topic)
         yield f"data: {json.dumps({'log': f'  ├─ 书籍分析完成: 《{book_title}》'}, ensure_ascii=False)}\n\n"
@@ -3871,6 +3849,98 @@ async def get_recommendations(request: Request, limit: int = 10):
     except Exception as e:
         print(f"获取推荐失败: {e}")
         return {"recommendations": []}
+
+class RecommendationChatRequest(BaseModel):
+    message: str
+    history: Optional[List[dict]] = None
+
+async def recommendation_chat_stream(request: RecommendationChatRequest, user: UserResponse) -> AsyncGenerator[str, None]:
+    """
+    处理引导式推荐的聊天请求，并以流式响应返回Qwen模型的回答.
+    """
+    # 1. 获取上下文数据
+    try:
+        from models import user_manager
+        # 获取用户真实历史记录
+        history_records = user_manager.get_user_view_history(user.id, limit=10)
+        user_history = [
+            {"title": record.title, "viewed_at": record.first_viewed_at.strftime('%Y-%m-%d')}
+            for record in history_records
+        ]
+        
+        # 复用现有函数获取书籍列表
+        all_books = get_all_books_with_categories()
+        # 格式化书籍列表以便在Prompt中使用
+        formatted_books = "\n".join([
+            f"- 《{book.get('title', '未知标题')}》 by {book.get('author', '未知作者')} (分类: {book.get('category_name', '无')})"
+            for book in all_books[:20] # 限制数量防止Prompt过长
+        ])
+    except Exception as e:
+        print(f"获取上下文数据失败: {e}")
+        user_history = []
+        formatted_books = "暂无书籍推荐信息。"
+
+    # 2. 构建Prompt
+    system_prompt = f"""你是一个专业、热情且善于引导的私人阅读顾问。你的任务是基于用户的需求和以下信息，与用户进行自然、有帮助的对话，并推荐最相关的书籍。
+
+# 可用信息：
+
+## 1. 用户的最近阅读历史:
+{json.dumps(user_history, ensure_ascii=False, indent=2) if user_history else "用户暂无阅读历史。"}
+
+## 2. 系统中的部分书籍列表:
+{formatted_books}
+
+# 你的行为准则:
+- **主动引导**: 不要只回答问题。要主动提问，探索用户的真实兴趣。例如，可以问：“你喜欢这本书的哪个方面？”或“你希望下一本书能带给你什么样的体验？”
+- **个性化推荐**: 结合用户的历史和当前对话，从系统书籍列表中挑选1-3本最合适的书籍进行推荐。在推荐时，要清晰地解释为什么这本书适合他。
+- **自然对话**: 像朋友一样聊天，语气亲切、自然。可以适当使用一些轻松的表情符号，如📚, ✨, 🤔。
+- **简洁明了**: 保持回答的简洁性，避免长篇大论。
+- **处理未知问题**: 如果用户的问题与书籍推荐无关，可以礼貌地引导回主题，例如：“这个问题很有趣，不过我们还是先来聊聊阅读吧？”
+- **最终目标**: 帮助用户找到他们真正感兴趣并可能喜欢的下一本书。
+
+请根据用户的最新消息进行回复。"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+    ]
+    # 添加对话历史
+    if request.history:
+        messages.extend(request.history)
+    # 添加用户最新消息
+    messages.append({"role": "user", "content": request.message})
+
+    # 3. 调用Qwen模型并流式返回
+    try:
+        response_stream = await client.chat.completions.create(
+            model=QWEN_MODEL,
+            messages=messages,
+            stream=True,
+            temperature=0.7,
+        )
+        
+        async for chunk in response_stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                # 按照SSE格式(Server-Sent Events)发送数据
+                yield f"data: {json.dumps({'token': content}, ensure_ascii=False)}\n\n"
+        
+        # 发送结束信号
+        yield f"data: {json.dumps({'event': '[DONE]'}, ensure_ascii=False)}\n\n"
+
+    except Exception as e:
+        error_message = f"请求大模型时出错: {str(e)}"
+        print(error_message)
+        yield f"data: {json.dumps({'error': error_message}, ensure_ascii=False)}\n\n"
+
+@app.post("/api/recommendation/chat")
+async def api_recommendation_chat(request: RecommendationChatRequest, user: UserResponse = Depends(verify_token)):
+    """
+    引导式推荐的流式聊天API.
+    """
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的认证令牌")
+    return StreamingResponse(recommendation_chat_stream(request, user), media_type="text/event-stream")
 
 @app.get("/api/recommendations/enhanced")
 async def get_enhanced_recommendations(request: Request, limit: int = 10):

@@ -301,9 +301,49 @@ def verify_token(token: str) -> Optional[str]:
     except jwt.PyJWTError:
         return None
 
+@dataclass
+class BookViewRecord:
+    """书籍浏览记录"""
+    title: str
+    author: Optional[str]
+    first_viewed_at: datetime
+
 class UserManager:
     def __init__(self):
         init_database()
+    
+    def get_user_view_history(self, user_id: int, limit: int = 10) -> List[BookViewRecord]:
+        """获取用户的书籍浏览历史（基于PPT的浏览记录）"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            # 让返回结果可以通过列名访问
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # 使用 updated_at 作为最近浏览时间的代理
+            cursor.execute('''
+                SELECT title, author, updated_at
+                FROM ppts
+                WHERE user_id = ? AND view_count > 0
+                ORDER BY updated_at DESC
+                LIMIT ?
+            ''', (user_id, limit))
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            history = []
+            for row in rows:
+                history.append(BookViewRecord(
+                    title=row['title'],
+                    author=row['author'],
+                    first_viewed_at=datetime.fromisoformat(row['updated_at'])
+                ))
+            
+            return history
+        except Exception as e:
+            print(f"获取用户浏览历史错误: {e}")
+            return []
     
     def create_user(self, username: str, email: str, password: str) -> Optional[User]:
         """创建新用户"""
