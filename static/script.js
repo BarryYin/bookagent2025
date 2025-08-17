@@ -232,22 +232,47 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="showcase-card-info">
                 <h3 class="showcase-card-title">${escapeHtml(ppt.title)}</h3>
                 <div class="showcase-card-meta">
-                    ${ppt.created_time}
+                    <div class="view-stats">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <span class="view-count">${ppt.view_count || 0}人浏览</span>
+                    </div>
                     ${categoryBadge}
                 </div>
             </div>
         `;
 
-        // 让整个卡片可点击，修改为跳转到图书馆分类页面
-        card.addEventListener('click', () => {
-            // 如果有分类ID，则跳转到对应的图书馆分类页面
-            if (ppt.category_id) {
+        // 为封面图片添加点击事件 - 跳转到PPT页面
+        const previewElement = card.querySelector('.showcase-card-preview');
+        if (previewElement) {
+            previewElement.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
+                window.open(ppt.html_url, '_blank');
+            });
+            previewElement.style.cursor = 'pointer';
+        }
+
+        // 为分类标签添加点击事件 - 跳转到图书馆分类页面
+        const categoryElement = card.querySelector('.category-badge');
+        if (categoryElement && ppt.category_id) {
+            categoryElement.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
                 window.location.href = `/library?category=${ppt.category_id}`;
-            } else {
-                // 如果没有分类ID，则跳转到图书馆主页
-                window.location.href = '/library';
-            }
-        });
+            });
+            categoryElement.style.cursor = 'pointer';
+        }
+
+        // 为标题添加点击事件 - 跳转到PPT页面
+        const titleElement = card.querySelector('.showcase-card-title');
+        if (titleElement) {
+            titleElement.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
+                window.open(ppt.html_url, '_blank');
+            });
+            titleElement.style.cursor = 'pointer';
+        }
 
         return card;
     }

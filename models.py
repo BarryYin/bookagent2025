@@ -254,11 +254,19 @@ def init_database():
             book_type TEXT DEFAULT 'generated',  -- 'generated' 或 'added'
             source_type TEXT DEFAULT 'self',      -- 'self', 'library', 'recommendation'
             source_id TEXT,                       -- 来源ID（如果是从图书馆或推荐添加的）
+            view_count INTEGER DEFAULT 0,         -- 访问次数
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
+    
+    # 为现有的ppts表添加view_count字段（如果不存在）
+    try:
+        cursor.execute('ALTER TABLE ppts ADD COLUMN view_count INTEGER DEFAULT 0')
+    except sqlite3.OperationalError:
+        # 字段已存在，忽略错误
+        pass
     
     conn.commit()
     conn.close()
@@ -534,7 +542,7 @@ class UserManager:
             offset = (page - 1) * limit
             cursor.execute(f'''
                 SELECT session_id, title, author, cover_url, category_id, category_name, 
-                       category_color, category_icon, book_type, source_type, source_id, created_at
+                       category_color, category_icon, book_type, source_type, source_id, created_at, view_count
                 FROM ppts 
                 WHERE {where_clause}
                 ORDER BY created_at DESC
@@ -559,6 +567,7 @@ class UserManager:
                     "source_type": row[9],
                     "source_id": row[10],
                     "created_at": row[11],
+                    "view_count": row[12] or 0,
                     "html_url": f"/outputs/{row[0]}/presentation.html",
                     "preview_url": f"/ppt-preview/{row[0]}"
                 })
@@ -741,10 +750,22 @@ class UserManager:
             return []
 
     def record_book_view(self, session_id: str):
-        """记录书籍浏览次数（这里我们使用创建时间作为热度指标）"""
-        # 由于我们没有单独的浏览次数字段，这里可以通过其他方式实现
-        # 比如创建一个新的表来记录浏览次数，或者使用现有的created_at字段
-        pass
+        """记录书籍浏览次数"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                UPDATE ppts SET view_count = view_count + 1 
+                WHERE session_id = ?
+            ''', (session_id,))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"记录浏览次数错误: {e}")
+            return False
     
     def add_book_to_bookshelf(self, user_id: int, title: str, author: str = None, 
                              cover_url: str = None, category_id: str = None, 

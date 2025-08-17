@@ -659,7 +659,7 @@
             .then(data => {
                 if (data.success) {
                     // 成功 - 提供下载链接
-                    exportButton.innerHTML = '✅ 生成完成';
+                    exportButton.innerHTML = data.cached ? '✅ 使用缓存' : '✅ 生成完成';
                     
                     // 创建下载链接
                     const downloadLink = document.createElement('a');
@@ -670,8 +670,12 @@
                     downloadLink.click();
                     document.body.removeChild(downloadLink);
                     
-                    // 显示成功消息
-                    alert(`视频生成成功！\n文件：${data.filename}\n大小：${data.file_size}\n时长：${data.duration}秒`);
+                    // 显示成功消息 - 区分缓存和新生成
+                    const statusMessage = data.cached ? 
+                        `视频已存在，直接使用缓存！\n文件：${data.filename}\n大小：${data.file_size}\n时长：${data.duration}秒` :
+                        `视频生成成功！\n文件：${data.filename}\n大小：${data.file_size}\n时长：${data.duration}秒`;
+                    
+                    alert(statusMessage);
                     
                     // 3秒后恢复按钮状态
                     setTimeout(() => {

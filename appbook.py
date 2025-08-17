@@ -74,6 +74,26 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/podcast_audio", StaticFiles(directory="podcast_audio"), name="podcast_audio")
 app.mount("/covers", StaticFiles(directory="covers"), name="covers")
+# 添加访问统计中间件
+@app.middleware("http")
+async def track_ppt_views(request: Request, call_next):
+    response = await call_next(request)
+    
+    # 检查是否是访问PPT的请求
+    if request.url.path.startswith("/outputs/") and request.url.path.endswith("/presentation.html"):
+        # 从URL中提取session_id
+        path_parts = request.url.path.split("/")
+        if len(path_parts) >= 3:
+            session_id = path_parts[2]
+            # 记录访问次数
+            try:
+                from models import user_manager
+                user_manager.record_book_view(session_id)
+            except Exception as e:
+                print(f"记录访问次数失败: {e}")
+    
+    return response
+
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 class ChatRequest(BaseModel):
@@ -3160,6 +3180,41 @@ async def export_video(request: VideoExportRequest):
         if not audio_dir.exists():
             raise HTTPException(status_code=404, detail="音频文件目录不存在")
         
+        # 检查视频缓存 - 先查找是否已有生成的视频
+        output_dir = Path(f"outputs/{request.session_id}")
+        existing_videos = list(output_dir.glob("*截图版*.mp4"))
+        
+        if existing_videos:
+            # 找到最新的视频文件
+            latest_video = max(existing_videos, key=lambda x: x.stat().st_mtime)
+            
+            # 获取视频信息
+            file_size = latest_video.stat().st_size / (1024 * 1024)  # MB
+            
+            # 获取视频时长
+            duration = 0
+            try:
+                duration_result = subprocess.run([
+                    "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                    "-of", "csv=p=0", str(latest_video)
+                ], capture_output=True, text=True)
+                if duration_result.returncode == 0:
+                    duration = float(duration_result.stdout.strip())
+            except:
+                pass
+            
+            # 返回缓存的视频
+            return {
+                "success": True,
+                "video_url": f"/outputs/{request.session_id}/{latest_video.name}",
+                "filename": latest_video.name,
+                "file_size": f"{file_size:.1f} MB",
+                "duration": f"{duration:.1f}",
+                "message": "视频已存在，直接返回缓存的视频",
+                "cached": True
+            }
+        
+        # 如果没有缓存，开始生成新视频
         # 动态导入视频生成器
         sys.path.append(str(Path("create").absolute()))
         from universal_ppt_video_generator import UniversalPPTVideoGenerator
@@ -3175,7 +3230,7 @@ async def export_video(request: VideoExportRequest):
         
         # 修改生成器的音频目录和输出目录
         generator.audio_dir = Path("ppt_audio")
-        generator.output_dir = Path(f"outputs/{request.session_id}")
+        generator.output_dir = output_dir
         
         # 检查依赖
         if not generator.check_dependencies():
@@ -3200,14 +3255,15 @@ async def export_video(request: VideoExportRequest):
             except:
                 pass
             
-            # 返回成功响应
+            # 返回新生成的视频
             return {
                 "success": True,
                 "video_url": f"/outputs/{request.session_id}/{result.name}",
                 "filename": result.name,
                 "file_size": f"{file_size:.1f} MB",
                 "duration": f"{duration:.1f}",
-                "message": "视频生成成功"
+                "message": "视频生成成功",
+                "cached": False
             }
         else:
             return {

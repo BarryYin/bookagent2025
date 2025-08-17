@@ -153,23 +153,84 @@ class UniversalPPTVideoGenerator:
         return True
 
     def take_chrome_screenshot(self, html_path, slide_index, output_path, max_retries=3):
-        """使用Chrome headless截图，显示特定的幻灯片页面"""
+        """使用Chrome headless截图，只截取PPT内容区域"""
         for attempt in range(max_retries):
             try:
-                # 创建临时HTML文件，自动显示指定的幻灯片
+                # 创建临时HTML文件，自动显示指定的幻灯片，并优化为视频导出
                 temp_html_content = f"""
                 <style>
-                /* 截图时隐藏所有浮层控件，避免底部出现渐变/空白区域 */
+                /* 隐藏导航栏和控制元素 */
+                .nav-sidebar,
                 .navigation,
                 .speech-indicator,
                 .subtitle-container,
                 .subtitle-controls,
                 .theme-selector,
                 .slide-counter {{ display: none !important; }}
-                html, body, .slideshow-container, .slide {{ height: 100vh !important; }}
-                html, body {{ background: #000 !important; }}
-                .slideshow-container, .slide {{ background-color: #000 !important; }}
-                body {{ overflow: hidden !important; }}
+                
+                /* 重新布局 - 让主内容区占满全屏 */
+                .presentation-container {{
+                    display: block !important;
+                    height: 100vh !important;
+                    background: white !important;
+                }}
+                
+                .main-content {{
+                    width: 100% !important;
+                    height: 100vh !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    background: white !important;
+                }}
+                
+                .slide-container {{
+                    width: 100% !important;
+                    height: 100vh !important;
+                    background: white !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                }}
+                
+                .slide {{
+                    width: 100% !important;
+                    height: 100% !important;
+                    background: white !important;
+                    padding: 2rem !important;
+                    box-sizing: border-box !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: center !important;
+                    align-items: center !important;
+                }}
+                
+                .slide.active {{
+                    display: flex !important;
+                }}
+                
+                .slide:not(.active) {{
+                    display: none !important;
+                }}
+                
+                /* 确保整体背景是白色 */
+                html, body {{
+                    background: white !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: hidden !important;
+                    height: 100vh !important;
+                }}
+                
+                /* 文字样式优化 */
+                .slide h1, .slide h2, .slide h3 {{
+                    color: #1D1D1F !important;
+                    text-shadow: none !important;
+                }}
+                
+                .slide p, .slide div {{
+                    color: #333 !important;
+                    text-shadow: none !important;
+                }}
                 </style>
                 <script>
                 // 禁用所有confirm和alert对话框
@@ -177,6 +238,17 @@ class UniversalPPTVideoGenerator:
                 window.alert = function() {{}};
                 
                 setTimeout(function() {{
+                    // 隐藏导航栏
+                    const sidebar = document.querySelector('.nav-sidebar');
+                    if (sidebar) sidebar.style.display = 'none';
+                    
+                    // 调整主内容区域
+                    const mainContent = document.querySelector('.main-content');
+                    if (mainContent) {{
+                        mainContent.style.width = '100%';
+                        mainContent.style.marginLeft = '0';
+                    }}
+                    
                     if (typeof showSlide === 'function') {{
                         showSlide({slide_index});
                         console.log('显示第{slide_index + 1}页幻灯片');
@@ -185,7 +257,13 @@ class UniversalPPTVideoGenerator:
                         const slides = document.querySelectorAll('.slide');
                         if (slides.length > {slide_index}) {{
                             slides.forEach((s, idx) => {{
-                                s.style.display = idx === {slide_index} ? 'block' : 'none';
+                                if (idx === {slide_index}) {{
+                                    s.classList.add('active');
+                                    s.style.display = 'flex';
+                                }} else {{
+                                    s.classList.remove('active');
+                                    s.style.display = 'none';
+                                }}
                             }});
                         }}
                     }}

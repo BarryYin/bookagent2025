@@ -2289,3 +2289,32 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
         gap: 0.75rem;
     }
 }
+
+/* 访问统计样式 */
+.view-stats {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #666;
+    font-size: 0.75rem;
+}
+
+.view-stats svg {
+    color: #999;
+}
+
+.view-count {
+    color: #666;
+    font-weight: 500;
+}
+
+.showcase-card-meta {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
