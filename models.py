@@ -175,7 +175,7 @@ class BookIntroductionResult:
     download_url: str
 
 # 数据库配置
-DATABASE_PATH = "users.db"
+DATABASE_PATH = "fogsight.db"
 
 class User(BaseModel):
     id: Optional[int] = None
@@ -766,6 +766,27 @@ class UserManager:
         except Exception as e:
             print(f"记录浏览次数错误: {e}")
             return False
+    
+    def get_ppt_view_count(self, session_id: str) -> int:
+        """获取PPT的访问次数"""
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT view_count FROM ppts WHERE session_id = ?
+            ''', (session_id,))
+            
+            result = cursor.fetchone()
+            conn.close()
+            
+            if result:
+                return result[0] or 0
+            else:
+                return 0
+        except Exception as e:
+            print(f"获取访问次数错误: {e}")
+            return 0
     
     def add_book_to_bookshelf(self, user_id: int, title: str, author: str = None, 
                              cover_url: str = None, category_id: str = None, 

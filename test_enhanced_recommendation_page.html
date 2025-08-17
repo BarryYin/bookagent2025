@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>增强版推荐系统测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .recommendation-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            background: #f9f9f9;
+        }
+        .book-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+        .book-meta {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .recommendation-reason {
+            background: #e0f2fe;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #0277bd;
+            margin-top: 10px;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status.active { background: #dcfce7; color: #166534; }
+        .status.inactive { background: #fef2f2; color: #991b1b; }
+        .metadata {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .btn {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #1d4ed8;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 增强版推荐系统测试</h1>
+        <p>这个页面用于测试我们的增强版推荐系统整合效果，展示用户画像和智能推荐的融合。</p>
+        
+        <div class="section">
+            <button class="btn" onclick="loadUserProfile()">获取用户画像</button>
+            <button class="btn" onclick="loadEnhancedRecommendations()">获取增强推荐</button>
+            <button class="btn" onclick="loadRecommendationContext()">获取推荐上下文</button>
+            <button class="btn" onclick="startAgentChat()">启动智能体对话</button>
+        </div>
+    </div>
+
+    <!-- 用户画像展示 -->
+    <div class="container" id="userProfileSection" style="display: none;">
+        <h2>📊 用户阅读画像</h2>
+        <div id="userProfileContent"></div>
+    </div>
+
+    <!-- 增强推荐展示 -->
+    <div class="container" id="recommendationsSection" style="display: none;">
+        <h2>📚 增强版推荐结果</h2>
+        <div id="recommendationsContent"></div>
+    </div>
+
+    <!-- 推荐上下文展示 -->
+    <div class="container" id="contextSection" style="display: none;">
+        <h2>🎯 推荐上下文</h2>
+        <div id="contextContent"></div>
+    </div>
+
+    <!-- 智能体对话展示 -->
+    <div class="container" id="agentSection" style="display: none;">
+        <h2>💬 智能体对话</h2>
+        <div id="agentContent"></div>
+        <div style="margin-top: 20px;">
+            <input type="text" id="userMessage" placeholder="输入你的消息..." 
+                   style="width: 70%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            <button class="btn" onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+
+    <script>
+        // 模拟用户登录状态（实际应用中从认证系统获取）
+        const mockUser = { id: 1, name: "测试用户" };
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('请求失败:', error);
+                return { error: error.message };
+            }
+        }
+
+        async function loadUserProfile() {
+            const section = document.getElementById('userProfileSection');
+            const content = document.getElementById('userProfileContent');
+            
+            content.innerHTML = '<div class="loading">正在获取用户画像...</div>';
+            section.style.display = 'block';
+            
+            const data = await makeRequest('/api/user/reading-profile');
+            
+            if (data.error) {
+                content.innerHTML = `<div class="error">获取失败: ${data.error}</div>`;
+                return;
+            }
+            
+            const profile = data.profile;
+            if (!profile) {
+                content.innerHTML = '<div class="error">用户画像数据为空</div>';
+                return;
+            }
+            
+            content.innerHTML = `
+                <div class="profile-item">
+                    <span>用户ID:</span>
+                    <span>${profile.user_id}</span>
+                </div>
+                <div class="profile-item">
+                    <span>生成书籍数量:</span>
+                    <span>${profile.total_books_generated} 本</span>
+                </div>
+                <div class="profile-item">
+                    <span>浏览书籍数量:</span>
+                    <span>${profile.total_books_viewed} 本</span>
+                </div>
+                <div class="profile-item">
+                    <span>阅读频率:</span>
+                    <span class="status ${profile.recent_activity ? 'active' : 'inactive'}">${profile.generation_frequency}</span>
+                </div>
+                <div class="profile-item">
+                    <span>分类多样性:</span>
+                    <span>${(profile.category_diversity * 100).toFixed(1)}%</span>
+                </div>
+                <div class="profile-item">
+                    <span>最近活跃:</span>
+                    <span class="status ${profile.recent_activity ? 'active' : 'inactive'}">${profile.recent_activity ? '是' : '否'}</span>
+                </div>
+                <div class="profile-item">
+                    <span>主要分类偏好:</span>
+                    <span>${Object.keys(profile.preferred_categories).slice(0, 3).join(', ') || '暂无'}</span>
+                </div>
+                <div class="profile-item">
+                    <span>排除书籍数量:</span>
+                    <span>${profile.excluded_books_count} 本</span>
+                </div>
+            `;
+        }
+
+        async function loadEnhancedRecommendations() {
+            const section = document.getElementById('recommendationsSection');
+            const content = document.getElementById('recommendationsContent');
+            
+            content.innerHTML = '<div class="loading">正在获取增强推荐...</div>';
+            section.style.display = 'block';
+            
+            const data = await makeRequest('/api/recommendations/enhanced?limit=5');
+            
+            if (data.error) {
+                content.innerHTML = `<div class="error">获取失败: ${data.error}</div>`;
+                return;
+            }
+            
+            const recommendations = data.recommendations || [];
+            const explanations = data.explanations || [];
+            const metadata = data.recommendation_metadata || {};
+            
+            let html = '';
+            
+            if (recommendations.length === 0) {
+                html = '<div class="error">暂无推荐数据</div>';
+            } else {
+                recommendations.forEach((book, index) => {
+                    const explanation = explanations[index] || '暂无推荐理由';
+                    html += `
+                        <div class="recommendation-card">
+                            <div class="book-title">${book.title || '未知标题'}</div>
+                            <div class="book-meta">
+                                作者：${book.author || '未知'} | 
+                                分类：${book.category_name || '未分类'} |
+                                排名：第 ${index + 1} 位
+                            </div>
+                            <div class="recommendation-reason">
+                                <strong>推荐理由：</strong>${explanation}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += `
+                <div class="metadata">
+                    <h3>推荐元数据</h3>
+                    <div class="profile-item">
+                        <span>推荐策略:</span>
+                        <span>${metadata.strategy_used || '未知'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <span>置信度:</span>
+                        <span>${metadata.confidence_score || 0}</span>
+                    </div>
+                    <div class="profile-item">
+                        <span>数据源:</span>
+                        <span>${metadata.data_source || '未知'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <span>用户总书籍:</span>
+                        <span>${metadata.total_user_books || 0} 本</span>
+                    </div>
+                </div>
+            `;
+            
+            content.innerHTML = html;
+        }
+
+        async function loadRecommendationContext() {
+            const section = document.getElementById('contextSection');
+            const content = document.getElementById('contextContent');
+            
+            content.innerHTML = '<div class="loading">正在获取推荐上下文...</div>';
+            section.style.display = 'block';
+            
+            const data = await makeRequest('/api/recommendation/context');
+            
+            if (data.error) {
+                content.innerHTML = `<div class="error">获取失败: ${data.error}</div>`;
+                return;
+            }
+            
+            const context = data.context || '暂无上下文数据';
+            
+            content.innerHTML = `
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; line-height: 1.6;">
+${context}
+                </div>
+            `;
+        }
+
+        let agentSessionActive = false;
+
+        async function startAgentChat() {
+            const section = document.getElementById('agentSection');
+            const content = document.getElementById('agentContent');
+            
+            content.innerHTML = '<div class="loading">正在启动智能体对话...</div>';
+            section.style.display = 'block';
+            
+            const data = await makeRequest('/api/recommendation/start', { method: 'POST' });
+            
+            if (data.error) {
+                content.innerHTML = `<div class="error">启动失败: ${data.error}</div>`;
+                return;
+            }
+            
+            agentSessionActive = true;
+            
+            let html = `
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <strong>智能体：</strong>${data.message || '会话已启动'}
+                </div>
+            `;
+            
+            if (data.recommendations && data.recommendations.length > 0) {
+                html += '<div style="margin: 15px 0;"><strong>推荐书籍：</strong></div>';
+                data.recommendations.forEach((book, index) => {
+                    html += `
+                        <div style="background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 6px;">
+                            ${index + 1}. 《${book.title}》- ${book.author}
+                            <br><small style="color: #666;">${book.reason || book.description}</small>
+                        </div>
+                    `;
+                });
+            }
+            
+            content.innerHTML = html;
+        }
+
+        async function sendMessage() {
+            if (!agentSessionActive) {
+                alert('请先启动智能体对话');
+                return;
+            }
+            
+            const messageInput = document.getElementById('userMessage');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            const content = document.getElementById('agentContent');
+            
+            // 添加用户消息
+            content.innerHTML += `
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; text-align: right;">
+                    <strong>你：</strong>${message}
+                </div>
+            `;
+            
+            messageInput.value = '';
+            
+            // 显示加载状态
+            content.innerHTML += '<div class="loading">智能体正在思考...</div>';
+            
+            const data = await makeRequest('/api/recommendation/chat', {
+                method: 'POST',
+                body: JSON.stringify({ message: message })
+            });
+            
+            // 移除加载状态
+            const loadingDiv = content.querySelector('.loading');
+            if (loadingDiv) loadingDiv.remove();
+            
+            if (data.error) {
+                content.innerHTML += `<div class="error">对话失败: ${data.error}</div>`;
+                return;
+            }
+            
+            // 添加智能体回复
+            let replyHtml = `
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>智能体：</strong>${data.message || '收到你的消息'}
+                </div>
+            `;
+            
+            if (data.recommendations && data.recommendations.length > 0) {
+                replyHtml += '<div style="margin: 15px 0;"><strong>新推荐：</strong></div>';
+                data.recommendations.forEach((book, index) => {
+                    replyHtml += `
+                        <div style="background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 6px;">
+                            ${index + 1}. 《${book.title}》- ${book.author}
+                            <br><small style="color: #666;">${book.reason || book.description}</small>
+                        </div>
+                    `;
+                });
+            }
+            
+            content.innerHTML += replyHtml;
+            content.scrollTop = content.scrollHeight;
+        }
+
+        // 页面加载完成后自动获取用户画像
+        window.addEventListener('load', () => {
+            console.log('增强版推荐系统测试页面已加载');
+        });
+    </script>
+</body>
+</html>

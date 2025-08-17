@@ -1600,10 +1600,6 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
                 🔊 播放解说
             </button>
             
-            <button id="exportVideoButton" class="nav-button" onclick="exportVideo()" style="background: rgba(255, 200, 100, 0.2); margin-top: 10px;">
-                🎬 导出视频
-            </button>
-            
             <button id="backButton" class="nav-button" onclick="goBack()" style="background: rgba(255, 255, 255, 0.2);">
                 ← 返回主页
             </button>
@@ -1859,88 +1855,6 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
         function goBack() {{
             // 返回到主应用页面
             window.location.href = '/';
-        }}
-
-        // 导出视频功能
-        function exportVideo() {{
-            const exportButton = document.getElementById('exportVideoButton');
-            const originalText = exportButton.innerHTML;
-            
-            // 获取当前HTML文件的路径和session_id
-            const currentPath = window.location.pathname;
-            const sessionId = currentPath.split('/')[2]; // 从URL中提取session_id
-            const htmlFileName = 'presentation.html';
-            
-            // 更新按钮状态
-            exportButton.innerHTML = '⏳ 生成中...';
-            exportButton.disabled = true;
-            exportButton.style.opacity = '0.6';
-            
-            // 发送POST请求到后端API
-            fetch('/api/export-video', {{
-                method: 'POST',
-                headers: {{
-                    'Content-Type': 'application/json',
-                }},
-                body: JSON.stringify({{
-                    session_id: sessionId,
-                    html_file: htmlFileName,
-                    audio_prefix: sessionId + '_slide'
-                }})
-            }})
-            .then(response => response.json())
-            .then(data => {{
-                if (data.success) {{
-                    // 成功 - 提供下载链接
-                    exportButton.innerHTML = data.cached ? '✅ 使用缓存' : '✅ 生成完成';
-                    
-                    // 创建下载链接
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = data.video_url;
-                    downloadLink.download = data.filename;
-                    downloadLink.style.display = 'none';
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                    
-                    // 显示成功消息 - 区分缓存和新生成
-                    const statusMessage = data.cached ? 
-                        `视频已存在，直接使用缓存！\\n文件：${{data.filename}}\\n大小：${{data.file_size}}\\n时长：${{data.duration}}秒` :
-                        `视频生成成功！\\n文件：${{data.filename}}\\n大小：${{data.file_size}}\\n时长：${{data.duration}}秒`;
-                    
-                    alert(statusMessage);
-                    
-                    // 3秒后恢复按钮状态
-                    setTimeout(() => {{
-                        exportButton.innerHTML = originalText;
-                        exportButton.disabled = false;
-                        exportButton.style.opacity = '1';
-                    }}, 3000);
-                }} else {{
-                    // 失败
-                    exportButton.innerHTML = '❌ 生成失败';
-                    alert('视频生成失败：' + (data.error || '未知错误'));
-                    
-                    // 3秒后恢复按钮状态
-                    setTimeout(() => {{
-                        exportButton.innerHTML = originalText;
-                        exportButton.disabled = false;
-                        exportButton.style.opacity = '1';
-                    }}, 3000);
-                }}
-            }})
-            .catch(error => {{
-                console.error('导出视频错误:', error);
-                exportButton.innerHTML = '❌ 生成失败';
-                alert('网络错误：' + error.message);
-                
-                // 3秒后恢复按钮状态
-                setTimeout(() => {{
-                    exportButton.innerHTML = originalText;
-                    exportButton.disabled = false;
-                    exportButton.style.opacity = '1';
-                }}, 3000);
-            }});
         }}
     </script>
 </body>
@@ -2932,13 +2846,19 @@ async def get_generated_ppts(
                         category_color = book_data.get("category_color", "#E74C3C")
                         category_icon = book_data.get("category_icon", "📖")
                         
-                        # 获取访问统计
+                        # 从数据库获取访问统计
+                        view_count = 0
                         try:
-                            from models import user_manager
-                            view_count = user_manager.get_ppt_view_count(session_dir.name)
+                            import sqlite3
+                            conn = sqlite3.connect("fogsight.db")
+                            cursor = conn.cursor()
+                            cursor.execute("SELECT view_count FROM ppts WHERE session_id = ?", (session_dir.name,))
+                            result = cursor.fetchone()
+                            if result:
+                                view_count = result[0] or 0
+                            conn.close()
                         except Exception as e:
                             print(f"获取访问统计失败: {e}")
-                            view_count = 0
 
                         ppt_info = {
                             "session_id": session_dir.name,
@@ -2951,7 +2871,14 @@ async def get_generated_ppts(
                             "category_name": category_name,
                             "category_color": category_color,
                             "category_icon": category_icon,
-                            "view_count": view_count
+                            "view_count": view_count,  # 添加访问统计字段
+                        }
+                            "preview_url": f"/ppt-preview/{session_dir.name}",
+                            "cover_url": cover_url,
+                            "category_id": ppt_category_id,
+                            "category_name": category_name,
+                            "category_color": category_color,
+                            "category_icon": category_icon
                         }
                         
                         ppt_list.append(ppt_info)
@@ -3736,55 +3663,14 @@ async def search_books_api(title: str = None, author: str = None, search: str = 
 
 @app.post("/api/recommendation/start")
 async def start_recommendation_session(request: Request):
-    """开始引导推荐会话（增强版）"""
+    """开始引导推荐会话"""
     user = await get_current_user(request)
     if not user:
         raise HTTPException(status_code=401, detail="请先登录")
     
     try:
-        # 使用增强版推荐引擎
-        from enhanced_recommendation_engine import EnhancedRecommendationEngine
-        from user_profile_aggregator import UserProfileAggregator
-        from guided_recommendation_agent import GuidedRecommendationAgent
-        
-        # 获取用户画像
-        aggregator = UserProfileAggregator()
-        profile = aggregator.get_comprehensive_user_profile(user.id)
-        
-        # 获取增强推荐
-        engine = EnhancedRecommendationEngine()
-        enhanced_data = engine.get_enhanced_recommendations(user.id, 5)
-        
-        # 启动智能体会话
-        agent = GuidedRecommendationAgent()
-        session_result = await agent.start_recommendation_session(user.id)
-        
-        # 组合响应数据
-        response = {
-            "success": True,
-            "message": session_result.get('message', '你好！我是你的私人阅读顾问。'),
-            "user_profile": {
-                "reading_frequency": profile.generation_frequency,
-                "preferred_categories": list(profile.preferred_categories.keys())[:3],
-                "current_life_stage": enhanced_data['user_context']['reading_level'],
-                "total_books": profile.total_books_generated,
-                "reading_maturity": enhanced_data['user_context']['reading_maturity'],
-                "needs_diversification": enhanced_data['user_context']['needs_diversification']
-            },
-            "user_info": {
-                "username": user.username,
-                "id": user.id
-            },
-            "recommendations": enhanced_data['recommendations'][:3],  # 前3个推荐
-            "explanations": enhanced_data['explanations'][:3],
-            "recommendation_metadata": enhanced_data['recommendation_metadata']
-        }
-        
-        return response
-        
-    except Exception as e:
-        print(f"启动增强推荐会话失败: {e}")
-        # 降级到基础功能
+        # 这里可以集成 guided_recommendation_agent.py 的功能
+        # 目前返回基本响应
         return {
             "success": True,
             "message": "你好！我是你的私人阅读顾问。让我先了解一下你的阅读情况...",
@@ -3796,46 +3682,11 @@ async def start_recommendation_session(request: Request):
             "user_info": {
                 "username": user.username,
                 "id": user.id
-            },
-            "error": "enhanced_failed"
+            }
         }
-
-@app.post("/api/recommendation/chat")
-async def chat_with_recommendation_agent(request: Request):
-    """与推荐智能体对话"""
-    user = await get_current_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="请先登录")
-    
-    try:
-        # 获取请求数据
-        body = await request.json()
-        message = body.get('message', '')
-        
-        if not message:
-            raise HTTPException(status_code=400, detail="消息内容不能为空")
-        
-        # 使用增强版推荐智能体
-        from guided_recommendation_agent import GuidedRecommendationAgent
-        
-        agent = GuidedRecommendationAgent()
-        response = await agent.continue_conversation(user.id, message)
-        
-        return {
-            "success": True,
-            "message": response.get('message', ''),
-            "recommendations": response.get('recommendations', []),
-            "turn": response.get('turn', 0),
-            "should_recommend": response.get('should_recommend', False)
-        }
-        
     except Exception as e:
-        print(f"对话处理失败: {e}")
-        return {
-            "success": False,
-            "message": "抱歉，我现在有点困惑。能再说一遍你的需求吗？",
-            "error": str(e)
-        }
+        print(f"启动推荐会话失败: {e}")
+        raise HTTPException(status_code=500, detail="启动推荐会话失败")
 
 @app.get("/api/user")
 async def get_current_user_info(request: Request):

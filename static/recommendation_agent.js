@@ -17,6 +17,24 @@ async function getBookDetails(title, author) {
     }
 }
 
+// 检查PPT是否存在
+async function checkPPTExists(title) {
+    try {
+        const response = await fetch(`/api/ppts/search?title=${encodeURIComponent(title)}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.ppts && data.ppts.length > 0) {
+                // 返回最新的PPT
+                return data.ppts[0];
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('检查PPT失败:', error);
+        return null;
+    }
+}
+
 // 初始化推荐会话
 document.addEventListener('DOMContentLoaded', function() {
     checkAuthAndInitialize();
@@ -310,6 +328,9 @@ async function updateRecommendations(recommendations) {
         let bookDetails = await getBookDetails(book.title, book.author);
         let bookId = bookDetails ? bookDetails.id : null;
         
+        // 检查是否有已生成的PPT
+        let pptInfo = await checkPPTExists(book.title);
+        
         // 尝试获取封面图片
         let coverUrl = `/covers/${book.title}_${book.author}.jpg`;
         
@@ -318,10 +339,6 @@ async function updateRecommendations(recommendations) {
         
         // 检查封面图片是否存在
         const coverExists = await checkImageExists(coverUrl);
-        
-        // 检查是否有已生成的内容
-        const hasContent = book.has_content || false;
-        const contentId = book.content_id || null;
         
         bookCard.innerHTML = `
             <div class="book-card-content">
@@ -338,13 +355,13 @@ async function updateRecommendations(recommendations) {
                     <div class="book-meta">
                         <span class="category-tag">${book.category || '未分类'}</span>
                         <span class="difficulty-tag">${book.difficulty || '普通'}</span>
-                        ${hasContent ? '<span class="available-tag">已有内容</span>' : ''}
+                        ${pptInfo ? '<span class="available-tag">已有PPT</span>' : ''}
                     </div>
                 </div>
             </div>
             <div class="book-actions">
-                ${hasContent ? 
-                    `<button class="book-action-btn primary" onclick="window.location.href='/ppt/${contentId}'">查看已有内容</button>` : 
+                ${pptInfo ? 
+                    `<button class="book-action-btn primary" onclick="window.location.href='/ppt/${pptInfo.session_id}'">查看PPT介绍</button>` : 
                     bookId ? 
                         `<button class="book-action-btn" onclick="window.location.href='/book/${bookId}'">查看详情</button>` : 
                         `<button class="book-action-btn" onclick="searchBook('${book.title}', '${book.author}')">查找此书</button>`
@@ -368,7 +385,8 @@ async function checkImageExists(url) {
 
 // 搜索图书
 function searchBook(title, author) {
-    window.location.href = `/search?q=${encodeURIComponent(title)}`;
+    // 跳转到图书馆页面并进行搜索
+    window.location.href = `/library?search=${encodeURIComponent(title)}`;
 }
 
 // 生成图书介绍

@@ -1,6 +1,7 @@
 """
 引导式书籍推荐智能体
 基于用户阅读数据和智能对话的个性化书籍推荐系统
+集成增强版推荐引擎和用户画像分析
 """
 
 import json
@@ -11,6 +12,15 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 import asyncio
 import random
+
+# 导入增强版推荐引擎
+try:
+    from enhanced_recommendation_engine import EnhancedRecommendationEngine
+    from user_profile_aggregator import UserProfileAggregator
+    ENHANCED_ENGINE_AVAILABLE = True
+except ImportError:
+    ENHANCED_ENGINE_AVAILABLE = False
+    print("警告: 增强版推荐引擎不可用，将使用基础功能")
 
 @dataclass
 class Book:
@@ -342,17 +352,67 @@ class RecommendationEngine:
         return [book for book, score in filtered_books[:3]]
 
 class GuidedRecommendationAgent:
-    """引导式书籍推荐智能体"""
+    """增强版引导推荐智能体"""
     
     def __init__(self, db_path: str = "fogsight.db"):
+        self.db_path = db_path
         self.analyzer = ReadingAnalyzer(db_path)
         self.dialogue_system = GuidedDialogueSystem()
         self.recommendation_engine = RecommendationEngine()
         self.conversation_context = {}
+        
+        # 初始化增强版推荐引擎
+        if ENHANCED_ENGINE_AVAILABLE:
+            self.enhanced_engine = EnhancedRecommendationEngine(db_path)
+            self.profile_aggregator = UserProfileAggregator(db_path)
+            print("增强版推荐引擎已启用")
+        else:
+            self.enhanced_engine = None
+            self.profile_aggregator = None
+            print("使用基础推荐引擎")
     
     async def start_recommendation_session(self, user_id: int) -> Dict[str, Any]:
-        """开始推荐会话"""
+        """开始推荐会话（增强版）"""
+        try:
+            if self.enhanced_engine:
+                return await self._start_enhanced_session(user_id)
+            else:
+                return await self._start_basic_session(user_id)
+        except Exception as e:
+            print(f"启动推荐会话失败: {e}")
+            return await self._start_fallback_session(user_id)
+    
+    async def _start_enhanced_session(self, user_id: int) -> Dict[str, Any]:
+        """启动增强版会话"""
+        # 获取用户画像和推荐数据
+        enhanced_data = self.enhanced_engine.get_enhanced_recommendations(user_id, 5)
+        user_context = enhanced_data['user_context']
+        recommendations = enhanced_data['recommendations']
+        explanations = enhanced_data['explanations']
         
+        # 构建个性化开场白
+        greeting = self._create_personalized_greeting(user_context, recommendations)
+        
+        # 初始化对话上下文
+        self.conversation_context[user_id] = {
+            "user_profile": user_context,
+            "turn": 0,
+            "recommendations": recommendations,
+            "explanations": explanations,
+            "enhanced_data": enhanced_data,
+            "conversation_history": []
+        }
+        
+        return {
+            "message": greeting,
+            "recommendations": self._format_recommendations(recommendations[:3], explanations[:3]),
+            "user_profile": user_context,
+            "session_id": f"enhanced_session_{user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "metadata": enhanced_data['recommendation_metadata']
+        }
+    
+    async def _start_basic_session(self, user_id: int) -> Dict[str, Any]:
+        """启动基础版会话"""
         # 分析用户阅读数据
         user_profile = self.analyzer.analyze_reading_patterns(user_id)
         
@@ -373,15 +433,248 @@ class GuidedRecommendationAgent:
             "session_id": f"session_{user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         }
     
+    async def _start_fallback_session(self, user_id: int) -> Dict[str, Any]:
+        """降级会话"""
+        return {
+            "message": "你好！我是你的阅读顾问。请告诉我你最近在读什么书，或者想要什么类型的推荐？",
+            "recommendations": [],
+            "session_id": f"fallback_session_{user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        }
+    
+    def _create_personalized_greeting(self, user_context: Dict, recommendations: List[Dict]) -> str:
+        """创建个性化开场白"""
+        reading_level = user_context.get('reading_level', '未知')
+        interests = user_context.get('primary_interests', [])
+        needs_diversification = user_context.get('needs_diversification', False)
+        
+        if reading_level == "高频":
+            greeting = "你好！我注意到你是一位非常活跃的读者，"
+        elif reading_level == "中频":
+            greeting = "你好！看到你保持着很好的阅读习惯，"
+        else:
+            greeting = "你好！很高兴看到你开始探索阅读的世界，"
+        
+        if interests:
+            greeting += f"特别关注{', '.join(interests[:2])}等领域。"
+        else:
+            greeting += "兴趣涉猎很广泛。"
+        
+        if needs_diversification:
+            greeting += "我发现你的阅读可能需要一些新的方向，"
+        else:
+            greeting += "你在自己感兴趣的领域已经有了很好的积累，"
+        
+        greeting += f"基于你的阅读画像，我为你精选了几本书。我们可以聊聊你现在最想了解什么类型的内容？"
+        
+        return greeting
+    
+    def _format_recommendations(self, recommendations: List[Dict], explanations: List[str]) -> List[Dict]:
+        """格式化推荐结果"""
+        formatted = []
+        for i, (book, explanation) in enumerate(zip(recommendations, explanations)):
+            formatted.append({
+                "title": book.get('title', ''),
+                "author": book.get('author', ''),
+                "category": book.get('category_name', ''),
+                "description": book.get('description', ''),
+                "reason": explanation,
+                "cover_url": book.get('cover_url', ''),
+                "rank": i + 1
+            })
+        return formatted
+    
     async def continue_conversation(self, user_id: int, user_response: str) -> Dict[str, Any]:
-        """继续对话"""
+        """继续对话（增强版）"""
         
         if user_id not in self.conversation_context:
             return await self.start_recommendation_session(user_id)
         
         context = self.conversation_context[user_id]
         context["turn"] += 1
+        context["conversation_history"].append(("user", user_response))
         
+        # 根据是否有增强引擎选择不同的处理方式
+        if self.enhanced_engine and "enhanced_data" in context:
+            return await self._continue_enhanced_conversation(user_id, user_response, context)
+        else:
+            return await self._continue_basic_conversation(user_id, user_response, context)
+    
+    async def _continue_enhanced_conversation(self, user_id: int, user_response: str, context: Dict) -> Dict[str, Any]:
+        """增强版对话处理"""
+        try:
+            # 分析用户输入
+            user_response_lower = user_response.lower()
+            
+            # 意图识别
+            if any(keyword in user_response_lower for keyword in ['推荐', '建议', '什么书', '书籍']):
+                reply = await self._handle_recommendation_request(context)
+            elif any(keyword in user_response_lower for keyword in ['喜欢', '兴趣', '偏好']):
+                reply = await self._handle_preference_inquiry(user_response, context)
+            elif any(keyword in user_response_lower for keyword in ['时间', '忙', '短', '长']):
+                reply = await self._handle_time_constraints(user_response, context)
+            elif any(keyword in user_response_lower for keyword in ['详细', '介绍', '更多']):
+                reply = await self._handle_detail_request(user_response, context)
+            else:
+                reply = await self._handle_general_response(user_response, context)
+            
+            context["conversation_history"].append(("agent", reply["message"]))
+            
+            return reply
+            
+        except Exception as e:
+            print(f"增强对话处理失败: {e}")
+            return {
+                "message": "抱歉，我现在有点困惑。能再说一遍你的需求吗？",
+                "recommendations": [],
+                "turn": context["turn"]
+            }
+    
+    async def _handle_recommendation_request(self, context: Dict) -> Dict[str, Any]:
+        """处理推荐请求"""
+        recommendations = context.get("recommendations", [])
+        explanations = context.get("explanations", [])
+        
+        if recommendations:
+            message = "基于我对你阅读习惯的深度分析，我特别推荐以下几本书：\n\n"
+            
+            for i, (book, explanation) in enumerate(zip(recommendations[:3], explanations[:3])):
+                message += f"{i+1}. 《{book['title']}》- {book['author']} ({book['category_name']})\n"
+                message += f"   推荐理由：{explanation}\n\n"
+            
+            message += "你对哪本书比较感兴趣？或者告诉我你更偏向什么类型的内容？"
+            
+            return {
+                "message": message,
+                "recommendations": self._format_recommendations(recommendations[:3], explanations[:3]),
+                "turn": context["turn"],
+                "should_recommend": True
+            }
+        else:
+            return {
+                "message": "让我了解一下你的偏好，然后为你推荐合适的书籍。你平时喜欢读什么类型的书？",
+                "recommendations": [],
+                "turn": context["turn"]
+            }
+    
+    async def _handle_preference_inquiry(self, user_response: str, context: Dict) -> Dict[str, Any]:
+        """处理偏好询问"""
+        # 提取用户提到的偏好
+        preferences = self._extract_preferences_from_message(user_response)
+        
+        if preferences:
+            message = f"了解了！你喜欢{', '.join(preferences)}类的书籍。这很有趣，"
+            
+            # 根据偏好调整推荐策略
+            if preferences[0] in context.get("user_profile", {}).get("primary_interests", []):
+                message += "这正好是你的强项领域。我可以推荐一些这个领域的进阶内容。"
+            else:
+                message += "这是一个新的探索方向。我来为你挑选一些入门但高质量的作品。"
+            
+            message += "\n\n有什么特定的主题或作者你特别想了解吗？"
+        else:
+            message = "能具体说说你喜欢什么类型的书吗？比如心理学、历史、小说、传记、科技等？"
+        
+        return {
+            "message": message,
+            "recommendations": context.get("recommendations", [])[:3],
+            "turn": context["turn"]
+        }
+    
+    async def _handle_time_constraints(self, user_response: str, context: Dict) -> Dict[str, Any]:
+        """处理时间限制"""
+        if any(word in user_response.lower() for word in ['忙', '短', '快', '时间少']):
+            message = "理解你的时间比较紧张。基于你的阅读画像，我建议你选择："
+            message += "\n• 结构清晰、可以碎片化阅读的内容"
+            message += "\n• 篇幅适中但信息密度高的书籍"
+            message += "\n• 或者优质的有声书版本"
+            
+            # 从现有推荐中筛选适合忙碌人群的书籍
+            filtered_recommendations = []
+            for book in context.get("recommendations", []):
+                if any(keyword in book.get('category_name', '').lower() for keyword in ['心理', '技能', '管理']):
+                    filtered_recommendations.append(book)
+            
+            message += "\n\n从我的推荐中，你比较倾向于哪种类型？"
+            
+            return {
+                "message": message,
+                "recommendations": self._format_recommendations(filtered_recommendations[:3], 
+                                                              context.get("explanations", [])[:3]),
+                "turn": context["turn"]
+            }
+        else:
+            message = "看起来你有充足的时间深度阅读，这很棒！我可以推荐一些更有挑战性和深度的作品。"
+            message += "你想要更有挑战性的内容，还是偏向轻松一些的阅读体验？"
+            
+            return {
+                "message": message,
+                "recommendations": context.get("recommendations", [])[:3],
+                "turn": context["turn"]
+            }
+    
+    async def _handle_detail_request(self, user_response: str, context: Dict) -> Dict[str, Any]:
+        """处理详细信息请求"""
+        # 简单的书名提取（实际应用中可以用更复杂的NLP）
+        recommendations = context.get("recommendations", [])
+        
+        for book in recommendations:
+            if book['title'] in user_response:
+                message = f"关于《{book['title']}》的详细介绍：\n\n"
+                message += f"作者：{book['author']}\n"
+                message += f"分类：{book['category_name']}\n"
+                message += f"推荐理由：{context.get('explanations', [''])[0]}\n\n"
+                message += "这本书你感兴趣吗？还想了解其他推荐吗？"
+                
+                return {
+                    "message": message,
+                    "recommendations": [book],
+                    "turn": context["turn"]
+                }
+        
+        # 如果没有找到特定书籍，提供一般性回复
+        message = "我可以为你详细介绍任何一本推荐的书。请告诉我你想了解哪本书？"
+        
+        return {
+            "message": message,
+            "recommendations": recommendations[:3],
+            "turn": context["turn"]
+        }
+    
+    async def _handle_general_response(self, user_response: str, context: Dict) -> Dict[str, Any]:
+        """处理一般性回复"""
+        # 简单的情感分析
+        positive_words = ['好', '喜欢', '有趣', '不错', '谢谢']
+        negative_words = ['不喜欢', '没兴趣', '不好', '不要']
+        
+        is_positive = any(word in user_response for word in positive_words)
+        is_negative = any(word in user_response for word in negative_words)
+        
+        if is_positive:
+            message = "很高兴你喜欢！基于你的反馈，我会继续为你推荐类似风格的内容。"
+            message += "还想了解什么类型的书籍吗？"
+        elif is_negative:
+            message = "我明白了，那让我们换个方向。能告诉我你更偏向什么类型的内容吗？"
+        else:
+            message = "我理解。为了给你更好的推荐，你希望我介绍具体的书籍，还是想先聊聊你的阅读偏好？"
+        
+        return {
+            "message": message,
+            "recommendations": context.get("recommendations", [])[:3],
+            "turn": context["turn"]
+        }
+    
+    def _extract_preferences_from_message(self, message: str) -> List[str]:
+        """从用户消息中提取偏好"""
+        categories = ['心理学', '历史', '文学', '科技', '哲学', '传记', '小说', '散文', '经济', '管理', '艺术', '科普', '职场', '成长']
+        found_preferences = []
+        
+        for category in categories:
+            if category in message:
+                found_preferences.append(category)
+        
+        return found_preferences
+    async def _continue_basic_conversation(self, user_id: int, user_response: str, context: Dict) -> Dict[str, Any]:
+        """基础版对话处理"""
         # 生成回复
         reply = self.dialogue_system.continue_conversation(user_response, context)
         

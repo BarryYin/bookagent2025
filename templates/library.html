@@ -6,10 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图书馆 - PPT作品集</title>
     <link rel="stylesheet" href="/static/style.css?v={{ time }}">
+    <link rel="stylesheet" href="/static/library-category-styles-oneline.css?v={{ time }}">
     <link rel="icon" href="/static/favicon.png?v={{ time }}" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* 修改卡片信息布局 */
+
+.library-card-info {
+    padding: 12px !important;
+}
+.library-card-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+}
+.library-card-meta-inline {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+.library-card-stats {
+    margin-top: 0 !important;
+    margin-left: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+}
+.library-card-title {
+    flex: 1 !important;
+    min-width: 0 !important;
+    margin-right: 8px !important;
+} 
+</style>
 </head>
 
 <body class="library-page">
@@ -273,34 +308,48 @@
                 `;
             }
 
+            // 创建可点击的分类标签
+            let categoryElement = '';
+            if (ppt.category_name && ppt.category_icon) {
+                categoryElement = `
+                    <button class="category-badge clickable-category" 
+                            style="background-color: ${ppt.category_color || '#E74C3C'}; border: none; cursor: pointer; transition: all 0.2s;"
+                            onclick="filterByCategory('${ppt.category_id || ''}', '${escapeHtml(ppt.category_name)}')"
+                            onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+                            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'"
+                            title="点击查看${escapeHtml(ppt.category_name)}分类的所有书籍">
+                        <span class="category-icon">${ppt.category_icon}</span>
+                        <span class="category-name">${ppt.category_name}</span>
+                    </button>
+                `;
+            }
+
+            // 修改预览内容，添加点击跳转功能
+            let clickablePreviewContent = previewContent.replace(
+                '<div class="library-card-preview',
+                `<div class="library-card-preview clickable-preview" onclick="window.open('${ppt.html_url}', '_blank')" style="cursor: pointer;" title="点击查看PPT介绍"`
+            );
+
             card.innerHTML = `
-                ${previewContent}
+                ${clickablePreviewContent}
                 <div class="library-card-info">
-                    <h3 class="library-card-title">${escapeHtml(ppt.title)}</h3>
-                    <div class="library-card-meta">
-                        <span class="creation-time">${ppt.created_time}</span>
-                        <span class="session-id">${ppt.session_id.substring(0, 8)}...</span>
-                        ${categoryBadge}
-                    </div>
-                    <div class="library-card-actions">
-                        <a href="${ppt.html_url}" target="_blank" class="library-action-btn primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                <polyline points="15,3 21,3 21,9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                            </svg>
-                            查看PPT
-                        </a>
-                        <button class="library-action-btn" onclick="copyPPTLink('${ppt.html_url}')">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                            </svg>
-                            复制链接
-                        </button>
-                        <button class="library-action-btn add-to-bookshelf-btn" onclick="addToBookshelf('${escapeHtml(ppt.title)}', '${escapeHtml(ppt.author || '')}', '${escapeHtml(ppt.cover_url || '')}', '${escapeHtml(ppt.category_id || '')}', '${escapeHtml(ppt.category_name || '')}', '${escapeHtml(ppt.category_color || '')}', '${escapeHtml(ppt.category_icon || '')}', 'library', '${escapeHtml(ppt.session_id)}')" title="添加到书架">
-                            📚
-                        </button>
+                    <div class="library-card-header" style="display: flex; flex-direction: row; align-items: center; gap: 8px; width: 100%;">
+                        <h3 class="library-card-title" style="flex: 1; min-width: 0;" title="${escapeHtml(ppt.title)}">${escapeHtml(ppt.title)}</h3>
+                        <div class="library-card-meta-inline" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                            ${categoryElement}
+                            <button class="library-action-btn add-to-bookshelf-btn compact" onclick="addToBookshelf('${escapeHtml(ppt.title)}', '${escapeHtml(ppt.author || '')}', '${escapeHtml(ppt.cover_url || '')}', '${escapeHtml(ppt.category_id || '')}', '${escapeHtml(ppt.category_name || '')}', '${escapeHtml(ppt.category_color || '')}', '${escapeHtml(ppt.category_icon || '')}', 'library', '${escapeHtml(ppt.session_id)}')" title="收藏到书架">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </button>
+                            <span class="view-count" style="display: flex; align-items: center; gap: 4px; font-size: 0.7rem; color: #666; background: #f8f9fa; padding: 2px 6px; border-radius: 10px; border: 1px solid #e9ecef; white-space: nowrap;" title="访问次数">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                ${ppt.view_count || 0}
+                            </span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -640,6 +689,22 @@
             }
         }
         
+        // 按分类筛选函数
+        function filterByCategory(categoryId, categoryName) {
+            // 更新筛选器
+            currentCategory = categoryId;
+            currentPage = 1;
+            
+            // 更新UI
+            document.getElementById('category-filter').value = categoryId;
+            
+            // 重新加载数据
+            loadLibraryPagePPTs(currentPage, currentCategory, currentSearch);
+            
+            // 显示提示信息
+            showMessage(`正在筛选 "${categoryName}" 分类的书籍`, 'info');
+        }
+
         // 页面加载时检查用户认证状态
         document.addEventListener('DOMContentLoaded', async function() {
             await checkUserAuth();
