@@ -45,14 +45,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function checkAuthAndInitialize() {
     try {
-        // 使用推荐系统专用的认证检查端点
-        const authResponse = await fetch('/api/recommendation/auth/status', {
+        // 使用统一的认证检查端点
+        const authResponse = await fetch('/api/user', {
             credentials: 'include'
         });
         
         if (authResponse.ok) {
             const authData = await authResponse.json();
-            if (authData.authenticated && authData.user) {
+            
+            if (authData.success && authData.user) {
                 // 用户已登录，初始化推荐系统
                 await initializeRecommendationSystem();
                 return;
@@ -70,7 +71,8 @@ async function checkAuthAndInitialize() {
 
 function showAuthRequired() {
     const messagesContainer = document.getElementById('chat-messages');
-    const isUserLoggedIn = document.getElementById('user-section').style.display === 'flex';
+    // 不再依赖导航栏状态，直接显示未登录提示
+    const isUserLoggedIn = false;
     
     if (isUserLoggedIn) {
         // 用户显示已登录但API认证失败
@@ -193,8 +195,11 @@ function addMessage(type, text) {
         timestamp: now.toISOString()
     });
     
-    // 显示保存按钮
-    document.getElementById('save-chat-btn').style.display = 'block';
+    // 显示保存按钮（如果存在的话）
+    const saveButton = document.getElementById('save-chat-btn');
+    if (saveButton) {
+        saveButton.style.display = 'block';
+    }
 }
 
 // 保存聊天记录功能

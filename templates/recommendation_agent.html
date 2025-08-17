@@ -103,9 +103,13 @@
         // 用户认证相关功能 - 与recommendation_agent.js保持一致
         async function checkAuthStatus() {
             try {
-                const response = await fetch('/api/user');
+                const response = await fetch('/api/user', {
+                    credentials: 'include'
+                });
+                
                 if (response.ok) {
                     const data = await response.json();
+                    
                     if (data.success && data.user) {
                         // 用户已登录
                         showUserSection(data.user);
@@ -161,24 +165,12 @@
             }
         }
 
-        // 页面加载时检查用户认证状态 - 与推荐系统同步
+        // 页面加载时检查用户认证状态
         document.addEventListener('DOMContentLoaded', function() {
-            // 使用与推荐系统相同的认证检查端点
-            fetch('/api/recommendation/auth/status', {
-                credentials: 'include'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.authenticated && data.user) {
-                    showUserSection(data.user);
-                } else {
-                    showAuthButtons();
-                }
-            })
-            .catch(error => {
-                console.error('认证检查失败:', error);
-                showAuthButtons();
-            });
+            // 稍微延迟执行，确保页面元素都加载完成
+            setTimeout(() => {
+                checkAuthStatus();
+            }, 50);
             
             // 绑定登出按钮事件
             const logoutButton = document.getElementById('logout-button');
