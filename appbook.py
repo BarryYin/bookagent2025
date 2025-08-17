@@ -4,13 +4,14 @@ import httpx
 import re
 import os
 import sys
+import subprocess
 from datetime import datetime
 from typing import AsyncGenerator, List, Optional
 from pathlib import Path
 
 import pytz
 from fastapi import FastAPI, Request, HTTPException, Depends, status
-from fastapi.responses import StreamingResponse, RedirectResponse
+from fastapi.responses import StreamingResponse, RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI, OpenAIError
 from pydantic import BaseModel
@@ -108,6 +109,12 @@ class InterviewRequest(BaseModel):
     book_title: str
     book_author: Optional[str] = None
     history: Optional[List[dict]] = None
+
+class VideoExportRequest(BaseModel):
+    """视频导出请求模型"""
+    session_id: str
+    html_file: str
+    audio_prefix: str
 
 # -----------------------------------------------------------------------
 # 1.5. 书籍封面搜索功能 - 导入test_cover.py的函数
@@ -3137,6 +3144,81 @@ async def get_books_by_category(category_id: str):
         return {
             "success": False,
             "error": str(e)
+        }
+
+@app.post("/api/export-video")
+async def export_video(request: VideoExportRequest):
+    """导出PPT演示视频"""
+    try:
+        # 验证session_id和相关文件是否存在
+        html_file_path = Path(f"outputs/{request.session_id}/{request.html_file}")
+        if not html_file_path.exists():
+            raise HTTPException(status_code=404, detail="演示文件不存在")
+        
+        # 检查音频文件是否存在
+        audio_dir = Path("ppt_audio")
+        if not audio_dir.exists():
+            raise HTTPException(status_code=404, detail="音频文件目录不存在")
+        
+        # 动态导入视频生成器
+        sys.path.append(str(Path("create").absolute()))
+        from universal_ppt_video_generator import UniversalPPTVideoGenerator
+        
+        # 在项目根目录运行，传入完整的HTML文件路径
+        full_html_path = str(html_file_path.absolute())
+        
+        # 创建视频生成器实例
+        generator = UniversalPPTVideoGenerator(
+            html_file=full_html_path,
+            audio_prefix=request.audio_prefix
+        )
+        
+        # 修改生成器的音频目录和输出目录
+        generator.audio_dir = Path("ppt_audio")
+        generator.output_dir = Path(f"outputs/{request.session_id}")
+        
+        # 检查依赖
+        if not generator.check_dependencies():
+            raise HTTPException(status_code=500, detail="系统依赖不满足，请检查FFmpeg和Chrome是否安装")
+        
+        # 生成视频
+        result = generator.generate_video()
+        
+        if result and result.exists():
+            # 获取视频信息
+            file_size = result.stat().st_size / (1024 * 1024)  # MB
+            
+            # 获取视频时长
+            duration = 0
+            try:
+                duration_result = subprocess.run([
+                    "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                    "-of", "csv=p=0", str(result)
+                ], capture_output=True, text=True)
+                if duration_result.returncode == 0:
+                    duration = float(duration_result.stdout.strip())
+            except:
+                pass
+            
+            # 返回成功响应
+            return {
+                "success": True,
+                "video_url": f"/outputs/{request.session_id}/{result.name}",
+                "filename": result.name,
+                "file_size": f"{file_size:.1f} MB",
+                "duration": f"{duration:.1f}",
+                "message": "视频生成成功"
+            }
+        else:
+            return {
+                "success": False,
+                "error": "视频生成失败，请检查音频文件是否存在"
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"视频生成错误：{str(e)}"
         }
 
 # -----------------------------------------------------------------------

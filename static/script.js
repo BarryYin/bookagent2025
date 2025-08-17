@@ -238,9 +238,15 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // 让整个卡片可点击
+        // 让整个卡片可点击，修改为跳转到图书馆分类页面
         card.addEventListener('click', () => {
-            window.open(ppt.html_url, '_blank');
+            // 如果有分类ID，则跳转到对应的图书馆分类页面
+            if (ppt.category_id) {
+                window.location.href = `/library?category=${ppt.category_id}`;
+            } else {
+                // 如果没有分类ID，则跳转到图书馆主页
+                window.location.href = '/library';
+            }
         });
 
         return card;

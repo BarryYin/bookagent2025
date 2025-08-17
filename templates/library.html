@@ -109,12 +109,19 @@
 
         // 图书馆页面初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 检查URL参数中的搜索词
+            // 检查URL参数中的搜索词和分类
             const urlParams = new URLSearchParams(window.location.search);
             const searchParam = urlParams.get('search');
+            const categoryParam = urlParams.get('category');
+            
             if (searchParam) {
                 currentSearch = searchParam;
                 document.getElementById('search-input').value = searchParam;
+            }
+            
+            if (categoryParam) {
+                currentCategory = categoryParam;
+                document.getElementById('category-filter').value = categoryParam;
             }
             
             loadLibraryPagePPTs(currentPage, currentCategory, currentSearch);

@@ -25,7 +25,7 @@ class UniversalPPTVideoGenerator:
     def __init__(self, html_file, audio_prefix="slide"):
         """
         初始化视频生成器
-        :param html_file: HTML PPT文件名
+        :param html_file: HTML PPT文件路径（可以是相对路径或绝对路径）
         :param audio_prefix: 音频文件前缀 (如 "slide" 或 "musk_slide")
         """
         self.html_file = html_file
@@ -36,7 +36,8 @@ class UniversalPPTVideoGenerator:
         self.slides_data = []
         
         # 从HTML文件名推断输出文件名前缀
-        self.output_prefix = self.html_file.replace("PPT演示.html", "PPT").replace(".html", "")
+        html_path = Path(html_file)
+        self.output_prefix = html_path.stem.replace("PPT演示", "PPT").replace("presentation", "PPT")
         
         # 创建目录
         self.output_dir.mkdir(exist_ok=True)
@@ -45,6 +46,8 @@ class UniversalPPTVideoGenerator:
         print(f"🎯 目标文件: {self.html_file}")
         print(f"🎵 音频前缀: {self.audio_prefix}")
         print(f"📁 输出前缀: {self.output_prefix}")
+        print(f"🎵 音频目录: {self.audio_dir}")
+        print(f"📁 输出目录: {self.output_dir}")
 
     def check_dependencies(self):
         """检查系统依赖"""

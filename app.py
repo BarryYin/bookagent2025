@@ -4,12 +4,15 @@
 import asyncio
 import json
 import os
+import subprocess
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Any, AsyncGenerator
 
 import pytz
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse
+from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -83,6 +86,8 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+app.mount("/ppt_audio", StaticFiles(directory="ppt_audio"), name="ppt_audio")
 
 # -----------------------------------------------------------------------
 # 2. API模型
@@ -99,6 +104,11 @@ class GenerationRequest(BaseModel):
     book_info: BookRequest
     style_preference: str = "professional"
     language: str = "zh"
+
+class VideoExportRequest(BaseModel):
+    session_id: str
+    html_file: str
+    audio_prefix: str
 
 # -----------------------------------------------------------------------
 # 3. 核心处理函数
@@ -325,6 +335,81 @@ async def get_generation_status(session_id: str):
         "progress": progress,
         "completed": len(progress) == len(ProcessOrchestrator().processors)
     }
+
+@app.post("/api/export-video")
+async def export_video(request: VideoExportRequest):
+    """导出PPT演示视频"""
+    try:
+        # 验证session_id和相关文件是否存在
+        html_file_path = Path(f"outputs/{request.session_id}/{request.html_file}")
+        if not html_file_path.exists():
+            raise HTTPException(status_code=404, detail="演示文件不存在")
+        
+        # 检查音频文件是否存在
+        audio_dir = Path("ppt_audio")
+        if not audio_dir.exists():
+            raise HTTPException(status_code=404, detail="音频文件目录不存在")
+        
+        # 动态导入视频生成器
+        sys.path.append(str(Path("create").absolute()))
+        from universal_ppt_video_generator import UniversalPPTVideoGenerator
+        
+        # 在项目根目录运行，传入完整的HTML文件路径
+        full_html_path = str(html_file_path.absolute())
+        
+        # 创建视频生成器实例
+        generator = UniversalPPTVideoGenerator(
+            html_file=full_html_path,
+            audio_prefix=request.audio_prefix
+        )
+        
+        # 修改生成器的音频目录和输出目录
+        generator.audio_dir = Path("ppt_audio")
+        generator.output_dir = Path(f"outputs/{request.session_id}")
+        
+        # 检查依赖
+        if not generator.check_dependencies():
+            raise HTTPException(status_code=500, detail="系统依赖不满足，请检查FFmpeg和Chrome是否安装")
+        
+        # 生成视频
+        result = generator.generate_video()
+        
+        if result and result.exists():
+            # 获取视频信息
+            file_size = result.stat().st_size / (1024 * 1024)  # MB
+            
+            # 获取视频时长
+            duration = 0
+            try:
+                duration_result = subprocess.run([
+                    "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                    "-of", "csv=p=0", str(result)
+                ], capture_output=True, text=True)
+                if duration_result.returncode == 0:
+                    duration = float(duration_result.stdout.strip())
+            except:
+                pass
+            
+            # 返回成功响应
+            return {
+                "success": True,
+                "video_url": f"/outputs/{request.session_id}/{result.name}",
+                "filename": result.name,
+                "file_size": f"{file_size:.1f} MB",
+                "duration": f"{duration:.1f}",
+                "message": "视频生成成功"
+            }
+        else:
+            return {
+                "success": False,
+                "error": "视频生成失败，请检查音频文件是否存在"
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"视频生成错误：{str(e)}"
+        }
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):
