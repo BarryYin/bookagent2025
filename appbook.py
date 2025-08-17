@@ -1872,7 +1872,7 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
             const htmlFileName = 'presentation.html';
             
             // 更新按钮状态
-            exportButton.innerHTML = '⏳ 生成中...';
+            exportButton.innerHTML = '⏳ 准备中...';
             exportButton.disabled = true;
             exportButton.style.opacity = '0.6';
             
@@ -1891,13 +1891,175 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
             .then(response => response.json())
             .then(data => {{
                 if (data.success) {{
-                    // 成功 - 提供下载链接
-                    exportButton.innerHTML = data.cached ? '✅ 使用缓存' : '✅ 生成完成';
-                    
-                    // 创建下载链接
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = data.video_url;
-                    downloadLink.download = data.filename;
+                    if (data.cached) {{
+                        // 视频已存在 - 直接提供下载
+                        exportButton.innerHTML = '✅ 使用缓存';
+                        showVideoDownload(data);
+                    }} else if (data.status === 'started') {{
+                        // 后台任务已启动 - 开始轮询状态
+                        exportButton.innerHTML = '🔄 生成中 (0%)';
+                        pollVideoStatus(data.task_id, exportButton);
+                        
+                        // 显示提示信息
+                        showNotification('✨ 视频生成已开始！您可以继续使用其他功能，完成后会自动通知您。', 'info');
+                    }} else if (data.status === 'processing') {{
+                        // 已有任务在进行
+                        exportButton.innerHTML = '🔄 生成中...';
+                        pollVideoStatus(data.task_id || sessionId + '_' + sessionId + '_slide', exportButton);
+                    }}
+                }} else {{
+                    // 失败
+                    exportButton.innerHTML = '❌ 生成失败';
+                    showNotification('视频生成失败: ' + data.error, 'error');
+                    setTimeout(() => {{
+                        exportButton.innerHTML = originalText;
+                        exportButton.disabled = false;
+                        exportButton.style.opacity = '1';
+                    }}, 3000);
+                }}
+            }})
+            .catch(error => {{
+                console.error('导出视频错误:', error);
+                exportButton.innerHTML = '❌ 请求失败';
+                showNotification('网络请求失败，请检查网络连接', 'error');
+                setTimeout(() => {{
+                    exportButton.innerHTML = originalText;
+                    exportButton.disabled = false;
+                    exportButton.style.opacity = '1';
+                }}, 3000);
+            }});
+        }}
+
+        function pollVideoStatus(taskId, button) {{
+            const poll = () => {{
+                fetch(`/api/export-video-status/${{taskId}}`)
+                .then(response => response.json())
+                .then(data => {{
+                    if (data.status === 'processing') {{
+                        // 更新进度
+                        const progress = data.progress || 0;
+                        button.innerHTML = `🔄 生成中 (${{progress}}%)`;
+                        setTimeout(poll, 2000); // 2秒后再次轮询
+                    }} else if (data.status === 'completed') {{
+                        // 生成完成
+                        button.innerHTML = '✅ 生成完成';
+                        showVideoDownload(data);
+                        showNotification('🎉 视频生成完成！', 'success');
+                    }} else if (data.status === 'failed') {{
+                        // 生成失败
+                        button.innerHTML = '❌ 生成失败';
+                        showNotification('视频生成失败: ' + data.error, 'error');
+                        setTimeout(() => {{
+                            button.innerHTML = '🎬 导出视频';
+                            button.disabled = false;
+                            button.style.opacity = '1';
+                        }}, 3000);
+                    }}
+                }})
+                .catch(error => {{
+                    console.error('轮询状态错误:', error);
+                    button.innerHTML = '❌ 状态查询失败';
+                    setTimeout(() => {{
+                        button.innerHTML = '🎬 导出视频';
+                        button.disabled = false;
+                        button.style.opacity = '1';
+                    }}, 3000);
+                }});
+            }};
+            
+            // 开始轮询
+            setTimeout(poll, 1000);
+        }}
+
+        function showVideoDownload(data) {{
+            // 创建下载链接
+            const downloadLink = document.createElement('a');
+            downloadLink.href = data.video_url;
+            downloadLink.download = data.filename;
+            downloadLink.click();
+            
+            // 显示视频信息
+            const infoDiv = document.createElement('div');
+            infoDiv.style.marginTop = '10px';
+            infoDiv.style.padding = '10px';
+            infoDiv.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+            infoDiv.style.borderRadius = '8px';
+            infoDiv.style.fontSize = '14px';
+            infoDiv.innerHTML = `
+                <div style="color: #4caf50; font-weight: bold;">📹 视频信息</div>
+                <div>文件名: ${{data.filename}}</div>
+                <div>大小: ${{data.file_size}}</div>
+                <div>时长: ${{data.duration}}秒</div>
+            `;
+            
+            // 添加到按钮下方
+            const button = document.getElementById('exportVideoButton');
+            button.parentNode.insertBefore(infoDiv, button.nextSibling);
+            
+            // 恢复按钮状态
+            setTimeout(() => {{
+                button.innerHTML = '🎬 导出视频';
+                button.disabled = false;
+                button.style.opacity = '1';
+            }}, 3000);
+        }}
+
+        function showNotification(message, type = 'info') {{
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-size: 14px;
+                max-width: 400px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideInFromRight 0.3s ease;
+            `;
+            
+            // 根据类型设置颜色
+            if (type === 'success') {{
+                notification.style.backgroundColor = '#4caf50';
+            }} else if (type === 'error') {{
+                notification.style.backgroundColor = '#f44336';
+            }} else {{
+                notification.style.backgroundColor = '#2196f3';
+            }}
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 自动移除
+            setTimeout(() => {{
+                notification.style.animation = 'slideOutToRight 0.3s ease';
+                setTimeout(() => {{
+                    if (notification.parentNode) {{
+                        notification.parentNode.removeChild(notification);
+                    }}
+                }}, 300);
+            }}, 5000);
+            
+            // 添加动画样式
+            if (!document.getElementById('notification-styles')) {{
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideInFromRight {{
+                        from {{ transform: translateX(100%); opacity: 0; }}
+                        to {{ transform: translateX(0); opacity: 1; }}
+                    }}
+                    @keyframes slideOutToRight {{
+                        from {{ transform: translateX(0); opacity: 1; }}
+                        to {{ transform: translateX(100%); opacity: 0; }}
+                    }}
+                `;
+                document.head.appendChild(style);
+            }}
+        }}
                     downloadLink.style.display = 'none';
                     document.body.appendChild(downloadLink);
                     downloadLink.click();
@@ -2350,7 +2512,11 @@ async def enhanced_llm_event_stream(
         try:
             html_content = await step4_generate_html(slides_data, narrations_data, book_data, methodology=methodology, enable_voice=True, book_title=book_title)
         except Exception as e:
+            # 记录详细错误信息以便调试
+            import traceback
+            error_details = traceback.format_exc()
             yield f"data: {json.dumps({'log': f'  ├─ HTML生成遇到问题: {str(e)}'}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'log': f'  ├─ 错误详情: {error_details[:500]}...'}, ensure_ascii=False)}\n\n"
             # 使用简化的HTML生成
             html_content = f"<html><body><h1>《{book_title}》</h1><p>演示文件生成中遇到问题，请稍后重试。</p></body></html>"
         
@@ -3261,9 +3427,20 @@ async def get_books_by_category(category_id: str):
             "error": str(e)
         }
 
+import asyncio
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+# 全局线程池用于视频生成
+video_executor = ThreadPoolExecutor(max_workers=2)
+
+# 视频生成任务状态管理
+video_tasks = {}
+
 @app.post("/api/export-video")
 async def export_video(request: VideoExportRequest):
-    """导出PPT演示视频"""
+    """导出PPT演示视频（异步后台处理）"""
     try:
         # 验证session_id和相关文件是否存在
         html_file_path = Path(f"outputs/{request.session_id}/{request.html_file}")
@@ -3289,12 +3466,15 @@ async def export_video(request: VideoExportRequest):
             # 获取视频时长
             duration = 0
             try:
-                duration_result = subprocess.run([
+                duration_result = await asyncio.create_subprocess_exec(
                     "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-                    "-of", "csv=p=0", str(latest_video)
-                ], capture_output=True, text=True)
+                    "-of", "csv=p=0", str(latest_video),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await duration_result.communicate()
                 if duration_result.returncode == 0:
-                    duration = float(duration_result.stdout.strip())
+                    duration = float(stdout.decode().strip())
             except:
                 pass
             
@@ -3309,27 +3489,81 @@ async def export_video(request: VideoExportRequest):
                 "cached": True
             }
         
-        # 如果没有缓存，开始生成新视频
+        # 检查是否已有正在进行的视频生成任务
+        task_key = f"{request.session_id}_{request.audio_prefix}"
+        if task_key in video_tasks:
+            task_status = video_tasks[task_key]
+            if task_status['status'] == 'processing':
+                return {
+                    "success": False,
+                    "status": "processing",
+                    "message": "视频正在生成中，请稍候...",
+                    "progress": task_status.get('progress', 0)
+                }
+        
+        # 启动后台视频生成任务
+        video_tasks[task_key] = {
+            'status': 'processing',
+            'progress': 0,
+            'start_time': time.time()
+        }
+        
+        # 在后台线程池中执行视频生成
+        future = video_executor.submit(
+            generate_video_background,
+            str(html_file_path.absolute()),
+            request.audio_prefix,
+            output_dir,
+            task_key
+        )
+        
+        return {
+            "success": True,
+            "status": "started",
+            "message": "视频生成已开始，您可以继续使用其他功能，完成后会自动通知",
+            "task_id": task_key,
+            "estimated_time": "2-5分钟"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"启动视频生成失败：{str(e)}"
+        }
+
+def generate_video_background(html_file_path, audio_prefix, output_dir, task_key):
+    """后台线程中执行视频生成"""
+    try:
         # 动态导入视频生成器
         sys.path.append(str(Path("create").absolute()))
         from universal_ppt_video_generator import UniversalPPTVideoGenerator
         
-        # 在项目根目录运行，传入完整的HTML文件路径
-        full_html_path = str(html_file_path.absolute())
+        # 更新进度
+        video_tasks[task_key]['progress'] = 10
         
         # 创建视频生成器实例
         generator = UniversalPPTVideoGenerator(
-            html_file=full_html_path,
-            audio_prefix=request.audio_prefix
+            html_file=html_file_path,
+            audio_prefix=audio_prefix
         )
         
         # 修改生成器的音频目录和输出目录
         generator.audio_dir = Path("ppt_audio")
         generator.output_dir = output_dir
         
+        # 更新进度
+        video_tasks[task_key]['progress'] = 20
+        
         # 检查依赖
         if not generator.check_dependencies():
-            raise HTTPException(status_code=500, detail="系统依赖不满足，请检查FFmpeg和Chrome是否安装")
+            video_tasks[task_key] = {
+                'status': 'failed',
+                'error': '系统依赖不满足，请检查FFmpeg和Chrome是否安装'
+            }
+            return
+        
+        # 更新进度
+        video_tasks[task_key]['progress'] = 30
         
         # 生成视频
         result = generator.generate_video()
@@ -3338,9 +3572,13 @@ async def export_video(request: VideoExportRequest):
             # 获取视频信息
             file_size = result.stat().st_size / (1024 * 1024)  # MB
             
+            # 更新进度
+            video_tasks[task_key]['progress'] = 90
+            
             # 获取视频时长
             duration = 0
             try:
+                import subprocess
                 duration_result = subprocess.run([
                     "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
                     "-of", "csv=p=0", str(result)
@@ -3350,27 +3588,42 @@ async def export_video(request: VideoExportRequest):
             except:
                 pass
             
-            # 返回新生成的视频
-            return {
-                "success": True,
-                "video_url": f"/outputs/{request.session_id}/{result.name}",
-                "filename": result.name,
-                "file_size": f"{file_size:.1f} MB",
-                "duration": f"{duration:.1f}",
-                "message": "视频生成成功",
-                "cached": False
+            # 生成完成
+            video_tasks[task_key] = {
+                'status': 'completed',
+                'progress': 100,
+                'video_url': f"/outputs/{result.parent.name}/{result.name}",
+                'filename': result.name,
+                'file_size': f"{file_size:.1f} MB",
+                'duration': f"{duration:.1f}",
+                'message': "视频生成成功"
             }
         else:
-            return {
-                "success": False,
-                "error": "视频生成失败，请检查音频文件是否存在"
+            video_tasks[task_key] = {
+                'status': 'failed',
+                'error': "视频生成失败，请检查音频文件是否存在"
             }
             
     except Exception as e:
-        return {
-            "success": False,
-            "error": f"视频生成错误：{str(e)}"
+        video_tasks[task_key] = {
+            'status': 'failed',
+            'error': f"视频生成错误：{str(e)}"
         }
+
+@app.get("/api/export-video-status/{task_id}")
+async def get_video_export_status(task_id: str):
+    """获取视频导出状态"""
+    if task_id not in video_tasks:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    
+    task_status = video_tasks[task_id]
+    
+    # 如果任务完成或失败超过1小时，清理任务状态
+    if task_status['status'] in ['completed', 'failed']:
+        if time.time() - task_status.get('start_time', 0) > 3600:  # 1小时
+            del video_tasks[task_id]
+    
+    return task_status
 
 # -----------------------------------------------------------------------
 # 认证相关依赖和中间件
@@ -3389,13 +3642,14 @@ async def get_current_user(request: Request):
     
     # 如果没有session，尝试从Authorization header获取JWT token
     try:
-        credentials: HTTPAuthorizationCredentials = Depends(security)
-        token = credentials.credentials
-        username = verify_token(token)
-        if username:
-            user = user_manager.get_user_by_username(username)
-            if user:
-                return user
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            username = verify_token(token)
+            if username:
+                user = user_manager.get_user_by_username(username)
+                if user:
+                    return user
     except:
         pass
     
@@ -3516,23 +3770,7 @@ async def logout(request: Request):
     
     return json_response
 
-@app.get("/api/user")
-async def get_current_user_info(request: Request):
-    """获取当前用户信息"""
-    user = await get_current_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="未登录")
-    
-    return {
-        "success": True,
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "created_at": user.created_at,
-            "last_login": user.last_login
-        }
-    }
+
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):

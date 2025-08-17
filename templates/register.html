@@ -270,8 +270,11 @@
             try {
                 const response = await fetch('/api/user');
                 if (response.ok) {
-                    // 已经登录，跳转到首页
-                    window.location.href = '/';
+                    const data = await response.json();
+                    if (data.success && data.user) {
+                        // 已经登录，跳转到首页
+                        window.location.href = '/';
+                    }
                 }
             } catch (error) {
                 // 未登录，继续显示注册页面

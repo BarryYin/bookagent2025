@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遇见未知的自己 - Bookagent 智能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, 
+                #667eea 0%, 
+                #764ba2 25%, 
+                #f093fb 50%, 
+                #f5576c 75%, 
+                #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .presentation-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        /* 左侧导航 */
+        .nav-sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-section {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-button {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button.playing {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .slide-counter {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: auto;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .slide-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .slide {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 60px;
+            max-width: 900px;
+            width: 100%;
+            min-height: 600px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .slide h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            text-align: center;
+            line-height: 1.3;
+            font-weight: 600;
+        }
+
+        .slide h2 {
+            font-size: 2em;
+            margin-bottom: 25px;
+            color: #34495e;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .slide p {
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            color: #555;
+            text-align: justify;
+        }
+
+        .slide ul {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+
+        .slide li {
+            font-size: 1.1em;
+            line-height: 1.7;
+            margin-bottom: 12px;
+            color: #666;
+        }
+
+        /* 右侧导航 */
+        .nav-right {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-arrow {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-size: 20px;
+            margin: 0 auto;
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 字幕区域 */
+        .narration-display {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            color: #FFD700;
+            padding: 25px 40px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.6;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .sentence {
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            font-weight: 500;
+        }
+
+        .sentence.active {
+            opacity: 1;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .nav-sidebar {
+                width: 200px;
+            }
+            
+            .slide {
+                padding: 40px;
+                max-width: 700px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .presentation-container {
+                flex-direction: column;
+            }
+            
+            .nav-sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 15px;
+            }
+            
+            .nav-right {
+                width: 100%;
+                flex-direction: row;
+                justify-content: center;
+                height: auto;
+                padding: 15px;
+            }
+            
+            .slide {
+                padding: 30px;
+                margin: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 左侧导航栏 -->
+        <div class="nav-sidebar">
+            <div class="logo-section">
+                <div class="logo-title">Bookagent</div>
+            </div>
+            
+            <button id="playPauseButton" class="nav-button" onclick="toggleAudio()">
+                🔊 播放解说
+            </button>
+            
+            <button id="exportVideoButton" class="nav-button" onclick="exportVideo()" style="background: rgba(255, 200, 100, 0.2); margin-top: 10px;">
+                🎬 导出视频
+            </button>
+            
+            <button id="backButton" class="nav-button" onclick="goBack()" style="background: rgba(255, 255, 255, 0.2);">
+                ← 返回主页
+            </button>
+            
+            <div class="slide-counter">
+                <div id="slideCounter">第 1 页 / 6 页</div>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <div class="slide-container">
+                
+                <div class="slide active" data-speech="这不是命运的偏爱，而是认知的差距。我们以为自己掌控生活，其实，真正操控我们的，是一个看不见的‘小我’。它藏在情绪里、执念中、恐惧背后，悄悄地绑架着我们的选择与人生方向。  这本书《遇见未知的自己》，正是要揭开这个被我们忽视的心理机制。关键在于，只有看清‘小我’的存在，才能走出焦虑的迷宫。">
+                    <div style="text-align: center; padding: 2rem;">
+                        <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem; color: #1D1D1F;">遇见未知的自己</h1>
+                        <div style="width: 80px; height: 3px; background: linear-gradient(to right, #667eea, #764ba2); margin: 2rem auto; border-radius: 2px;"></div>
+                        <p style="font-size: 1.2rem; color: #666; font-style: italic;">欢迎来到本书的精彩解读</p>
+                    </div>
+                </div>
+                <div class="slide " data-speech="张德芬在《遇见未知的自己》中提出了一个核心模型——‘真我—小我’模型。她指出，人类痛苦的根源，在于我们误把‘小我’当成了真实的自己。  ‘小我’由情绪、恐惧、执念构成，它不断制造冲突和焦虑；而‘真我’，是那个内在平静、智慧、充满力量的本源。核心在于，从‘小我’到‘真我’，是一条可以走通的成长之路。">
+                    <h2>这本书的底层逻辑：我们的人生是由‘小我’操控的</h2>
+                    <p>《遇见未知的自己》不提供心灵鸡汤，而是揭开一个被忽视的心理机制：<br><br>我们以为自己在做决定，其实是“小我”驱动的情绪、恐惧和执念在做主。<br><br>只有识别并超越它，才能走向真正的自由。</p>
+                </div>
+                <div class="slide " data-speech="张德芬在书中构建了一套完整的成长路径，分为四个阶段：觉察、接纳、转化、合一。  第一步是觉察，识别情绪背后的‘小我’；第二步是接纳，放下抗拒与控制欲；第三步是转化，将负面能量转化为内在力量；最后一步是合一，回归‘真我’的平静与智慧。  本质上，这是一套可以反复实践、不断升级的人格系统。">
+                    <h2>一套完整的内在成长系统：觉察→接纳→转化→合一</h2>
+                    <p>书中构建了一套清晰的成长路径：<br><br>1️⃣ 觉察：识别情绪背后的“小我”<br>2️⃣ 接纳：放下抗拒与控制欲<br>3️⃣ 转化：将负面能量转化为内在力量<br>4️⃣ 合一：回归“真我”的平静与智慧</p>
+                </div>
+                <div class="slide " data-speech="《遇见未知的自己》被誉为现代心灵成长领域的经典之作，影响了数百万读者。  ✅ 被广泛应用于职场、亲子、情感等多个生活场景； ✅ 提供如“情绪观察法”、“臣服练习”等实操工具； ✅ 多个真实案例验证，从高管到宝妈，都通过这本书实现了内在转化。  关键是，它不仅告诉你道理，更给你可以落地的方法。">
+                    <h2>百万读者验证：这是一套真正有效的人格升级系统</h2>
+                    <p>✅ 被誉为中国心灵成长领域经典之作<br>✅ 数百万读者通过实践走出人生低谷<br>✅ 覆盖职场、亲子、情感等多个生活场景<br>✅ 提供如“情绪观察法”、“臣服练习”等实操工具<br><br>这不是一本读完就放下的书，而是一套可以反复践行的成长系统。</p>
+                </div>
+                <div class="slide " data-speech="你可以从今天开始，启动你的人格升级计划：  第一步：每天花10分钟进行“情绪观察”——写下你此刻的情绪，并问自己：“这是‘小我’在说话吗？”  第二步：面对困境时尝试“臣服练习”——停止挣扎，接受现实，把注意力转向内在。  第三步：每日睡前回顾“真我状态”——回想一天中是否有片刻感受到内心的平静与喜悦。  立竿见影的改变，从这三步开始。">
+                    <h2>从今天开始，启动你的“人格升级计划”</h2>
+                    <p>第一步：每天花10分钟进行“情绪观察”——写下你此刻的情绪，并问自己：“这是‘小我’在说话吗？”<br><br>第二步：面对困境时尝试“臣服练习”——停止挣扎，接受现实，把注意力转向内在。<br><br>第三步：每日睡前回顾“真我状态”——回想一天中是否有片刻感受到内心的平静与喜悦。</p>
+                </div>
+                <div class="slide " data-speech="你有两个选择：  ❌ 继续被“小我”绑架，活在焦虑与控制之中； ✅ 开启“真我”主导的人生，拥抱内在的自由与力量。  这本书不是为了告诉你答案，而是为了唤醒你自己内在的答案。  觉醒，就是认知变现的开始。">
+                    <h2>记住：改变命运的不是外在环境，而是你是否敢于遇见那个真实的自己</h2>
+                    <p>你有两个选择：<br><br>❌ 继续被“小我”绑架，活在焦虑与控制之中<br>✅ 开启“真我”主导的人生，拥抱内在的自由与力量<br><br>这本书不是为了告诉你答案，而是为了唤醒你自己内在的答案。</p>
+                </div>
+            </div>
+
+            <!-- 字幕显示区域 -->
+            <div class="narration-display">
+                <div id="currentNarration">点击"播放解说"开始自动播放演示</div>
+            </div>
+        </div>
+
+        <!-- 右侧导航 -->
+        <div class="nav-right">
+            <button class="nav-arrow" id="prevBtn" onclick="prevSlide()">❮</button>
+            <button class="nav-arrow" id="nextBtn" onclick="nextSlide()">❯</button>
+        </div>
+    </div>
+
+    <!-- 音频播放器 -->
+    <audio id="audioPlayer" preload="auto"></audio>
+
+    <script>
+        // 全局变量
+        let currentSlide = 0;
+        let totalSlides = 6;
+        let isAutoPlaying = false;
+        let isPlaying = false;
+        let sentenceTimers = [];
+
+        // 解说词数据
+        const narrationData = [
+        {
+            "sentences": ["这不是命运的偏爱，而是认知的差距。", "我们以为自己掌控生活，其实，真正操控我们的，是一个看不见的‘小我’。", "它藏在情绪里、执念中、恐惧背后，悄悄地绑架着我们的选择与人生方向。", "这本书《遇见未知的自己》，正是要揭开这个被我们忽视的心理机制。", "关键在于，只有看清‘小我’的存在，才能走出焦虑的迷宫。"],
+            "timings": [0, 6, 12, 18, 24]
+        },
+        {
+            "sentences": ["张德芬在《遇见未知的自己》中提出了一个核心模型——‘真我—小我’模型。", "她指出，人类痛苦的根源，在于我们误把‘小我’当成了真实的自己。", "‘小我’由情绪、恐惧、执念构成，它不断制造冲突和焦虑；而‘真我’，是那个内在平静、智慧、充满力量的本源。", "核心在于，从‘小我’到‘真我’，是一条可以走通的成长之路。"],
+            "timings": [0, 6, 12, 18]
+        },
+        {
+            "sentences": ["张德芬在书中构建了一套完整的成长路径，分为四个阶段：觉察、接纳、转化、合一。", "第一步是觉察，识别情绪背后的‘小我’；第二步是接纳，放下抗拒与控制欲；第三步是转化，将负面能量转化为内在力量；最后一步是合一，回归‘真我’的平静与智慧。", "本质上，这是一套可以反复实践、不断升级的人格系统。"],
+            "timings": [0, 6, 12]
+        },
+        {
+            "sentences": ["《遇见未知的自己》被誉为现代心灵成长领域的经典之作，影响了数百万读者。", "✅ 被广泛应用于职场、亲子、情感等多个生活场景；\n✅ 提供如“情绪观察法”、“臣服练习”等实操工具；\n✅ 多个真实案例验证，从高管到宝妈，都通过这本书实现了内在转化。", "关键是，它不仅告诉你道理，更给你可以落地的方法。"],
+            "timings": [0, 6, 12]
+        },
+        {
+            "sentences": ["你可以从今天开始，启动你的人格升级计划：\n\n第一步：每天花10分钟进行“情绪观察”——写下你此刻的情绪，并问自己：“这是‘小我’在说话吗？”\n\n第二步：面对困境时尝试“臣服练习”——停止挣扎，接受现实，把注意力转向内在。", "第三步：每日睡前回顾“真我状态”——回想一天中是否有片刻感受到内心的平静与喜悦。", "立竿见影的改变，从这三步开始。"],
+            "timings": [0, 6, 12]
+        },
+        {
+            "sentences": ["你有两个选择：\n\n❌ 继续被“小我”绑架，活在焦虑与控制之中；\n✅ 开启“真我”主导的人生，拥抱内在的自由与力量。", "这本书不是为了告诉你答案，而是为了唤醒你自己内在的答案。", "觉醒，就是认知变现的开始。"],
+            "timings": [0, 6, 12]
+        }
+    ];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSlideCounter();
+            updateNavigationButtons();
+        });
+
+        // 音频播放功能
+        function toggleAudio() {
+            const playPauseButton = document.getElementById('playPauseButton');
+            
+            if (isAutoPlaying) {
+                // 停止自动播放
+                stopAutoPlay();
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            } else {
+                // 开始自动播放整个PPT
+                startAutoPlay();
+                playPauseButton.textContent = '⏸️ 停止播放';
+                playPauseButton.classList.add('playing');
+            }
+        }
+        
+        function startAutoPlay() {
+            isAutoPlaying = true;
+            // 从当前页开始播放，而不是重置到第一页
+            // currentSlide 保持当前值
+            showSlide(currentSlide);
+            playCurrentSlide();
+        }
+        
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            isPlaying = false;
+            const audioPlayer = document.getElementById('audioPlayer');
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            clearSentenceTimers();
+            resetNarrationDisplay();
+        }
+        
+        function playCurrentSlide() {
+            if (!isAutoPlaying) return;
+            
+            const audioPlayer = document.getElementById('audioPlayer');
+            const sessionId = window.location.pathname.split('/')[2]; // 从URL中提取session_id
+            const slideNumber = (currentSlide + 1).toString().padStart(2, '0');
+            const audioPath = `/ppt_audio/${sessionId}_slide_${slideNumber}.mp3`;
+            
+            audioPlayer.src = audioPath;
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                startSentenceDisplay();
+            }).catch((error) => {
+                console.error('音频播放失败:', error);
+                // 如果音频播放失败，仍然显示字幕并在5秒后切换到下一页
+                startSentenceDisplay();
+                setTimeout(() => {
+                    if (isAutoPlaying) {
+                        goToNextSlide();
+                    }
+                }, 5000);
+            });
+        }
+
+        // 导航功能
+        function nextSlide() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+            goToNextSlide();
+        }
+        
+        function prevSlide() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+            goToPrevSlide();
+        }
+        
+        function goToNextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+                if (isAutoPlaying) {
+                    setTimeout(() => playCurrentSlide(), 500);
+                }
+            } else if (isAutoPlaying) {
+                // 到达最后一页，停止自动播放
+                stopAutoPlay();
+                const playPauseButton = document.getElementById('playPauseButton');
+                playPauseButton.textContent = '🔊 播放解说';
+                playPauseButton.classList.remove('playing');
+            }
+        }
+        
+        function goToPrevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+                if (isAutoPlaying) {
+                    setTimeout(() => playCurrentSlide(), 500);
+                }
+            }
+        }
+
+        function showSlide(slideIndex) {
+            const slides = document.querySelectorAll('.slide');
+            
+            // 隐藏所有幻灯片
+            slides.forEach(slide => slide.classList.remove('active'));
+            
+            // 显示目标幻灯片
+            if (slides[slideIndex]) {
+                slides[slideIndex].classList.add('active');
+                currentSlide = slideIndex;
+            }
+            
+            updateSlideCounter();
+            updateNavigationButtons();
+            if (!isAutoPlaying) {
+                resetNarrationDisplay();
+            }
+        }
+
+        function updateSlideCounter() {
+            const counter = document.getElementById('slideCounter');
+            if (counter) {
+                counter.textContent = `第 ${currentSlide + 1} 页 / ${totalSlides} 页`;
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            if (prevBtn) {
+                prevBtn.disabled = currentSlide === 0;
+            }
+            if (nextBtn) {
+                nextBtn.disabled = currentSlide === totalSlides - 1;
+            }
+        }
+
+        // 字幕显示功能
+        function startSentenceDisplay() {
+            const slideData = narrationData[currentSlide];
+            if (!slideData) return;
+            
+            clearSentenceTimers();
+            
+            slideData.sentences.forEach((sentence, index) => {
+                const delay = slideData.timings[index] * 1000;
+                const timer = setTimeout(() => {
+                    if (isAutoPlaying || isPlaying) {
+                        displaySentence(sentence);
+                    }
+                }, delay);
+                sentenceTimers.push(timer);
+            });
+
+            // 音频结束后自动切换到下一页
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.onended = () => {
+                if (isAutoPlaying) {
+                    setTimeout(() => goToNextSlide(), 1000);
+                }
+            };
+        }
+
+        function displaySentence(sentence) {
+            const narrationDiv = document.getElementById('currentNarration');
+            if (narrationDiv) {
+                narrationDiv.innerHTML = `<span class="sentence active">${sentence}</span>`;
+            }
+        }
+
+        function clearSentenceTimers() {
+            sentenceTimers.forEach(timer => clearTimeout(timer));
+            sentenceTimers = [];
+        }
+
+        function resetNarrationDisplay() {
+            const narrationDiv = document.getElementById('currentNarration');
+            if (narrationDiv) {
+                narrationDiv.innerHTML = '点击"播放解说"开始自动播放演示';
+            }
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (event.key === 'ArrowRight') {
+                nextSlide();
+            } else if (event.key === ' ') {
+                event.preventDefault();
+                toggleAudio();
+            }
+        });
+
+        // 返回主页功能
+        function goBack() {
+            // 返回到主应用页面
+            window.location.href = '/';
+        }
+
+        // 导出视频功能
+        function exportVideo() {
+            const exportButton = document.getElementById('exportVideoButton');
+            const originalText = exportButton.innerHTML;
+            
+            // 获取当前HTML文件的路径和session_id
+            const currentPath = window.location.pathname;
+            const sessionId = currentPath.split('/')[2]; // 从URL中提取session_id
+            const htmlFileName = 'presentation.html';
+            
+            // 更新按钮状态
+            exportButton.innerHTML = '⏳ 生成中...';
+            exportButton.disabled = true;
+            exportButton.style.opacity = '0.6';
+            
+            // 发送POST请求到后端API
+            fetch('/api/export-video', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    html_file: htmlFileName,
+                    audio_prefix: sessionId + '_slide'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 成功 - 提供下载链接
+                    exportButton.innerHTML = data.cached ? '✅ 使用缓存' : '✅ 生成完成';
+                    
+                    // 创建下载链接
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = data.video_url;
+                    downloadLink.download = data.filename;
+                    downloadLink.style.display = 'none';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    
+                    // 显示成功消息 - 区分缓存和新生成
+                    const statusMessage = data.cached ? 
+                        `视频已存在，直接使用缓存！\n文件：${data.filename}\n大小：${data.file_size}\n时长：${data.duration}秒` :
+                        `视频生成成功！\n文件：${data.filename}\n大小：${data.file_size}\n时长：${data.duration}秒`;
+                    
+                    alert(statusMessage);
+                    
+                    // 3秒后恢复按钮状态
+                    setTimeout(() => {
+                        exportButton.innerHTML = originalText;
+                        exportButton.disabled = false;
+                        exportButton.style.opacity = '1';
+                    }, 3000);
+                } else {
+                    // 失败
+                    exportButton.innerHTML = '❌ 生成失败';
+                    alert('视频生成失败：' + (data.error || '未知错误'));
+                    
+                    // 3秒后恢复按钮状态
+                    setTimeout(() => {
+                        exportButton.innerHTML = originalText;
+                        exportButton.disabled = false;
+                        exportButton.style.opacity = '1';
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error('导出视频错误:', error);
+                exportButton.innerHTML = '❌ 生成失败';
+                alert('网络错误：' + error.message);
+                
+                // 3秒后恢复按钮状态
+                setTimeout(() => {
+                    exportButton.innerHTML = originalText;
+                    exportButton.disabled = false;
+                    exportButton.style.opacity = '1';
+                }, 3000);
+            });
+        }
+    </script>
+</body>
+</html>

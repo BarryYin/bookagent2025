@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>《明朝那些事儿》- 董宇辉式虚构类介绍</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            width: 90%;
+            max-width: 1000px;
+            padding: 60px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            display: none;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #2C3E50;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .slide h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #2C3E50;
+            margin-bottom: 30px;
+        }
+
+        .slide h3 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #7F8C8D;
+            margin-bottom: 40px;
+        }
+
+        .slide p {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            color: #34495E;
+            margin-bottom: 20px;
+        }
+
+        .slide ul {
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .slide li {
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #34495E;
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .slide li::before {
+            content: "•";
+            color: #9B59B6;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .gradient-bar {
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, #9B59B6, #8E44AD);
+            margin: 30px auto;
+            border-radius: 2px;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+        }
+
+        .quote {
+            font-style: italic;
+            font-size: 1.6rem;
+            color: #8E44AD;
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #9B59B6;
+            background: rgba(155, 89, 182, 0.05);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-around;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .data-item {
+            text-align: center;
+            margin: 10px;
+        }
+
+        .data-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #9B59B6;
+        }
+
+        .data-label {
+            font-size: 1.1rem;
+            color: #7F8C8D;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 开场页 -->
+        <div class="slide active" data-speech="如果历史是一面镜子，那它照见的不只是帝王将相的荣光，还有每一个普通人的挣扎与梦想。欢迎来到《明朝那些事儿》的时空之旅。这是一部用故事重写历史的作品，它不是枯燥的编年体，而是一个个有血有肉的人物命运交织成的传奇。作者当年明月以现代视角切入，打破传统史书的严肃语调，让我们在轻松幽默中看见权力的博弈、人性的复杂，以及历史背后的温度。">
+            <div class="icon">🔮</div>
+            <h1>《明朝那些事儿》</h1>
+            <h3>一段穿越时空的历史之旅</h3>
+            <div class="gradient-bar"></div>
+            <p style="font-style: italic; color: #9B59B6;">用故事讲述历史，用历史映照现实</p>
+        </div>
+
+        <!-- 作者介绍页 -->
+        <div class="slide" data-speech="他是海关公务员出身，却用一支笔点燃了整个网络对历史的热情。他就是当年明月——本名石悦。一个原本默默无闻的公务员，因为一本《明朝那些事儿》而成为全民热议的历史写作者。他的文风轻松调侃，语言鲜活生动，把朱元璋的崛起、张居正的改革、崇祯的无奈娓娓道来，仿佛你我身边的朋友在讲一段段精彩的故事。他不仅讲历史，更是在讲人、讲选择、讲命运。">
+            <h2>当年明月</h2>
+            <h3>让历史变得有趣的人</h3>
+            <div class="gradient-bar"></div>
+            <p>本名石悦，原为海关公务员，因《明朝那些事儿》一书走红网络。</p>
+            <p>以幽默风趣的笔触重新演绎明朝历史，被誉为'网络历史写作第一人'。</p>
+        </div>
+
+        <!-- 核心观点页 -->
+        <div class="slide" data-speech="历史不是冰冷的年代数字，而是由一个个鲜活的人组成的画卷。《明朝那些事儿》最打动人心的地方，在于它真正做到了'历史即人学'。无论是乞丐出身的朱元璋，还是权倾朝野的魏忠贤，亦或是试图力挽狂澜的张居正，他们都不是脸谱化的符号，而是有着真实情感和复杂动机的人。他们的喜怒哀乐、挣扎与抉择，构成了明朝276年的波澜壮阔。">
+            <div class="icon">👥</div>
+            <h2>历史即人学</h2>
+            <h3>每个人都有血有肉、有爱有恨</h3>
+            <div class="gradient-bar"></div>
+            <p>《明朝那些事儿》不是冷冰冰的时间线和事件堆砌，而是通过一个个鲜活人物的命运起伏，展现人性的复杂与真实。</p>
+        </div>
+
+        <!-- 数据展示页 -->
+        <div class="slide" data-speech="276年，16位皇帝，无数人物登场又谢幕。明朝从建立到灭亡，历时276年，经历了16位皇帝。在这段漫长岁月里，涌现了无数英雄豪杰、奸佞小人、忠臣良将和平民百姓。全书共约一百万字，畅销销量超千万册，但它所承载的不仅是文字，更是历史的记忆与民族的思考。作者以一人之力，将如此厚重的历史浓缩成一部通俗易懂的作品，实属难得。">
+            <h2>276年 · 16位皇帝 · 无数人物</h2>
+            <h3>一部浓缩的大明王朝兴衰史</h3>
+            <div class="gradient-bar"></div>
+            <div class="data-row">
+                <div class="data-item">
+                    <div class="data-number">276</div>
+                    <div class="data-label">存在年数</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-number">16</div>
+                    <div class="data-label">位皇帝</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-number">100万</div>
+                    <div class="data-label">字篇幅</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-number">1000万+</div>
+                    <div class="data-label">册销量</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 引用页 -->
+        <div class="slide" data-speech="有一句话，曾让无数读者动容："成功只有一个——按照自己的方式，去度过人生。"这是书中借徐霞客之口说出的一句话，也是全书的精神内核。它告诉我们，历史不仅是帝王将相的舞台，更是每个人书写自我价值的过程。在这部作品中，我们看到的不只是明朝的兴衰，更是一种关于人生意义的深刻思考。">
+            <h2>书中金句</h2>
+            <div class="gradient-bar"></div>
+            <div class="quote">
+                "成功只有一个——按照自己的方式，去度过人生。"
+            </div>
+            <p>这是作者借徐霞客之口表达的人生感悟，也是贯穿全书的精神内核。</p>
+        </div>
+
+        <!-- 总结页 -->
+        <div class="slide" data-speech="读史明智，知古鉴今。历史的价值，不仅在于记录过去，更在于指引未来。《明朝那些事儿》通过一个个鲜活的人物命运，启发我们反思自我选择；它用通俗的语言传递深刻的智慧，提升大众文化素养；它激发了无数人对中国历史的兴趣，唤醒了民族文化自豪感。这不仅是一场历史之旅，更是一次思想的洗礼。让我们在故事中读懂历史，在历史中读懂自己。">
+            <div class="icon">📚</div>
+            <h2>读史明智 · 知古鉴今</h2>
+            <h3>从明朝看今天，从历史看人生</h3>
+            <div class="gradient-bar"></div>
+            <ul>
+                <li>启发思考：通过历史人物的命运，反思自我选择</li>
+                <li>提升素养：用通俗语言传递深刻智慧</li>
+                <li>激发兴趣：让更多人爱上中国历史</li>
+                <li>增强认同：唤醒民族文化自豪感</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">6</span>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="previousSlide()">上一页</button>
+        <button class="btn" onclick="toggleAutoplay()" id="autoplay-btn">自动播放</button>
+        <button class="btn" onclick="nextSlide()">下一页</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        let isAutoplay = false;
+        let autoplayInterval;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        // 更新幻灯片显示
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.toggle('active', index === currentSlide);
+            });
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+        }
+
+        // 下一张幻灯片
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            updateSlide();
+        }
+
+        // 上一张幻灯片
+        function previousSlide() {
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            updateSlide();
+        }
+
+        // 切换自动播放
+        function toggleAutoplay() {
+            const btn = document.getElementById('autoplay-btn');
+            if (isAutoplay) {
+                clearInterval(autoplayInterval);
+                btn.textContent = '自动播放';
+                isAutoplay = false;
+            } else {
+                autoplayInterval = setInterval(nextSlide, 8000);
+                btn.textContent = '停止播放';
+                isAutoplay = true;
+            }
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            } else if (e.key === 'Escape') {
+                if (isAutoplay) {
+                    toggleAutoplay();
+                }
+            }
+        });
+
+        // 初始化
+        document.getElementById('total-slides').textContent = totalSlides;
+        updateSlide();
+    </script>
+</body>
+</html>

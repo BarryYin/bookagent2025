@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>《卓有成效的管理者》- 罗振宇式效率提升介绍</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #8fd3f4 0%, #84fab0 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            width: 90%;
+            max-width: 1000px;
+            padding: 60px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            display: none;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #2C3E50;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .slide h2 {
+            font-size: 2.8rem;
+            font-weight: 600;
+            color: #2C3E50;
+            margin-bottom: 30px;
+        }
+
+        .slide h3 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #FF6F31;
+            margin-bottom: 40px;
+        }
+
+        .slide p {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            color: #34495E;
+            margin-bottom: 20px;
+        }
+
+        .slide ul {
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .slide li {
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #34495E;
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .slide li::before {
+            content: "▶";
+            color: #27AE60;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .gradient-bar {
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, #27AE60, #2ECC71);
+            margin: 30px auto;
+            border-radius: 2px;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+        }
+
+        .quote {
+            font-style: italic;
+            font-size: 1.6rem;
+            color: #27AE60;
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #27AE60;
+            background: rgba(39, 174, 96, 0.05);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-around;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .data-item {
+            text-align: center;
+            margin: 10px;
+        }
+
+        .data-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #27AE60;
+        }
+
+        .data-label {
+            font-size: 1.1rem;
+            color: #7F8C8D;
+            margin-top: 5px;
+        }
+
+        .urgent-style {
+            background: linear-gradient(135deg, #FF6F31, #E74C3C);
+            color: white;
+            padding: 40px;
+        }
+
+        .urgent-style h2 {
+            color: white;
+        }
+
+        .urgent-style p {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .action-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .step-card {
+            background: rgba(39, 174, 96, 0.1);
+            border: 2px solid #27AE60;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .step-number {
+            background: #27AE60;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 焦虑制造页 -->
+        <div class="slide active urgent-style" data-speech="你知道吗？在这个信息爆炸的时代，最稀缺的资源不是金钱，不是人脉，而是时间。每天我们被会议、邮件、任务填满，看似高效运转，但真正推动组织发展的贡献却寥寥无几。你以为的高效，可能只是'伪忙碌'。这是彼得·德鲁克在《卓有成效的管理者》一书中揭示的真相：忙碌不等于成效。关键问题不是时间不够，而是方向不清。我们陷入了一个误区：以为忙就是干，以为干就是价值。但真正的管理者，必须跳出这种幻觉。">
+            <div class="icon">⏰</div>
+            <h2>为什么你总是很忙，却没成果？</h2>
+            <h3>管理者常见的困境</h3>
+            <div class="gradient-bar"></div>
+            <p>每天被会议、邮件、任务填满，但真正推动组织发展的贡献却寥寥无几。</p>
+            <p style="font-size: 1.6rem; font-weight: bold; margin-top: 30px;">你以为的高效，可能只是"伪忙碌"。</p>
+        </div>
+
+        <!-- 认知升级页 -->
+        <div class="slide" data-speech="有一个颠覆性的认知：管理者的首要任务，不是管理别人，而是管理自己。这是管理学大师德鲁克的核心观点。他告诉我们，管理的本质是自我管理——管理自己的时间、贡献和决策方式。你不是因为职位高才成为管理者，而是因为你能否做出有效的贡献。管理不是发号施令，而是承担责任。本质上，成效不是天赋，而是一种可以通过训练掌握的习惯。德鲁克的洞察，打破了传统"权威式管理"的幻觉，为我们打开了一扇新的门。">
+            <div class="icon">🧠</div>
+            <h2>真正的管理者，管理的是自己</h2>
+            <h3>德鲁克的颠覆性洞察</h3>
+            <div class="gradient-bar"></div>
+            <p>彼得·德鲁克提出：管理者的核心任务不是管理员工，而是管理自己的时间、贡献和决策方式。</p>
+            <div class="quote">
+                "管理的本质是自我管理，成效是训练出来的习惯。"
+            </div>
+        </div>
+
+        <!-- 方法拆解页 -->
+        <div class="slide" data-speech="真正有效的管理，是一套系统工程，而不是灵光一闪。德鲁克提出了五个关键法则，构成了"卓有成效"的完整闭环。第一，时间管理：记录、分析、整合，才能从忙乱中脱身；第二，贡献导向：关注外部价值，而非内部职能；第三，要事优先：聚焦关键任务，敢于放弃次优选择；第四，决策系统化：从经验走向结构化思维；第五，角色升级：从监督者到赋能者。这五个步骤，构成了一个完整的管理者效能提升路径。">
+            <div class="icon">📋</div>
+            <h2>卓有成效的五大法则</h2>
+            <h3>从理论到可操作的实践路径</h3>
+            <div class="gradient-bar"></div>
+            <ul>
+                <li>⏰ 时间管理：记录、分析、整合</li>
+                <li>🎯 贡献导向：关注外部价值而非内部职能</li>
+                <li>⭐ 要事优先：聚焦关键任务，放弃次优选择</li>
+                <li>🧠 决策系统化：从经验走向结构化思维</li>
+                <li>🤝 角色升级：从监督者到赋能者</li>
+            </ul>
+        </div>
+
+        <!-- 数据支撑页 -->
+        <div class="slide" data-speech="数据不会撒谎。这本书为什么值得一读再读？因为全球的管理者已经给出了答案。《卓有成效的管理者》被誉为现代管理学的奠基之作，全球销量超千万册。它被哈佛、斯坦福等顶尖商学院列为必读书目，被各类组织广泛应用。德鲁克被誉为"现代管理学之父"，他的思想不仅具有理论深度，更具有极强的实践指导意义。这本书不仅适用于企业，同样适用于政府、NGO等各类组织。权威性 + 实践性 = 可信赖的管理思维框架。">
+            <div class="icon">📊</div>
+            <h2>全球百万管理者验证的效能法则</h2>
+            <h3>为什么这本书值得一读再读？</h3>
+            <div class="gradient-bar"></div>
+            <ul>
+                <li>✅ 被誉为现代管理学奠基之作</li>
+                <li>✅ 全球销量超千万册</li>
+                <li>✅ 适用于企业、政府、NGO等各类组织</li>
+                <li>✅ 被哈佛、斯坦福等商学院列为必读书目</li>
+                <li>✅ 德鲁克被誉为"现代管理学之父"</li>
+            </ul>
+        </div>
+
+        <!-- 行动指南页 -->
+        <div class="slide" data-speech="改变，从最小的行动开始。你不需要一次改变所有，只需要三步。第一步，记录你的时间使用情况，连续一周。你会惊讶地发现，时间都去哪了。第二步，列出你对组织最重要的三项贡献。聚焦价值，而非任务。第三步，每天设定一个优先任务，坚持完成。这三步，看似简单，却构成了"有效性训练"的起点。从微小行动开始，构建管理者的效能习惯。正如德鲁克所说，有效性不是天赋，而是训练。">
+            <h2>三步开始你的"有效性训练"</h2>
+            <h3>从今天起，做卓有成效的管理者</h3>
+            <div class="gradient-bar"></div>
+            <div class="action-steps">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <p>记录你的时间使用情况，连续一周</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <p>列出你对组织最重要的三项贡献</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <p>每天设定一个优先任务，坚持完成</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 认知变现页 -->
+        <div class="slide" data-speech="真正的跃迁，是从"忙"到"效"的转变。当你掌握了"有效性"思维，你将不再疲于应付，而是主动引领；不再靠权威驱动，而是靠价值驱动。你不再是组织中的一颗齿轮，而是推动组织前进的引擎。这就是德鲁克带给我们的最大启发：卓有成效不是天赋，而是一种选择，一种训练，一种成长。从今天起，做卓有成效的管理者，让每一个决策都创造价值。">
+            <div class="icon">🚀</div>
+            <h2>从"忙"到"效"，是管理者的跃迁</h2>
+            <h3>学以致用，创造真实价值</h3>
+            <div class="gradient-bar"></div>
+            <p>当你真正掌握"有效性"思维，你将不再疲于应付，而是主动引领；不再靠权威驱动，而是靠价值驱动。</p>
+            <div class="quote" style="background: rgba(39, 174, 96, 0.1); border-left: 4px solid #27AE60;">
+                "卓有成效不是天赋，是选择，是训练，是成长。"
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">6</span>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="previousSlide()">上一页</button>
+        <button class="btn" onclick="toggleAutoplay()" id="autoplay-btn">自动播放</button>
+        <button class="btn" onclick="nextSlide()">下一页</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        let isAutoplay = false;
+        let autoplayInterval;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        // 更新幻灯片显示
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.toggle('active', index === currentSlide);
+            });
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+        }
+
+        // 下一张幻灯片
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            updateSlide();
+        }
+
+        // 上一张幻灯片
+        function previousSlide() {
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            updateSlide();
+        }
+
+        // 切换自动播放
+        function toggleAutoplay() {
+            const btn = document.getElementById('autoplay-btn');
+            if (isAutoplay) {
+                clearInterval(autoplayInterval);
+                btn.textContent = '自动播放';
+                isAutoplay = false;
+            } else {
+                autoplayInterval = setInterval(nextSlide, 8000);
+                btn.textContent = '停止播放';
+                isAutoplay = true;
+            }
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            } else if (e.key === 'Escape') {
+                if (isAutoplay) {
+                    toggleAutoplay();
+                }
+            }
+        });
+
+        // 初始化
+        document.getElementById('total-slides').textContent = totalSlides;
+        updateSlide();
+    </script>
+</body>
+</html>

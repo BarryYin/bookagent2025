@@ -35,19 +35,24 @@ async function checkPPTExists(title) {
     }
 }
 
-// 初始化推荐会话
+// 初始化推荐会话 - 确保认证状态同步
 document.addEventListener('DOMContentLoaded', function() {
-    checkAuthAndInitialize();
+    // 延迟执行，确保用户认证状态UI先渲染
+    setTimeout(() => {
+        checkAuthAndInitialize();
+    }, 100);
 });
 
 async function checkAuthAndInitialize() {
     try {
-        // 使用现有系统的认证检查端点
-        const authResponse = await fetch('/api/user');
+        // 使用推荐系统专用的认证检查端点
+        const authResponse = await fetch('/api/recommendation/auth/status', {
+            credentials: 'include'
+        });
         
         if (authResponse.ok) {
             const authData = await authResponse.json();
-            if (authData.success && authData.user) {
+            if (authData.authenticated && authData.user) {
                 // 用户已登录，初始化推荐系统
                 await initializeRecommendationSystem();
                 return;
@@ -65,32 +70,56 @@ async function checkAuthAndInitialize() {
 
 function showAuthRequired() {
     const messagesContainer = document.getElementById('chat-messages');
-    messagesContainer.innerHTML = `
-        <div class="message agent-message">
-            <div class="message-avatar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 12l2 2 4-4"/>
-                    <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
-                    <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
-                </svg>
-            </div>
-            <div class="message-content">
-                <div class="message-text">
-                    <p>🔐 需要登录才能使用引导推荐功能</p>
-                    <p>请先登录您的账户，这样我就能根据您的阅读历史提供个性化推荐了。</p>
-                    <button onclick="window.location.href='/'" style="margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                        返回首页登录
-                    </button>
+    const isUserLoggedIn = document.getElementById('user-section').style.display === 'flex';
+    
+    if (isUserLoggedIn) {
+        // 用户显示已登录但API认证失败
+        messagesContainer.innerHTML = `
+            <div class="message agent-message">
+                <div class="message-avatar">⚠️</div>
+                <div class="message-content">
+                    <div class="message-text">
+                        <p>🔐 认证状态异常</p>
+                        <p>检测到您的登录状态存在问题，请尝试以下操作：</p>
+                        <ol style="margin: 10px 0; padding-left: 20px;">
+                            <li>强制刷新页面 (Ctrl+F5)</li>
+                            <li>重新登录</li>
+                            <li>检查浏览器cookie设置</li>
+                        </ol>
+                        <button onclick="location.reload()" style="margin: 5px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            刷新页面
+                        </button>
+                        <button onclick="window.location.href='/login'" style="margin: 5px; padding: 8px 16px; background: #48bb78; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            重新登录
+                        </button>
+                    </div>
+                    <div class="message-time">${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
-                <div class="message-time">${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</div>
             </div>
-        </div>
-    `;
+        `;
+    } else {
+        // 确实未登录
+        messagesContainer.innerHTML = `
+            <div class="message agent-message">
+                <div class="message-avatar">🔐</div>
+                <div class="message-content">
+                    <div class="message-text">
+                        <p>🔐 需要登录才能使用引导推荐功能</p>
+                        <p>请先登录您的账户，这样我就能根据您的阅读历史提供个性化推荐了。</p>
+                        <button onclick="window.location.href='/login'" style="margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            立即登录
+                        </button>
+                    </div>
+                    <div class="message-time">${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+            </div>
+        `;
+    }
     
     // 禁用输入框
     document.getElementById('chat-input').disabled = true;
     document.getElementById('send-button').disabled = true;
-    document.getElementById('session-status').textContent = '需要登录';
+    document.getElementById('session-status').textContent = isUserLoggedIn ? '认证异常' : '需要登录';
 }
 
 async function initializeRecommendationSystem() {

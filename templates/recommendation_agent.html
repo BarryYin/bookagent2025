@@ -12,17 +12,38 @@
 </head>
 <body>
     <div class="recommendation-container">
+        <nav class="top-nav">
+            <div class="nav-left">
+                <a href="/" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5"/>
+                        <path d="M12 19l-7-7 7-7"/>
+                    </svg>
+                    返回首页
+                </a>
+            </div>
+            <div class="nav-right">
+                <div id="user-section" class="user-section" style="display: none;">
+                    <span id="username-display" class="username-display"></span>
+                    <button id="logout-button" class="logout-button" title="登出">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16,17 21,12 16,7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div id="auth-buttons" class="auth-buttons">
+                    <a href="/login" class="auth-link login-link">登录</a>
+                    <a href="/register" class="auth-link register-link">注册</a>
+                </div>
+            </div>
+        </nav>
+
         <header class="recommendation-header">
-            <button class="back-button" onclick="window.location.href='/'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 12H5"/>
-                    <path d="M12 19l-7-7 7-7"/>
-                </svg>
-                返回首页
-            </button>
             <h1>私人阅读顾问</h1>
             <div class="header-info">
-                <span id="session-status">正在分析阅读偏好...</span>
+                <span id="session-status">正在检查登录状态...</span>
             </div>
         </header>
 
@@ -78,6 +99,94 @@
     </div>
 
     <script src="/static/recommendation_agent.js"></script>
+    <script>
+        // 用户认证相关功能 - 与recommendation_agent.js保持一致
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.user) {
+                        // 用户已登录
+                        showUserSection(data.user);
+                    } else {
+                        showAuthButtons();
+                    }
+                } else {
+                    showAuthButtons();
+                }
+            } catch (error) {
+                console.log('用户未登录');
+                showAuthButtons();
+            }
+        }
+
+        function showUserSection(user) {
+            const userSection = document.getElementById('user-section');
+            const authButtons = document.getElementById('auth-buttons');
+            const usernameDisplay = document.getElementById('username-display');
+            
+            if (userSection && authButtons && usernameDisplay) {
+                userSection.style.display = 'flex';
+                authButtons.style.display = 'none';
+                usernameDisplay.textContent = user.username;
+            }
+        }
+
+        function showAuthButtons() {
+            const userSection = document.getElementById('user-section');
+            const authButtons = document.getElementById('auth-buttons');
+            
+            if (userSection && authButtons) {
+                userSection.style.display = 'none';
+                authButtons.style.display = 'flex';
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    // 登出成功，返回首页
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('登出失败:', error);
+            }
+        }
+
+        // 页面加载时检查用户认证状态 - 与推荐系统同步
+        document.addEventListener('DOMContentLoaded', function() {
+            // 使用与推荐系统相同的认证检查端点
+            fetch('/api/recommendation/auth/status', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated && data.user) {
+                    showUserSection(data.user);
+                } else {
+                    showAuthButtons();
+                }
+            })
+            .catch(error => {
+                console.error('认证检查失败:', error);
+                showAuthButtons();
+            });
+            
+            // 绑定登出按钮事件
+            const logoutButton = document.getElementById('logout-button');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', logout);
+            }
+        });
+    </script>
     <script>
 var _hmt = _hmt || [];
 (function() {
