@@ -42,7 +42,7 @@
         }
         
         .interview-left {
-            flex: 1;
+            flex: 3;
             display: flex;
             flex-direction: column;
             border-right: 1px solid var(--border-color);
@@ -50,7 +50,7 @@
         }
         
         .interview-right {
-            flex: 1;
+            flex: 7;
             display: flex;
             flex-direction: column;
             background: var(--bg-primary);
@@ -466,10 +466,11 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
+            padding: 0;
             text-align: center;
+            height: 100%;
+            min-height: calc(100vh - 120px);
+            overflow-y: auto;
         }
         
         .book-cover {
@@ -783,6 +784,16 @@
         // 加载书籍信息
         async function loadBookInfo(title, author = '') {
             try {
+                // 显示加载状态
+                const bookDisplay = document.getElementById('book-display');
+                bookDisplay.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem; animation: pulse 1.5s ease-in-out infinite;">📚</div>
+                        <p>正在加载书籍信息...</p>
+                        <div style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">检查是否有PPT可用</div>
+                    </div>
+                `;
+                
                 const params = new URLSearchParams({ title });
                 if (author) params.append('author', author);
                 
@@ -790,9 +801,26 @@
                 const bookInfo = await response.json();
                 currentBookInfo = bookInfo;
                 
-                updateBookDisplay(bookInfo);
+                console.log('📊 书籍信息:', bookInfo);
+                
+                // 延迟一点时间显示加载效果
+                setTimeout(() => {
+                    updateBookDisplay(bookInfo);
+                }, 500);
+                
             } catch (error) {
                 console.error('获取书籍信息失败:', error);
+                const bookDisplay = document.getElementById('book-display');
+                bookDisplay.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #dc3545;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
+                        <p>加载书籍信息失败</p>
+                        <button onclick="loadBookInfo('${title}', '${author}')" 
+                                style="padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 0.5rem;">
+                            重新加载
+                        </button>
+                    </div>
+                `;
             }
         }
         
@@ -801,34 +829,69 @@
             const bookDisplay = document.getElementById('book-display');
             
             if (bookInfo.ppt_exists && bookInfo.ppt_url) {
-                // 显示PPT预览模式
+                // 显示PPT嵌入模式（完整显示PPT内容）
                 bookDisplay.innerHTML = `
-                    <div style="display: flex; flex-direction: column; height: 100%;">
-                        <div class="book-header" style="padding: 1rem; border-bottom: 1px solid #ddd; background: #f8f9fa;">
-                            <h3 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.1rem;">${bookInfo.title}</h3>
-                            <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">${bookInfo.author}</p>
-                            <div style="background: #e3f2fd; padding: 0.5rem; border-radius: 4px; font-size: 0.8rem; color: #1976d2;">
-                                ✅ 在图书馆中找到此书
+                    <div style="display: flex; flex-direction: column; height: 100%; min-height: 800px;">
+                        <div class="book-header" style="padding: 0.8rem; border-bottom: 2px solid #007bff; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h3 style="margin: 0 0 0.3rem 0; color: white; font-size: 1.2rem; font-weight: 600;">${bookInfo.title}</h3>
+                                    <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 0.9rem;">${bookInfo.author}</p>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.2); padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.8rem;">
+                                    📚 图书馆收录
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="ppt-preview-container" style="flex: 1; position: relative;">
-                            <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-                                <button onclick="openPptFullscreen('${bookInfo.ppt_url}')" style="padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
-                                    全屏查看PPT
+                        <div class="ppt-container" style="flex: 1; position: relative; background: #f8f9fa; min-height: 700px; height: calc(100vh - 200px);">
+                            <div class="ppt-toolbar" style="position: absolute; top: 8px; right: 8px; z-index: 10; display: flex; gap: 0.5rem;">
+                                <button onclick="openPptFullscreen('${bookInfo.ppt_url}')" 
+                                        style="padding: 0.4rem 0.8rem; background: rgba(0,123,255,0.9); color: white; border: none; border-radius: 4px; font-size: 0.75rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.2s ease;"
+                                        onmouseover="this.style.background='rgba(0,86,179,0.9)'"
+                                        onmouseout="this.style.background='rgba(0,123,255,0.9)'">
+                                    🔍 全屏查看
+                                </button>
+                                <button onclick="refreshPpt('${bookInfo.ppt_url}')" 
+                                        style="padding: 0.4rem 0.8rem; background: rgba(40,167,69,0.9); color: white; border: none; border-radius: 4px; font-size: 0.75rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.2s ease;"
+                                        onmouseover="this.style.background='rgba(33,136,56,0.9)'"
+                                        onmouseout="this.style.background='rgba(40,167,69,0.9)'">
+                                    🔄 刷新
                                 </button>
                             </div>
-                            <iframe src="${bookInfo.ppt_url}" style="width: 100%; height: 100%; border: none; border-radius: 0 0 8px 8px;"></iframe>
+                            
+                            <iframe id="book-ppt-frame" 
+                                    src="${bookInfo.ppt_url}" 
+                                    style="width: 100%; height: 100%; min-height: 700px; border: none; background: white; overflow: hidden;"
+                                    onload="handlePptLoad()"
+                                    onerror="handlePptError()"
+                                    allowfullscreen="true"
+                                    scrolling="auto">
+                            </iframe>
+                            
+                            <div id="ppt-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; display: none;">
+                                <div style="font-size: 2rem; margin-bottom: 1rem;">📄</div>
+                                <p>PPT 加载中...</p>
+                            </div>
                         </div>
                         
-                        <div class="book-actions" style="padding: 0.75rem; border-top: 1px solid #ddd; background: #f8f9fa;">
-                            <div style="display: flex; gap: 0.5rem;">
-                                <button onclick="viewInLibrary()" style="flex: 1; padding: 0.5rem; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
-                                    在图书馆查看
+                        <div class="book-actions" style="padding: 0.8rem; border-top: 1px solid #ddd; background: white;">
+                            <div style="display: flex; gap: 0.6rem; margin-bottom: 0.8rem;">
+                                <button onclick="viewInLibrary()" 
+                                        style="flex: 1; padding: 0.6rem; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
+                                        onmouseover="this.style.background='#218838'"
+                                        onmouseout="this.style.background='#28a745'">
+                                    📚 在图书馆查看
                                 </button>
-                                <button onclick="findSimilarBooks()" style="flex: 1; padding: 0.5rem; background: #17a2b8; color: white; border: none; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
-                                    相似推荐
+                                <button onclick="findSimilarBooks()" 
+                                        style="flex: 1; padding: 0.6rem; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
+                                        onmouseover="this.style.background='#138496'"
+                                        onmouseout="this.style.background='#17a2b8'">
+                                    🔍 相似推荐
                                 </button>
+                            </div>
+                            <div style="text-align: center; font-size: 0.75rem; color: #666;">
+                                💡 可以直接在右侧浏览PPT内容，开始访谈时会结合PPT信息进行更深入的对话
                             </div>
                         </div>
                     </div>
@@ -1476,6 +1539,50 @@
             if (pptUrl) {
                 window.open(pptUrl, '_blank');
             }
+        }
+        
+        // 刷新PPT
+        function refreshPpt(pptUrl) {
+            const iframe = document.getElementById('book-ppt-frame');
+            const loading = document.getElementById('ppt-loading');
+            
+            if (iframe && pptUrl) {
+                // 显示加载状态
+                if (loading) {
+                    loading.style.display = 'block';
+                }
+                
+                // 重新加载iframe
+                iframe.src = pptUrl + '?refresh=' + new Date().getTime();
+            }
+        }
+        
+        // PPT加载成功回调
+        function handlePptLoad() {
+            const loading = document.getElementById('ppt-loading');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+            console.log('📚 PPT加载成功');
+        }
+        
+        // PPT加载失败回调
+        function handlePptError() {
+            const loading = document.getElementById('ppt-loading');
+            if (loading) {
+                loading.innerHTML = `
+                    <div style="text-align: center; color: #dc3545;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
+                        <p>PPT加载失败</p>
+                        <button onclick="refreshPpt('${currentBookInfo?.ppt_url}')" 
+                                style="padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 0.5rem;">
+                            重新加载
+                        </button>
+                    </div>
+                `;
+                loading.style.display = 'block';
+            }
+            console.error('❌ PPT加载失败');
         }
         
         // 在图书馆查看

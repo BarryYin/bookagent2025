@@ -4554,6 +4554,7 @@ async def get_book_info(title: str, author: str = None):
         import json
         
         # 查询数据库中的PPT信息 (注意表名是ppts，不是presentations)
+        # 仅按书名匹配，忽略作者（即使提供了作者也不用于过滤）
         query = """
         SELECT 
             session_id, title, author, category_name, cover_url, created_at
@@ -4561,10 +4562,6 @@ async def get_book_info(title: str, author: str = None):
         WHERE title LIKE ? 
         """
         params = [f"%{title}%"]
-        
-        if author:
-            query += " AND author LIKE ?"
-            params.append(f"%{author}%")
             
         query += " ORDER BY created_at DESC LIMIT 1"
         
@@ -4619,7 +4616,52 @@ async def get_book_info(title: str, author: str = None):
                     "source": "library"
                 }
             else:
-                # 如果数据库中没有，返回默认信息
+                # 如果数据库中没有，降级到文件系统按书名模糊匹配
+                try:
+                    import re
+                    outputs_root = "outputs"
+                    if os.path.isdir(outputs_root):
+                        def _clean(s: str) -> str:
+                            return re.sub(r"[\s\-_/《》\"'（）()、·]", "", (s or "").lower())
+
+                        target = _clean(title)
+                        for session_id in os.listdir(outputs_root):
+                            session_path = os.path.join(outputs_root, session_id)
+                            if not os.path.isdir(session_path):
+                                continue
+                            data_path = os.path.join(session_path, "data.json")
+                            ppt_path = os.path.join(session_path, "presentation.html")
+                            if not (os.path.exists(data_path) and os.path.exists(ppt_path)):
+                                continue
+                            try:
+                                with open(data_path, 'r', encoding='utf-8') as f:
+                                    data = json.load(f)
+                                book_data = data.get('book_data', {})
+                                raw = book_data.get('raw_content', '')
+                                m = re.search(r'"book_info"\s*:\s*\{[^}]*?"title"\s*:\s*"([^"]+)"', raw, re.DOTALL)
+                                found_title = m.group(1) if m else None
+                                if found_title and (_clean(found_title).find(target) != -1 or target.find(_clean(found_title)) != -1):
+                                    # 找到匹配的PPT
+                                    return {
+                                        "id": session_id,
+                                        "title": found_title or title,
+                                        "author": author or "未知作者",
+                                        "category": "未分类",
+                                        "description": f"关于《{found_title or title}》的深度解读",
+                                        "created_at": datetime.now(shanghai_tz).isoformat(),
+                                        "cover_url": None,
+                                        "ppt_exists": True,
+                                        "ppt_url": f"/outputs/{session_id}/presentation.html",
+                                        "interview_count": 1,
+                                        "podcast_count": 0,
+                                        "source": "filesystem"
+                                    }
+                            except Exception:
+                                continue
+                except Exception:
+                    pass
+
+                # 文件系统也未找到，返回默认信息
                 return {
                     "title": title,
                     "author": author or "未知作者",
