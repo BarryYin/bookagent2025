@@ -296,13 +296,13 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
 .initial-content { 
     display: flex; 
     flex-direction: column; 
-    justify-content: center; 
+    justify-content: flex-start; 
     align-items: center; 
     width: 100%; 
-    flex: 1; /* 占据剩余空间 */
+    min-height: auto;
     text-align: center;
-    margin-bottom: 4rem; /* 增加与PPT区域的间距 */
-    padding-top: 4rem; /* 增加与顶部的区隔 */
+    padding-top: 4rem;
+    padding-bottom: 2rem;
 }
 .hero-group { 
     text-align: center; 
@@ -2317,4 +2317,89 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+/* 嵌入演示文稿样式 */
+.embedded-presentation {
+    width: 100%;
+    max-width: 1200px;
+    margin: 3rem auto 2rem;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    display: block;
+    clear: both;
+}
+
+.embedded-presentation h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.embedded-presentation .iframe-container {
+    position: relative;
+    width: 100%;
+    height: 700px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    background: #fff;
+    margin-bottom: 1.5rem;
+}
+
+.embedded-presentation iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+.embedded-presentation .presentation-note {
+    text-align: center;
+    margin-top: 1rem;
+    color: #666;
+    font-size: 1rem;
+    font-style: italic;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .embedded-presentation {
+        margin: 2rem 1rem;
+        padding: 1.5rem;
+    }
+    
+    .embedded-presentation .iframe-container {
+        height: 500px;
+    }
+    
+    .embedded-presentation h2 {
+        font-size: 1.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .embedded-presentation {
+        margin: 1.5rem 0.5rem;
+        padding: 1rem;
+    }
+    
+    .embedded-presentation .iframe-container {
+        height: 400px;
+    }
+    
+    .embedded-presentation h2 {
+        font-size: 1.2rem;
+    }
 }
