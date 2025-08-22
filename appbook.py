@@ -24,6 +24,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 # 导入认证相关模块
 from models import UserManager, UserCreate, UserLogin, UserResponse, user_manager, verify_token
 
+# 导入播客数据库功能
+from podcast_database import init_podcast_database, save_podcast_to_database, get_all_podcasts, get_podcast_by_session_id, increment_play_count
+
 # 导入方法论配置
 sys.path.append(str(Path(__file__).parent / "create"))
 try:
@@ -3290,6 +3293,12 @@ async def test_static_cover():
     with open("test_static_cover.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
+@app.get("/test-auth-flow", response_class=HTMLResponse)
+async def test_auth_flow():
+    """测试身份验证流程的页面"""
+    with open("test_auth_flow.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
 @app.get("/test-cover/{filename}")
 async def test_cover_direct(filename: str):
     """直接测试封面文件访问"""
@@ -4341,9 +4350,11 @@ async def get_current_user_info(request: Request):
     """获取当前用户信息"""
     try:
         user = await get_current_user(request)
+        print(f"DEBUG: get_current_user 返回: {user}")
         if user:
             return {
                 "success": True,
+                "authenticated": True,
                 "user": {
                     "id": user.id,
                     "username": user.username,
@@ -4351,10 +4362,12 @@ async def get_current_user_info(request: Request):
                 }
             }
         else:
-            return {"success": False, "user": None}
+            return {"success": True, "authenticated": False, "user": None}
     except Exception as e:
         print(f"获取用户信息失败: {e}")
-        return {"success": False, "error": str(e)}
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "authenticated": False, "error": str(e)}
 
 @app.get("/api/user-preferences")
 async def get_user_preferences(request: Request):
@@ -4692,6 +4705,162 @@ async def get_book_info(title: str, author: str = None):
             "source": "error"
         }
 
+@app.get("/podcasts", response_class=HTMLResponse)
+async def podcast_gallery_page(request: Request):
+    """播客集合页面 - 公开访问"""
+    # 获取当前用户信息（可选）
+    user = await get_current_user(request)
+    
+    return templates.TemplateResponse(
+        "podcast_gallery.html", {
+            "request": request,
+            "time": datetime.now(shanghai_tz).strftime("%Y%m%d%H%M%S"),
+            "user": user  # 传递用户信息，可能为None
+        }
+    )
+
+@app.post("/api/podcasts/{session_id}/play")
+async def track_podcast_play(session_id: str, request: Request):
+    """记录播客播放次数 - 需要身份验证"""
+    # 检查用户是否已登录
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="请先登录")
+    
+    try:
+        success = increment_play_count(session_id)
+        if success:
+            return {"success": True, "message": "播放次数已记录"}
+        else:
+            return {"success": False, "message": "记录失败"}
+    except Exception as e:
+        print(f"记录播客播放失败: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/podcasts")
+async def get_podcasts(request: Request):
+    """获取播客列表API - 从数据库获取 - 公开访问"""
+    # 获取当前用户信息（可选）
+    user = await get_current_user(request)
+    
+    import os
+    import glob
+    from datetime import datetime
+    
+    try:
+        # 优先从数据库获取播客
+        podcasts_from_db = get_all_podcasts(limit=50)
+        
+        if podcasts_from_db:
+            # 处理数据库中的播客数据
+            processed_podcasts = []
+            for podcast in podcasts_from_db:
+                # 处理音频URL
+                audio_url = None
+                if podcast.get('audio_file_path'):
+                    # 如果有音频文件路径，构建URL
+                    audio_filename = os.path.basename(podcast['audio_file_path'])
+                    audio_url = f"/podcast_audio/{audio_filename}"
+                elif podcast.get('audio_url'):
+                    audio_url = podcast['audio_url']
+                
+                # 格式化播客名称：添加“-读者播客”后缀
+                formatted_title = f"{podcast.get('book_title', '未知书籍')}-读者播客"
+                
+                processed_podcast = {
+                    "id": podcast.get('session_id', podcast.get('id')),
+                    "book_title": formatted_title,
+                    "book_author": podcast.get('book_author', '用户'),
+                    "description": podcast.get('description', '这是一个精彩的读后感播客，分享了深刻的阅读感悟和思考。'),
+                    "audio_url": audio_url,
+                    "play_count": podcast.get('play_count', 0),
+                    "duration": podcast.get('duration'),
+                    "file_size": podcast.get('file_size')
+                }
+                processed_podcasts.append(processed_podcast)
+            
+            print(f"✅ 从数据库获取到 {len(processed_podcasts)} 个播客")
+            return {"success": True, "podcasts": processed_podcasts}
+        
+        # 如果数据库为空，尝试从文件系统扫描
+        podcasts = []
+        podcast_dir = "podcast_audio"
+        
+        if os.path.exists(podcast_dir):
+            # 扫描所有完整的播客文件
+            full_podcast_files = glob.glob(os.path.join(podcast_dir, "*full_podcast.mp3"))
+            
+            # 书籍信息映射（根据文件名推断）
+            book_mapping = {
+                "1755310187": {
+                    "title": "动物农场",
+                    "author": "用户",
+                    "description": "一个关于权力腐蚀和革命背叛的深刻思考，通过动物农场的寓言故事，探讨了政治制度的本质。"
+                },
+                "1755445943": {
+                    "title": "非暴力沟通",
+                    "author": "用户",
+                    "description": "学习如何用心倾听和表达，建立更和谐的人际关系。这本书改变了我对沟通的理解。"
+                },
+                "1755446344": {
+                    "title": "百年孤独",
+                    "author": "用户",
+                    "description": "魔幻现实主义的经典之作，布恩迪亚家族的百年兴衰史，反映了拉丁美洲的历史变迁。"
+                }
+            }
+            
+            for i, file_path in enumerate(full_podcast_files):
+                file_name = os.path.basename(file_path)
+                # 提取文件名中的ID
+                podcast_id = None
+                for key in book_mapping.keys():
+                    if key in file_name:
+                        podcast_id = key
+                        break
+                
+                if podcast_id and podcast_id in book_mapping:
+                    book_info = book_mapping[podcast_id]
+                else:
+                    # 默认信息
+                    book_info = {
+                        "title": f"未知书籍 {i+1}",
+                        "author": "用户",
+                        "description": "这是一个精彩的读后感播客，分享了深刻的阅读感悟和思考。"
+                    }
+                
+                # 获取文件修改时间
+                file_stat = os.stat(file_path)
+                created_at = datetime.fromtimestamp(file_stat.st_mtime).isoformat()
+                
+                # 格式化播客名称：添加“-读者播客”后缀
+                formatted_title = f"{book_info['title']}-读者播客"
+                
+                podcast = {
+                    "id": podcast_id or str(i+1),
+                    "book_title": formatted_title,
+                    "book_author": "用户",  # 作者显示为用户名称
+                    "description": book_info["description"],
+                    "audio_url": f"/{file_path}",
+                    "play_count": 0,  # 默认播放次数为0
+                    "file_size": file_stat.st_size
+                }
+                podcasts.append(podcast)
+            
+            # 按创建时间排序（最新的在前）
+            podcasts.sort(key=lambda x: x["created_at"], reverse=True)
+            
+            if podcasts:
+                print(f"✅ 从文件系统扫描到 {len(podcasts)} 个播客")
+                return {"success": True, "podcasts": podcasts}
+        
+        # 如果都没有找到，返回空列表
+        print("⚠️ 未找到播客数据，返回空列表")
+        return {"success": True, "podcasts": []}
+        
+    except Exception as e:
+        print(f"获取播客列表失败: {e}")
+        return {"success": False, "error": str(e), "podcasts": []}
+
 @app.get("/interview", response_class=HTMLResponse)
 async def interview_page(request: Request, book_title: str = None, book_author: str = None):
     """读后感访谈页面"""
@@ -4740,6 +4909,109 @@ async def interview_page(request: Request, book_title: str = None, book_author: 
         }
     )
 
+# 初始化播客数据库
+@app.on_event("startup")
+async def startup_event():
+    """应用启动时初始化播客数据库"""
+    try:
+        init_podcast_database()
+        print("✅ 播客数据库初始化完成")
+        
+        # 检查是否有现有的播客文件需要导入到数据库
+        await import_existing_podcasts_to_database()
+        
+    except Exception as e:
+        print(f"⚠️ 播客数据库初始化失败: {e}")
+
+async def import_existing_podcasts_to_database():
+    """导入现有的播客文件到数据库"""
+    try:
+        import os
+        import glob
+        from datetime import datetime
+        
+        podcast_dir = "podcast_audio"
+        if not os.path.exists(podcast_dir):
+            return
+        
+        # 扫描所有完整的播客文件
+        full_podcast_files = glob.glob(os.path.join(podcast_dir, "*full_podcast.mp3"))
+        
+        # 书籍信息映射
+        book_mapping = {
+            "1755310187": {
+                "title": "动物农场",
+                "author": "用户",
+                "description": "一个关于权力腐蚀和革命背叛的深刻思考，通过动物农场的寓言故事，探讨了政治制度的本质。"
+            },
+            "1755445943": {
+                "title": "非暴力沟通",
+                "author": "用户",
+                "description": "学习如何用心倾听和表达，建立更和谐的人际关系。这本书改变了我对沟通的理解。"
+            },
+            "1755446344": {
+                "title": "百年孤独",
+                "author": "用户",
+                "description": "魔幻现实主义的经典之作，布恩迪亚家族的百年兴衰史，反映了拉丁美洲的历史变迁。"
+            }
+        }
+        
+        imported_count = 0
+        for file_path in full_podcast_files:
+            file_name = os.path.basename(file_path)
+            
+            # 提取session_id
+            session_id = None
+            for key in book_mapping.keys():
+                if key in file_name:
+                    session_id = f"interview_{key}"
+                    break
+            
+            if not session_id:
+                # 生成一个基于文件名的session_id
+                session_id = f"imported_{file_name.replace('.mp3', '').replace('_full_podcast', '')}"
+            
+            # 检查是否已经在数据库中
+            existing = get_podcast_by_session_id(session_id)
+            if existing:
+                continue
+            
+            # 获取书籍信息
+            book_info = None
+            for key, info in book_mapping.items():
+                if key in file_name:
+                    book_info = info
+                    break
+            
+            if not book_info:
+                book_info = {
+                    "title": f"导入的播客 {imported_count + 1}",
+                    "author": "用户",
+                    "description": "这是一个精彩的读后感播客，分享了深刻的阅读感悟和思考。"
+                }
+            
+            # 保存到数据库
+            result = save_podcast_to_database(
+                session_id=session_id,
+                book_title=book_info["title"],
+                book_author=book_info["author"],
+                description=book_info["description"],
+                script_content="导入的播客内容",
+                audio_file_path=file_path,
+                audio_url=f"/podcast_audio/{file_name}"
+            )
+            
+            if result:
+                imported_count += 1
+        
+        if imported_count > 0:
+            print(f"✅ 成功导入 {imported_count} 个现有播客到数据库")
+        
+    except Exception as e:
+        print(f"⚠️ 导入现有播客失败: {e}")
+
+# 播客音频文件已在前面挂载，这里不需要重复
+
 # -----------------------------------------------------------------------
 # 4. 本地启动命令
 # -----------------------------------------------------------------------
@@ -4747,5 +5019,12 @@ async def interview_page(request: Request, book_title: str = None, book_author: 
 
 
 if __name__ == '__main__':
+    # 初始化播客数据库
+    try:
+        init_podcast_database()
+        print("✅ 播客数据库初始化完成")
+    except Exception as e:
+        print(f"⚠️ 播客数据库初始化失败: {e}")
+    
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001, reload=False)

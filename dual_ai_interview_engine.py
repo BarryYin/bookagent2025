@@ -12,6 +12,25 @@ from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from openai import AsyncOpenAI
 
+# 异步HTTP和文件操作依赖
+try:
+    import aiohttp
+    import aiofiles
+except ImportError:
+    print("警告：缺少异步依赖，请安装: pip install aiohttp aiofiles")
+    aiohttp = None
+    aiofiles = None
+
+# 导入播客数据库功能
+try:
+    from podcast_database import save_podcast_to_database, init_podcast_database
+except ImportError:
+    print("警告：无法导入播客数据库模块，播客将不会保存到数据库")
+    def save_podcast_to_database(*args, **kwargs):
+        return None
+    def init_podcast_database():
+        pass
+
 # Qwen配置
 QWEN_BASE_URL = "https://api-inference.modelscope.cn/v1/"
 QWEN_API_KEY = "ms-076e7668-1000-4ce8-be4e-f475ddfeead7"
@@ -171,11 +190,10 @@ class PodcastAI:
             user_content = self._compile_user_answers(session)
             
             # 调用星火API生成播客
-            import http.client
+            import aiohttp
             import json
-            import ssl
             import re
-            import requests
+            import aiofiles
             from datetime import datetime
             
             data = {
@@ -188,16 +206,14 @@ class PodcastAI:
                 "stream": False,
             }
             
-            payload = json.dumps(data)
-            
-            conn = http.client.HTTPSConnection("xingchen-api.xf-yun.com", timeout=120)
-            conn.request(
-                "POST", "/workflow/v1/chat/completions", 
-                payload, self.api_config["headers"], encode_chunked=True
-            )
-            res = conn.getresponse()
-            response_data = res.read().decode("utf-8")
-            conn.close()
+            # 使用异步HTTP客户端
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120)) as session_http:
+                async with session_http.post(
+                    self.api_config["url"],
+                    json=data,
+                    headers=self.api_config["headers"]
+                ) as response:
+                    response_data = await response.text()
             
             # 解析流式响应
             print(f"播客API原始响应: {response_data[:500]}...")  # 调试信息
@@ -240,11 +256,14 @@ class PodcastAI:
             
             audio_url = match.group(1)
             
-            # 下载音频文件
-            audio_response = requests.get(audio_url)
-            audio_response.raise_for_status()
+            # 异步下载音频文件
+            async with aiohttp.ClientSession() as session_http:
+                async with session_http.get(audio_url) as response:
+                    if response.status != 200:
+                        raise Exception(f"下载音频失败: HTTP {response.status}")
+                    audio_data = await response.read()
             
-            # 保存音频文件
+            # 异步保存音频文件
             output_dir = "podcast_audio"
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
@@ -253,11 +272,37 @@ class PodcastAI:
             file_name = f"reading_podcast_{session.session_id}_{timestamp}.mp3"
             file_path = os.path.join(output_dir, file_name)
             
-            with open(file_path, 'wb') as f:
-                f.write(audio_response.content)
+            async with aiofiles.open(file_path, 'wb') as f:
+                await f.write(audio_data)
             
             # 标记播客已生成
             session.podcast_generated = True
+            
+            # 保存到播客数据库
+            try:
+                init_podcast_database()  # 确保数据库已初始化
+                
+                # 生成播客描述
+                description = f"关于《{session.book_title}》的读后感播客，分享了深刻的阅读感悟和思考。"
+                
+                podcast_id = save_podcast_to_database(
+                    session_id=session.session_id,
+                    book_title=session.book_title,
+                    book_author=session.book_author,
+                    description=description,
+                    script_content=html_content,
+                    audio_url=audio_url,
+                    audio_file_path=file_path
+                )
+                
+                if podcast_id:
+                    print(f"✅ 播客已保存到数据库: ID {podcast_id}")
+                else:
+                    print(f"⚠️ 播客保存到数据库失败")
+                    
+            except Exception as db_error:
+                print(f"保存播客到数据库失败: {db_error}")
+                # 不影响主流程，继续返回结果
             
             return {
                 "success": True,
@@ -415,7 +460,7 @@ class DualAIInterviewEngine:
         return {"error": "未知状态"}
     
     async def generate_podcast(self, session_id: str) -> Dict[str, Any]:
-        """生成播客"""
+        """生成播客 - 异步处理避免阻塞"""
         if session_id not in self.sessions:
             return {"error": "会话不存在"}
         
@@ -427,9 +472,30 @@ class DualAIInterviewEngine:
         if session.podcast_generated:
             return {"error": "播客已经生成过了"}
         
-        # 调用播客AI生成播客
+        # 直接异步生成播客，但不阻塞API响应
         result = await self.podcast_ai.generate_podcast(session)
         return result
+    
+    async def _generate_podcast_background(self, session: DualAISession):
+        """后台生成播客"""
+        try:
+            result = await self.podcast_ai.generate_podcast(session)
+            # 可以在这里添加通知机制，比如WebSocket推送结果
+            print(f"播客生成完成: {result}")
+        except Exception as e:
+            print(f"后台播客生成失败: {e}")
+    
+    def get_podcast_status(self, session_id: str) -> Dict[str, Any]:
+        """获取播客生成状态"""
+        if session_id not in self.sessions:
+            return {"error": "会话不存在"}
+        
+        session = self.sessions[session_id]
+        return {
+            "session_id": session_id,
+            "podcast_generated": session.podcast_generated,
+            "status": "completed" if session.podcast_generated else "processing"
+        }
     
     def get_session_status(self, session_id: str) -> Dict[str, Any]:
         """获取会话状态"""

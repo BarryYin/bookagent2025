@@ -1449,12 +1449,21 @@
             }
         }
         
-        // 添加播客生成按钮
+        // 添加播客生成按钮（只有在访谈完成时才调用）
         function addPodcastButton() {
+            // 检查是否已经有播客按钮，避免重复添加
+            if (document.querySelector('button[onclick="generatePodcast()"]')) {
+                return;
+            }
+            
             const buttonContainer = document.createElement('div');
             buttonContainer.style.marginTop = '20px';
             buttonContainer.style.textAlign = 'center';
             buttonContainer.innerHTML = `
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #28a745;">
+                    <h4 style="margin: 0 0 8px 0; color: #155724;">✅ 访谈完成！</h4>
+                    <p style="margin: 0; color: #155724; font-size: 14px;">您已经完成了所有访谈问题，现在可以生成个性化的读后感播客了。</p>
+                </div>
                 <button onclick="generatePodcast()" style="padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     🎙️ 生成播客
                 </button>
@@ -1518,10 +1527,8 @@
             // 更新消息计数
             messageCount++;
             
-            // 检查是否需要显示播客按钮
-            if (messageCount >= 6 && !document.querySelector('button[onclick="generatePodcast()"]')) {
-                addPodcastButton();
-            }
+            // 移除自动显示播客按钮的逻辑，只有在访谈完成时才显示
+            // 这个逻辑现在由 sendMessage() 函数中的 data.ready_for_podcast 控制
             
             // 添加动画效果
             setTimeout(() => {

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书籍读者播客集合 - ReadBook Agent</title>
+    <link rel="stylesheet" href="/static/style.css?v={{ time }}&force=1">
+    <link rel="icon" href="/static/favicon.png?v={{ time }}" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .podcast-gallery-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: var(--bg-primary);
+            min-height: 100vh;
+        }
+
+        .gallery-header {
+            margin-bottom: 3rem;
+            padding: 3rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            border-radius: 20px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .gallery-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(255,255,255,0.08) 0%, transparent 50%);
+            opacity: 0.6;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header-text {
+            text-align: left;
+        }
+
+        .gallery-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .gallery-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            margin: 0;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .create-podcast-btn {
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15));
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .create-podcast-btn:hover {
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.25));
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .create-podcast-btn:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        /* 书籍输入区域样式 */
+        .book-input-section {
+            margin-bottom: 2rem;
+            animation: slideDown 0.3s ease;
+        }
+
+        .book-input-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .book-input-card h3 {
+            margin: 0 0 1.5rem 0;
+            color: #333;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .input-group input {
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-direction: column;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            color: #666;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            border-color: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        @keyframes slideDown {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .podcast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .podcast-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .podcast-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .podcast-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .podcast-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .podcast-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .podcast-info {
+            flex: 1;
+        }
+
+        .podcast-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+            line-height: 1.3;
+        }
+
+        .podcast-author {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .podcast-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 1rem 0;
+            font-size: 0.95rem;
+        }
+
+        .podcast-audio {
+            margin: 1rem 0;
+        }
+
+        .podcast-audio audio {
+            width: 100%;
+            height: 40px;
+        }
+
+        .podcast-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .podcast-date {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .podcast-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-nav {
+            margin-bottom: 2rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .podcast-gallery-container {
+                padding: 1rem;
+            }
+
+            .gallery-header {
+                padding: 2rem 1.5rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+            }
+
+            .header-text {
+                text-align: center;
+            }
+
+            .gallery-title {
+                font-size: 2.5rem;
+            }
+
+            .gallery-subtitle {
+                font-size: 1rem;
+            }
+
+            .podcast-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .podcast-card {
+                padding: 1rem;
+            }
+
+            .podcast-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .podcast-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+
+            .input-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .input-actions {
+                flex-direction: row;
+                justify-content: center;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="podcast-gallery-container">
+        <div class="back-nav">
+            <a href="/" class="back-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"/>
+                    <path d="M12 19l-7-7 7-7"/>
+                </svg>
+                返回首页
+            </a>
+        </div>
+
+        <div class="gallery-header">
+            <div class="header-content">
+                <div class="header-text">
+                    <h1 class="gallery-title">🎙️ 书籍读者播客集合</h1>
+                    <p class="gallery-subtitle">发现优秀的读后感播客，分享你的阅读感悟</p>
+                </div>
+                <div class="header-actions">
+                    <button onclick="checkAuthAndToggleInput()" class="create-podcast-btn" id="toggleBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 5v14"/>
+                            <path d="M5 12h14"/>
+                        </svg>
+                        制作我的播客
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 书名输入区域 -->
+        <div id="bookInputSection" class="book-input-section" style="display: none;">
+            <div class="book-input-card">
+                <h3>📚 选择要分享的书籍</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="bookTitle">书名</label>
+                        <input type="text" id="bookTitle" placeholder="请输入书名，如：三体、百年孤独..." autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label for="bookAuthor">作者（可选）</label>
+                        <input type="text" id="bookAuthor" placeholder="请输入作者姓名" autocomplete="off">
+                    </div>
+                    <div class="input-actions">
+                        <button onclick="startPodcastCreation()" class="btn-primary">开始制作</button>
+                        <button onclick="toggleBookInput()" class="btn-secondary">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="podcast-content">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>正在加载播客内容...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查身份验证并切换输入区域
+        async function checkAuthAndToggleInput() {
+            try {
+                const response = await fetch('/api/user');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    // 未登录，重定向到登录页面
+                    window.location.href = '/login?redirect=/podcasts';
+                    return;
+                }
+                
+                // 已登录，显示输入区域
+                toggleBookInput();
+                
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+        
+        // 切换书籍输入区域显示
+        function toggleBookInput() {
+            const inputSection = document.getElementById('bookInputSection');
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            if (inputSection.style.display === 'none' || inputSection.style.display === '') {
+                inputSection.style.display = 'block';
+                toggleBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6L6 18"/>
+                        <path d="M6 6l12 12"/>
+                    </svg>
+                    取消
+                `;
+                // 聚焦到书名输入框
+                setTimeout(() => {
+                    document.getElementById('bookTitle').focus();
+                }, 100);
+            } else {
+                inputSection.style.display = 'none';
+                toggleBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 5v14"/>
+                        <path d="M5 12h14"/>
+                    </svg>
+                    制作我的播客
+                `;
+                // 清空输入框
+                document.getElementById('bookTitle').value = '';
+                document.getElementById('bookAuthor').value = '';
+            }
+        }
+
+        async function startPodcastCreation() {
+            const bookTitle = document.getElementById('bookTitle').value.trim();
+            if (!bookTitle) {
+                alert('请输入书名');
+                return;
+            }
+            
+            // 检查用户是否已登录
+            try {
+                const response = await fetch('/api/user');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    // 未登录，重定向到登录页面
+                    const bookAuthor = document.getElementById('bookAuthor').value.trim();
+                    const params = new URLSearchParams();
+                    params.append('book_title', bookTitle);
+                    if (bookAuthor) {
+                        params.append('book_author', bookAuthor);
+                    }
+                    const redirectUrl = `/interview?${params.toString()}`;
+                    window.location.href = `/login?redirect=${encodeURIComponent(redirectUrl)}`;
+                    return;
+                }
+                
+                // 已登录，直接跳转到访谈页面
+                const bookAuthor = document.getElementById('bookAuthor').value.trim();
+                const params = new URLSearchParams();
+                params.append('book_title', bookTitle);
+                if (bookAuthor) {
+                    params.append('book_author', bookAuthor);
+                }
+                
+                window.location.href = `/interview?${params.toString()}`;
+                
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        // 加载播客数据
+        async function loadPodcasts() {
+            try {
+                console.log('开始加载播客数据...');
+                const response = await fetch('/api/podcasts');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('播客数据:', data);
+                
+                if (data.success && data.podcasts && data.podcasts.length > 0) {
+                    console.log(`找到 ${data.podcasts.length} 个播客`);
+                    renderPodcasts(data.podcasts);
+                } else if (data.success && data.podcasts && data.podcasts.length === 0) {
+                    console.log('播客列表为空');
+                    renderEmptyState();
+                } else {
+                    console.error('API返回错误:', data.error || '未知错误');
+                    renderErrorState();
+                }
+            } catch (error) {
+                console.error('加载播客失败:', error);
+                renderErrorState();
+            }
+        }
+
+        // 渲染播客列表
+        function renderPodcasts(podcasts) {
+            const contentDiv = document.getElementById('podcast-content');
+            
+            const podcastGrid = document.createElement('div');
+            podcastGrid.className = 'podcast-grid';
+            
+            podcasts.forEach(podcast => {
+                const podcastCard = createPodcastCard(podcast);
+                podcastGrid.appendChild(podcastCard);
+            });
+            
+            contentDiv.innerHTML = '';
+            contentDiv.appendChild(podcastGrid);
+            
+            // 添加统计信息
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'podcast-stats';
+            statsDiv.innerHTML = `
+                <p style="text-align: center; color: #666; margin-top: 2rem;">
+                    共找到 ${podcasts.length} 个播客
+                </p>
+            `;
+            contentDiv.appendChild(statsDiv);
+        }
+
+        // 创建播客卡片
+        function createPodcastCard(podcast) {
+            const card = document.createElement('div');
+            card.className = 'podcast-card';
+            
+            console.log('创建播客卡片:', podcast);
+            
+            // 处理音频URL
+            let audioHtml = '';
+            if (podcast.audio_url) {
+                let audioUrl = podcast.audio_url;
+                if (!audioUrl.startsWith('http') && !audioUrl.startsWith('/')) {
+                    audioUrl = `/podcast_audio/${audioUrl}`;
+                }
+                
+                audioHtml = `
+                    <div class="podcast-audio">
+                        <audio controls preload="metadata" onplay="trackPlay('${podcast.id || ''}')">
+                            <source src="${audioUrl}" type="audio/mpeg">
+                            您的浏览器不支持音频播放。
+                        </audio>
+                    </div>
+                `;
+            } else {
+                audioHtml = `
+                    <div class="podcast-audio-placeholder">
+                        <p style="color: #999; font-style: italic;">🎵 音频文件准备中...</p>
+                    </div>
+                `;
+            }
+            
+            const formatDate = (dateString) => {
+                if (!dateString) return '未知时间';
+                try {
+                    const date = new Date(dateString);
+                    if (isNaN(date.getTime())) return '未知时间';
+                    return date.toLocaleDateString('zh-CN', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                } catch (e) {
+                    return '未知时间';
+                }
+            };
+            
+            // 安全地处理数据，防止XSS
+            const safeTitle = (podcast.book_title || '未知书籍').replace(/[<>"'&]/g, function(match) {
+                const escapeMap = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                return escapeMap[match];
+            });
+            
+            const safeAuthor = (podcast.book_author || '未知作者').replace(/[<>"'&]/g, function(match) {
+                const escapeMap = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                return escapeMap[match];
+            });
+            
+            const safeDescription = (podcast.description || '这是一个关于读后感的精彩播客，分享了深刻的阅读感悟和思考。').replace(/[<>"'&]/g, function(match) {
+                const escapeMap = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;'};
+                return escapeMap[match];
+            });
+            
+            card.innerHTML = `
+                <div class="podcast-header">
+                    <div class="podcast-icon">🎙️</div>
+                    <div class="podcast-info">
+                        <h3 class="podcast-title">${safeTitle}</h3>
+                        <p class="podcast-author">作者：${safeAuthor}</p>
+                    </div>
+                </div>
+                
+                <div class="podcast-description">
+                    ${safeDescription}
+                </div>
+                
+                ${audioHtml}
+                
+                <div class="podcast-meta">
+                    <div class="podcast-stats">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14"></rect>
+                        </svg>
+                        播放 ${podcast.play_count || 0} 次
+                    </div>
+                    <div class="podcast-actions">
+                        ${podcast.audio_url ? `<a href="${podcast.audio_url}" download class="action-btn">下载</a>` : ''}
+                        <button class="action-btn" onclick="sharePodcast('${podcast.id || ''}', '${safeTitle}')">分享</button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // 渲染空状态
+        function renderEmptyState() {
+            const contentDiv = document.getElementById('podcast-content');
+            contentDiv.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎙️</div>
+                    <h3>还没有播客内容</h3>
+                    <p>成为第一个创建播客的用户吧！通过深度访谈，将你的读后感转化为精彩的播客内容。</p>
+                    <button onclick="checkAuthAndToggleInput()" class="create-podcast-btn" style="margin-top: 1rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 5v14"/>
+                            <path d="M5 12h14"/>
+                        </svg>
+                        制作我的播客
+                    </button>
+                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 8px; font-size: 0.9rem; color: #666;">
+                        <h4 style="margin: 0 0 0.5rem 0; color: #333;">💡 如何制作播客？</h4>
+                        <p style="margin: 0;">1. 点击上方按钮，输入你想分享的书籍<br>
+                        2. 通过5个深度问题分享你的读后感<br>
+                        3. AI会自动生成专属的播客内容</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染错误状态
+        function renderErrorState() {
+            const contentDiv = document.getElementById('podcast-content');
+            contentDiv.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <h3>加载失败</h3>
+                    <p>无法加载播客内容，请稍后重试。</p>
+                    <button onclick="loadPodcasts()" class="create-podcast-btn" style="margin-top: 1rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 4v6h6"/>
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                        </svg>
+                        重新加载
+                    </button>
+                </div>
+            `;
+        }
+
+        // 跟踪播客播放
+        function trackPlay(podcastId) {
+            if (!podcastId) return;
+            
+            fetch(`/api/podcasts/${podcastId}/play`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('播放次数已记录');
+                    // 可以在这里更新页面上的播放次数显示
+                }
+            }).catch(err => {
+                console.error('记录播放失败:', err);
+            });
+        }
+
+        // 分享播客
+        function sharePodcast(podcastId, bookTitle) {
+            const shareUrl = `${window.location.origin}/podcast/${podcastId}`;
+            const shareText = `我发现了一个关于《${bookTitle}》的精彩播客，快来听听吧！`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: `《${bookTitle}》读后感播客`,
+                    text: shareText,
+                    url: shareUrl
+                }).catch(err => console.log('分享失败:', err));
+            } else {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('播客链接已复制到剪贴板！');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('分享功能暂不可用');
+                });
+            }
+        }
+
+        // 页面加载时获取播客数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPodcasts();
+            
+            // 添加回车键支持
+            document.getElementById('bookTitle').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    startPodcastCreation();
+                }
+            });
+            
+            document.getElementById('bookAuthor').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    startPodcastCreation();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

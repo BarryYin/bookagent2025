@@ -8,3 +8,5 @@ google-genai
 requests
 PyJWT
 python-multipart
+aiohttp
+aiofiles

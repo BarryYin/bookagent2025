@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试身份验证流程</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .primary { background: #007bff; color: white; }
+        .success { background: #28a745; color: white; }
+        .info { background: #17a2b8; color: white; }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 身份验证流程测试</h1>
+    
+    <div class="test-section">
+        <h3>1. 检查当前登录状态</h3>
+        <button class="info" onclick="checkAuthStatus()">检查登录状态</button>
+        <div id="authStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 测试播客页面访问</h3>
+        <button class="primary" onclick="testPodcastAccess()">访问播客页面</button>
+        <button class="primary" onclick="testPodcastAPI()">测试播客API</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 模拟制作播客流程</h3>
+        <input type="text" id="testBookTitle" placeholder="输入书名" value="测试书籍">
+        <button class="success" onclick="simulateCreatePodcast()">模拟制作播客</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 快速登录/登出</h3>
+        <button class="primary" onclick="goToLogin()">前往登录页面</button>
+        <button class="info" onclick="logout()">登出</button>
+    </div>
+    
+    <div id="result"></div>
+
+    <script>
+        function log(message) {
+            const result = document.getElementById('result');
+            const time = new Date().toLocaleTimeString();
+            result.innerHTML += `<div>[${time}] ${message}</div>`;
+            result.scrollTop = result.scrollHeight;
+        }
+
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/user');
+                const data = await response.json();
+                
+                const statusDiv = document.getElementById('authStatus');
+                if (data.success && data.authenticated) {
+                    statusDiv.innerHTML = `<div style="color: green;">✅ 已登录: ${data.user.username}</div>`;
+                    log(`用户已登录: ${data.user.username}`);
+                } else {
+                    statusDiv.innerHTML = `<div style="color: red;">❌ 未登录</div>`;
+                    log('用户未登录');
+                }
+            } catch (error) {
+                log(`检查登录状态失败: ${error.message}`);
+            }
+        }
+
+        async function testPodcastAccess() {
+            try {
+                const response = await fetch('/podcasts');
+                if (response.ok) {
+                    log('✅ 播客页面可以正常访问');
+                } else {
+                    log(`❌ 播客页面访问失败: ${response.status}`);
+                }
+            } catch (error) {
+                log(`播客页面访问错误: ${error.message}`);
+            }
+        }
+
+        async function testPodcastAPI() {
+            try {
+                const response = await fetch('/api/podcasts');
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ 播客API正常: 找到 ${data.podcasts ? data.podcasts.length : 0} 个播客`);
+                } else {
+                    log(`❌ 播客API访问失败: ${response.status}`);
+                }
+            } catch (error) {
+                log(`播客API访问错误: ${error.message}`);
+            }
+        }
+
+        async function simulateCreatePodcast() {
+            const bookTitle = document.getElementById('testBookTitle').value;
+            if (!bookTitle) {
+                log('❌ 请输入书名');
+                return;
+            }
+
+            try {
+                // 检查登录状态
+                const response = await fetch('/api/user');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    log('❌ 未登录，需要跳转到登录页面');
+                    const redirectUrl = `/interview?book_title=${encodeURIComponent(bookTitle)}`;
+                    const loginUrl = `/login?redirect=${encodeURIComponent(redirectUrl)}`;
+                    log(`跳转URL: ${loginUrl}`);
+                    
+                    // 实际跳转（注释掉以便测试）
+                    // window.location.href = loginUrl;
+                } else {
+                    log(`✅ 已登录，可以制作播客: ${bookTitle}`);
+                    const interviewUrl = `/interview?book_title=${encodeURIComponent(bookTitle)}`;
+                    log(`访谈URL: ${interviewUrl}`);
+                    
+                    // 实际跳转（注释掉以便测试）
+                    // window.location.href = interviewUrl;
+                }
+            } catch (error) {
+                log(`模拟制作播客失败: ${error.message}`);
+            }
+        }
+
+        function goToLogin() {
+            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.href);
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                if (response.ok) {
+                    log('✅ 登出成功');
+                    checkAuthStatus();
+                } else {
+                    log('❌ 登出失败');
+                }
+            } catch (error) {
+                log(`登出错误: ${error.message}`);
+            }
+        }
+
+        // 页面加载时检查状态
+        window.onload = function() {
+            log('🚀 测试页面加载完成');
+            checkAuthStatus();
+        };
+    </script>
+</body>
+</html>
