@@ -33,18 +33,19 @@
 .clickable-category {
     transition: all 0.2s ease;
     border-radius: 12px;
-    padding: 4px 8px;
+    padding: 6px 12px;
     font-size: 0.75rem;
     font-weight: 500;
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
     text-decoration: none;
     color: white;
     border: none;
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .clickable-category:hover {
@@ -119,7 +120,7 @@
     transition: all 0.2s ease;
     overflow: hidden;
     height: auto;
-    min-height: 280px; /* 减小最小高度 */
+    min-height: 320px; /* 增加最小高度以适应更高的封面 */
 }
 
 .library-ppt-card:hover {
@@ -132,7 +133,7 @@
 }
 
 .library-card-preview {
-    height: 180px; /* 减小封面高度 */
+    height: 220px; /* 增加封面高度以更好展示 */
     overflow: hidden;
     position: relative;
 }
@@ -154,11 +155,11 @@
     }
     
     .library-ppt-card {
-        min-height: 240px;
+        min-height: 280px;
     }
     
     .library-card-preview {
-        height: 140px;
+        height: 180px;
     }
     
     .clickable-category {

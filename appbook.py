@@ -4737,6 +4737,153 @@ async def track_podcast_play(session_id: str, request: Request):
         print(f"记录播客播放失败: {e}")
         return {"success": False, "error": str(e)}
 
+@app.get("/api/latest-podcasts")
+async def get_latest_podcasts():
+    """获取最新的3个播客"""
+    try:
+        podcasts = get_all_podcasts(limit=3)
+        print(f"API返回播客数量: {len(podcasts)}")
+        return {"success": True, "podcasts": podcasts}
+    except Exception as e:
+        print(f"API错误: {e}")
+        return {"success": False, "error": str(e), "podcasts": []}
+
+@app.get("/api/latest-books")
+async def get_latest_books():
+    """获取最新的3本书"""
+    try:
+        # 使用现有的API获取最新的PPT作品
+        import os
+        import json
+        from pathlib import Path
+        
+        outputs_dir = Path("outputs")
+        if not outputs_dir.exists():
+            return {"success": True, "books": []}
+        
+        book_list = []
+        
+        # 遍历outputs目录下的所有子目录
+        for session_dir in outputs_dir.iterdir():
+            if session_dir.is_dir():
+                data_file = session_dir / "data.json"
+                html_file = session_dir / "presentation.html"
+                
+                if data_file.exists() and html_file.exists():
+                    try:
+                        # 读取数据文件获取PPT信息
+                        with open(data_file, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        
+                        # 获取文件创建时间
+                        created_time = datetime.fromtimestamp(
+                            data_file.stat().st_ctime, 
+                            tz=shanghai_tz
+                        )
+                        
+                        # 获取封面信息
+                        book_data = data.get("book_data", {})
+                        cover_url = book_data.get("cover_url", get_default_book_cover(data.get("topic", "未知主题")))
+                        
+                        # 获取书名 - 优先从book_data中提取
+                        title = data.get("topic", "未知主题")  # 默认值
+                        author = "未知作者"
+                        
+                        if book_data:
+                            # 尝试从book_data中提取书名
+                            if 'title' in book_data:
+                                title = book_data['title']
+                            elif 'book_title' in book_data:
+                                title = book_data['book_title']
+                            elif 'raw_content' in book_data:
+                                # 尝试从raw_content中解析JSON获取书名
+                                try:
+                                    raw_content = book_data['raw_content']
+                                    if isinstance(raw_content, str):
+                                        import re
+                                        # 尝试匹配《书名》格式
+                                        title_match = re.search(r'《([^》]+)》', raw_content)
+                                        if title_match:
+                                            title = title_match.group(1)
+                                        else:
+                                            # 尝试匹配"title":字段
+                                            title_match = re.search(r'"(?:book_title|title)":\s*"([^"]+)"', raw_content)
+                                            if title_match:
+                                                title = title_match.group(1)
+                                except:
+                                    pass
+                            
+                            # 提取作者信息
+                            if 'author' in book_data:
+                                author = book_data['author']
+                            elif 'raw_content' in book_data:
+                                try:
+                                    raw_content = book_data['raw_content']
+                                    if isinstance(raw_content, str):
+                                        import re
+                                        author_match = re.search(r'"author":\s*"([^"]+)"', raw_content)
+                                        if author_match:
+                                            author = author_match.group(1)
+                                except:
+                                    pass
+                        
+                        # 如果还是原始的长文本，尝试从topic中提取书名
+                        if len(title) > 100:
+                            import re
+                            # 尝试匹配《书名》格式
+                            title_match = re.search(r'《([^》]+)》', title)
+                            if title_match:
+                                title = title_match.group(1)
+                            else:
+                                # 尝试匹配"书名："格式
+                                title_match = re.search(r'书名[\uff1a:]\s*([^\n\-]+)', title)
+                                if title_match:
+                                    title = title_match.group(1).strip()
+                                    title = re.sub(r'\s*-\s*作者.*$', '', title)
+                                    title = re.sub(r'\s*-\s*分类.*$', '', title)
+                                    title = title.strip()
+                        
+                        # 转换本地封面路径为URL
+                        if cover_url and cover_url.startswith('covers/'):
+                            cover_url = f"/covers/{cover_url.replace('covers/', '')}"
+                        
+                        # 获取分类信息
+                        category_name = book_data.get("category_name", "文学类")
+                        category_color = book_data.get("category_color", "#E74C3C")
+                        category_icon = book_data.get("category_icon", "📚")
+                        
+                        book_info = {
+                            "session_id": session_dir.name,
+                            "title": title,
+                            "author": author,
+                            "created_time": created_time,
+                            "html_url": f"/outputs/{session_dir.name}/presentation.html",
+                            "cover_url": cover_url,
+                            "category_name": category_name,
+                            "category_color": category_color,
+                            "category_icon": category_icon,
+                            "description": f"关于《{title}》的深度解读"
+                        }
+                        
+                        book_list.append(book_info)
+                        
+                    except (json.JSONDecodeError, KeyError) as e:
+                        print(f"读取PPT数据失败: {session_dir.name}, 错误: {e}")
+                        continue
+        
+        # 按创建时间排序，最新的在前
+        book_list.sort(key=lambda x: x["created_time"], reverse=True)
+        
+        # 只返回最新的3本
+        latest_books = book_list[:3]
+        
+        print(f"API返回书籍数量: {len(latest_books)}")
+        return {"success": True, "books": latest_books}
+        
+    except Exception as e:
+        print(f"获取最新书籍失败: {e}")
+        return {"success": False, "error": str(e), "books": []}
+
 @app.get("/api/podcasts")
 async def get_podcasts(request: Request):
     """获取播客列表API - 从数据库获取 - 公开访问"""

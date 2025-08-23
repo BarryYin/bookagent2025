@@ -12,7 +12,7 @@ def start_backend():
     """使用 subprocess 启动 uvicorn 服务器。"""
     print(f"--- 后端启动中，请访问 http://{HOST}:{PORT} ---")
     subprocess.run(
-        [os.sys.executable, "-m", "uvicorn", "app:app", f"--host={HOST}", f"--port={PORT}"]
+        [os.sys.executable, "-m", "uvicorn", "appbook:app", f"--host={HOST}", f"--port={PORT}"]
     )
 
 def open_frontend():

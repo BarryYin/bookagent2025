@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试首页书籍展示</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 20px;
+        }
+        
+        .book-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+        
+        .book-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .book-cover {
+            flex-shrink: 0;
+            width: 80px;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .book-cover-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .book-cover-fallback {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 0.5rem;
+            box-sizing: border-box;
+        }
+        
+        .book-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .book-title-short {
+            font-size: 0.7rem;
+            font-weight: 600;
+            line-height: 1.2;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .book-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .book-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 0.5rem 0;
+            line-height: 1.3;
+        }
+        
+        .book-author {
+            font-size: 0.9rem;
+            color: #666;
+            margin: 0 0 0.75rem 0;
+            font-weight: 500;
+        }
+        
+        .book-category {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+        
+        .book-meta {
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 1rem;
+        }
+        
+        .view-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .view-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>首页最新书籍展示测试</h1>
+        <p>测试从API获取最新的3本书并展示</p>
+        
+        <div id="books-grid" class="books-grid">
+            <div class="loading">正在加载最新书籍...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadLatestBooks() {
+            console.log('开始加载最新书籍...');
+            
+            const booksGrid = document.getElementById('books-grid');
+            if (!booksGrid) {
+                console.error('找不到books-grid元素');
+                return;
+            }
+            
+            try {
+                console.log('发送书籍API请求...');
+                const response = await fetch('/api/latest-books');
+                console.log('书籍API响应状态:', response.status);
+                
+                const data = await response.json();
+                console.log('书籍API返回数据:', data);
+                
+                if (data.success && data.books && data.books.length > 0) {
+                    console.log(`找到 ${data.books.length} 本书`);
+                    
+                    const booksHTML = data.books.map(book => {
+                        const createdDate = new Date(book.created_time).toLocaleDateString('zh-CN');
+                        const coverImage = book.cover_url && !book.cover_url.startsWith('gradient:') 
+                            ? `<img src="${book.cover_url}" alt="${book.title}" class="book-cover-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
+                            : '';
+                        
+                        return `
+                            <div class="book-card">
+                                <div class="book-cover">
+                                    ${coverImage}
+                                    <div class="book-cover-fallback" style="${coverImage ? 'display: none;' : ''}">
+                                        <div class="book-icon">${book.category_icon || '📚'}</div>
+                                        <div class="book-title-short">${book.title.length > 10 ? book.title.substring(0, 10) + '...' : book.title}</div>
+                                    </div>
+                                </div>
+                                <div class="book-info">
+                                    <h3 class="book-title">${book.title}</h3>
+                                    <p class="book-author">${book.author}</p>
+                                    <div class="book-category" style="background-color: ${book.category_color}; color: white;">
+                                        ${book.category_icon} ${book.category_name}
+                                    </div>
+                                    <div class="book-meta">
+                                        <span class="book-date">${createdDate}</span>
+                                    </div>
+                                    <button class="view-btn" onclick="viewBook('${book.session_id}', '${book.html_url}')">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                        查看
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    booksGrid.innerHTML = booksHTML;
+                    console.log('书籍卡片已渲染');
+                } else {
+                    console.log('没有书籍数据');
+                    booksGrid.innerHTML = '<div class="loading">暂无书籍内容</div>';
+                }
+            } catch (error) {
+                console.error('加载书籍失败:', error);
+                booksGrid.innerHTML = `<div class="loading">加载失败: ${error.message}</div>`;
+            }
+        }
+
+        function viewBook(sessionId, htmlUrl) {
+            console.log('查看书籍:', sessionId, htmlUrl);
+            window.open(htmlUrl, '_blank');
+        }
+
+        // 页面加载时执行
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLatestBooks();
+        });
+    </script>
+</body>
+</html>

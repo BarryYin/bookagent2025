@@ -119,14 +119,33 @@
                 <p class="presentation-note">💡 点击上方演示区域可进行交互操作</p>
             </div>
 
-            <!-- PPT展示区域 -->
-            <div class="ppt-showcase" id="ppt-showcase">
-                <div class="ppt-showcase-grid" id="ppt-showcase-grid">
-                    <!-- PPT卡片将通过JavaScript动态加载 -->
-                    <div class="loading-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 3rem 2rem; color: var(--text-secondary);">
+           
+
+            <!-- 最新书籍展示区域 -->
+            <div class="books-showcase" id="books-showcase">
+                <h2 class="showcase-title">📚 最新书籍</h2>
+                <div class="books-grid" id="books-grid">
+                    <div class="loading-placeholder" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
                         <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
-                        <p style="margin: 0; font-size: 1rem;">正在加载最新作品...</p>
+                        <p style="margin: 0;">正在加载最新书籍...</p>
                     </div>
+                </div>
+                <div class="showcase-footer">
+                    <a href="/library" class="view-more-btn">查看图书广场 →</a>
+                </div>
+            </div>
+
+            <!-- 播客展示区域 -->
+            <div class="podcast-showcase" id="podcast-showcase">
+                <h2 class="showcase-title">🎧 最新播客</h2>
+                <div class="podcast-grid" id="podcast-grid">
+                    <div class="loading-placeholder" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+                        <p style="margin: 0;">正在加载最新播客...</p>
+                    </div>
+                </div>
+                <div class="showcase-footer">
+                    <a href="/podcasts" class="view-more-btn">查看全部播客 →</a>
                 </div>
             </div>
 
@@ -305,6 +324,174 @@
                 console.error('加载所有PPT失败:', error);
             }
         };
+
+        // 加载最新播客
+        async function loadLatestPodcasts() {
+            console.log('开始加载播客...');
+            
+            const podcastGrid = document.getElementById('podcast-grid');
+            if (!podcastGrid) {
+                console.error('找不到podcast-grid元素');
+                return;
+            }
+            
+            try {
+                console.log('发送API请求...');
+                const response = await fetch('/api/latest-podcasts');
+                console.log('API响应状态:', response.status);
+                
+                const data = await response.json();
+                console.log('API返回数据:', data);
+                
+                if (data.success && data.podcasts && data.podcasts.length > 0) {
+                    console.log(`找到 ${data.podcasts.length} 个播客`);
+                    
+                    const podcastsHTML = data.podcasts.map(podcast => {
+                        const createdDate = new Date(podcast.created_at).toLocaleDateString('zh-CN');
+                        return `
+                            <div class="podcast-card">
+                                <div class="podcast-cover">
+                                    <div class="podcast-icon">🎧</div>
+                                </div>
+                                <div class="podcast-info">
+                                    <h3 class="podcast-title">${podcast.book_title || '未知标题'}</h3>
+                                    <p class="podcast-author">${podcast.book_author || '未知作者'}</p>
+                                    <p class="podcast-description">${podcast.description || '暂无描述'}</p>
+                                    <div class="podcast-meta">
+                                        <span class="podcast-date">${createdDate}</span>
+                                        <span class="podcast-plays">播放 ${podcast.play_count || 0} 次</span>
+                                    </div>
+                                </div>
+                                <div class="podcast-actions">
+                                    <button class="play-btn" onclick="playPodcast('${podcast.session_id}', '${podcast.audio_file_path || ''}')">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                        播放
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    podcastGrid.innerHTML = podcastsHTML;
+                    console.log('播客卡片已渲染');
+                } else {
+                    console.log('没有播客数据');
+                    podcastGrid.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">暂无播客内容</p>';
+                }
+            } catch (error) {
+                console.error('加载播客失败:', error);
+                podcastGrid.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">加载失败: ${error.message}</p>`;
+            }
+        }
+
+        // 加载最新书籍
+        async function loadLatestBooks() {
+            console.log('开始加载最新书籍...');
+            
+            const booksGrid = document.getElementById('books-grid');
+            if (!booksGrid) {
+                console.error('找不到books-grid元素');
+                return;
+            }
+            
+            try {
+                console.log('发送书籍API请求...');
+                const response = await fetch('/api/latest-books');
+                console.log('书籍API响应状态:', response.status);
+                
+                const data = await response.json();
+                console.log('书籍API返回数据:', data);
+                
+                if (data.success && data.books && data.books.length > 0) {
+                    console.log(`找到 ${data.books.length} 本书`);
+                    
+                    const booksHTML = data.books.map(book => {
+                        const createdDate = new Date(book.created_time).toLocaleDateString('zh-CN');
+                        const coverImage = book.cover_url && !book.cover_url.startsWith('gradient:') 
+                            ? `<img src="${book.cover_url}" alt="${book.title}" class="book-cover-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
+                            : '';
+                        
+                        return `
+                            <div class="book-card">
+                                <div class="book-cover">
+                                    ${coverImage}
+                                    <div class="book-cover-fallback" style="${coverImage ? 'display: none;' : ''}">
+                                        <div class="book-icon">${book.category_icon || '📚'}</div>
+                                        <div class="book-title-short">${book.title.length > 10 ? book.title.substring(0, 10) + '...' : book.title}</div>
+                                    </div>
+                                </div>
+                                <div class="book-info">
+                                    <h3 class="book-title">${book.title}</h3>
+                                    <p class="book-author">${book.author}</p>
+                                    <div class="book-category" style="background-color: ${book.category_color}; color: white;">
+                                        ${book.category_icon} ${book.category_name}
+                                    </div>
+                                    <div class="book-meta">
+                                        <span class="book-date">${createdDate}</span>
+                                    </div>
+                                </div>
+                                <div class="book-actions">
+                                    <button class="view-btn" onclick="viewBook('${book.session_id}', '${book.html_url}')">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                        查看
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    booksGrid.innerHTML = booksHTML;
+                    console.log('书籍卡片已渲染');
+                } else {
+                    console.log('没有书籍数据');
+                    booksGrid.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">暂无书籍内容</p>';
+                }
+            } catch (error) {
+                console.error('加载书籍失败:', error);
+                booksGrid.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">加载失败: ${error.message}</p>`;
+            }
+        }
+
+        // 查看书籍
+        function viewBook(sessionId, htmlUrl) {
+            // 跳转到书籍详情页面
+            window.open(htmlUrl, '_blank');
+        }
+
+        // 播放播客
+        function playPodcast(sessionId, audioPath) {
+            // 跳转到播客页面
+            window.location.href = `/podcasts?play=${sessionId}`;
+        }
+
+        // 页面加载时加载内容
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟加载，确保DOM完全加载
+            setTimeout(() => {
+                loadLatestBooks();
+                loadLatestPodcasts();
+            }, 500);
+        });
+        
+        // 如果DOM已经加载完成，直接执行
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(() => {
+                    loadLatestBooks();
+                    loadLatestPodcasts();
+                }, 500);
+            });
+        } else {
+            setTimeout(() => {
+                loadLatestBooks();
+                loadLatestPodcasts();
+            }, 500);
+        }
     </script>
 
     <div id="overlay" class="overlay" style="display: none;"></div>

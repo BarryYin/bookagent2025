@@ -60,7 +60,7 @@ if API_KEY.startswith("sk-"):
     USE_GEMINI = False
 else:
     os.environ["GEMINI_API_KEY"] = API_KEY
-    gemini_client = genai.Client()
+    genai.configure(api_key=API_KEY)
     USE_GEMINI = True
 
 # 检查API密钥
@@ -217,12 +217,10 @@ html+css+js+svg，放进一个html里"""
                 history_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
                 full_prompt = history_text + "\n\n" + full_prompt
             
+            model_instance = genai.GenerativeModel(model)
             response = await asyncio.get_event_loop().run_in_executor(
                 None, 
-                lambda: gemini_client.models.generate_content(
-                    model=model, 
-                    contents=full_prompt
-                )
+                lambda: model_instance.generate_content(full_prompt)
             )
             
             text = response.text
@@ -410,6 +408,18 @@ async def export_video(request: VideoExportRequest):
             "success": False,
             "error": f"视频生成错误：{str(e)}"
         }
+
+@app.get("/api/latest-podcasts")
+async def get_latest_podcasts():
+    """获取最新的3个播客"""
+    try:
+        from podcast_database import get_all_podcasts
+        podcasts = get_all_podcasts(limit=3)
+        print(f"API返回播客数量: {len(podcasts)}")
+        return {"success": True, "podcasts": podcasts}
+    except Exception as e:
+        print(f"API错误: {e}")
+        return {"success": False, "error": str(e), "podcasts": []}
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):
