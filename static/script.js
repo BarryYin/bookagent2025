@@ -10,9 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
         githubrepo: { zh: "Github 开源仓库", en: "Fogsight Github Repo" },
         officialWebsite: { zh: "通向 AGI 之路社区", en: "WaytoAGI Open Source Community" },
         groupChat: { zh: "联系我们/加入交流群", en: "Contact Us" },
-        agentRecommendation: { zh: "引导推荐", en: "Guided Recommendation" },
-        agentLibrary: { zh: "图书馆搜索", en: "Library Search" },
-        agentInterview: { zh: "读后感访谈", en: "Reading Interview" },
+        agentRecommendation: { zh: "书籍推荐", en: "Book Recommendation" },
+        agentLibrary: { zh: "书籍搜索", en: "Book Search" },
+        agentInterview: { zh: "书籍播客", en: "Book Podcast" },
         placeholders: {
             zh: {
                 recommendation: ["推荐一些适合我的书", "我想读一些科幻小说", "有什么励志类的书籍"],
