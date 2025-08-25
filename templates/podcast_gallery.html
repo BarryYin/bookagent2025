@@ -17,24 +17,15 @@
     <header class="podcast-header">
         <div class="header-content">
             <div class="header-left">
-                <a href="/" class="back-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m12 19-7-7 7-7"/>
-                        <path d="M19 12H5"/>
+                <h1 class="podcast-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
                     </svg>
-                    返回首页
-                </a>
-            </div>
-            <h1 class="podcast-title">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                    <line x1="12" y1="19" x2="12" y2="23"/>
-                    <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-                书籍播客
-            </h1>
-            <div class="header-right">
+                    书籍播客
+                </h1>
                 <button onclick="checkAuthAndToggleInput()" class="create-btn" id="toggleBtn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 5v14"/>
@@ -42,6 +33,15 @@
                     </svg>
                     制作播客
                 </button>
+            </div>
+            <div class="header-right">
+                <a href="/" class="back-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m12 19-7-7 7-7"/>
+                        <path d="M19 12H5"/>
+                    </svg>
+                    返回首页
+                </a>
             </div>
         </div>
     </header>
@@ -77,17 +77,20 @@
     <script>
         // 检查身份验证并切换输入区域
         async function checkAuthAndToggleInput() {
+            console.log('checkAuthAndToggleInput 被调用');
             try {
                 const response = await fetch('/api/user');
                 const data = await response.json();
                 
                 if (!data.authenticated) {
                     // 未登录，重定向到登录页面
+                    console.log('用户未登录，重定向到登录页面');
                     window.location.href = '/login?redirect=/podcasts';
                     return;
                 }
                 
                 // 已登录，显示输入区域
+                console.log('用户已登录，显示输入区域');
                 toggleBookInput();
                 
             } catch (error) {
@@ -98,10 +101,16 @@
         
         // 切换书籍输入区域显示
         function toggleBookInput() {
+            console.log('toggleBookInput 被调用');
             const inputSection = document.getElementById('bookInputSection');
             const toggleBtn = document.getElementById('toggleBtn');
             
-            if (inputSection.style.display === 'none' || inputSection.style.display === '') {
+            // 获取计算后的样式来检查是否显示
+            const computedStyle = window.getComputedStyle(inputSection);
+            const isHidden = computedStyle.display === 'none';
+            
+            if (isHidden) {
+                console.log('显示输入区域');
                 inputSection.style.display = 'block';
                 toggleBtn.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -115,6 +124,7 @@
                     document.getElementById('bookTitle').focus();
                 }, 100);
             } else {
+                console.log('隐藏输入区域');
                 inputSection.style.display = 'none';
                 toggleBtn.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -203,34 +213,34 @@
         function renderPodcasts(podcasts) {
             const contentDiv = document.getElementById('podcast-content');
             
-            const podcastGrid = document.createElement('div');
-            podcastGrid.className = 'podcast-grid';
+            const podcastList = document.createElement('div');
+            podcastList.className = 'podcast-list';
             
             podcasts.forEach(podcast => {
-                const podcastCard = createPodcastCard(podcast);
-                podcastGrid.appendChild(podcastCard);
+                const podcastItem = createPodcastListItem(podcast);
+                podcastList.appendChild(podcastItem);
             });
             
             contentDiv.innerHTML = '';
-            contentDiv.appendChild(podcastGrid);
+            contentDiv.appendChild(podcastList);
             
             // 添加统计信息
             const statsDiv = document.createElement('div');
             statsDiv.className = 'podcast-stats';
             statsDiv.innerHTML = `
-                <p style="text-align: center; color: #666; margin-top: 2rem;">
+                <p style="text-align: center; color: rgba(255,255,255,0.8); margin-top: 2rem; font-size: 16px;">
                     共找到 ${podcasts.length} 个播客
                 </p>
             `;
             contentDiv.appendChild(statsDiv);
         }
 
-        // 创建播客卡片
-        function createPodcastCard(podcast) {
-            const card = document.createElement('div');
-            card.className = 'podcast-card';
+        // 创建播客列表项
+        function createPodcastListItem(podcast) {
+            const item = document.createElement('div');
+            item.className = 'podcast-list-item';
             
-            console.log('创建播客卡片:', podcast);
+            console.log('创建播客列表项:', podcast);
             
             // 处理音频URL
             let audioHtml = '';
@@ -251,7 +261,7 @@
             } else {
                 audioHtml = `
                     <div class="podcast-audio-placeholder">
-                        <p style="color: #999; font-style: italic;">🎵 音频文件准备中...</p>
+                        <span style="color: rgba(255,255,255,0.6); font-style: italic; font-size: 14px;">🎵 音频文件准备中...</span>
                     </div>
                 `;
             }
@@ -287,37 +297,35 @@
                 return escapeMap[match];
             });
             
-            card.innerHTML = `
-                <div class="podcast-card-header">
+            item.innerHTML = `
+                <div class="podcast-item-left">
                     <div class="podcast-icon">🎙️</div>
                     <div class="podcast-info">
-                        <h3 class="podcast-card-title">${safeTitle}</h3>
+                        <h3 class="podcast-title">${safeTitle}</h3>
                         <p class="podcast-author">作者：${safeAuthor}</p>
+                        <p class="podcast-description">${safeDescription}</p>
                     </div>
                 </div>
                 
-                <div class="podcast-description">
-                    ${safeDescription}
-                </div>
-                
-                ${audioHtml}
-                
-                <div class="podcast-meta">
-                    <div class="podcast-stats">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                            <rect x="1" y="5" width="15" height="14"></rect>
-                        </svg>
-                        播放 ${podcast.play_count || 0} 次
-                    </div>
-                    <div class="podcast-actions">
-                        ${podcast.audio_url ? `<a href="${podcast.audio_url}" download class="action-btn">下载</a>` : ''}
-                        <button class="action-btn" onclick="sharePodcast('${podcast.id || ''}', '${safeTitle}')">分享</button>
+                <div class="podcast-item-right">
+                    ${audioHtml}
+                    <div class="podcast-meta">
+                        <div class="podcast-stats">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                                <rect x="1" y="5" width="15" height="14"></rect>
+                            </svg>
+                            <span>${podcast.play_count || 0} 次播放</span>
+                        </div>
+                        <div class="podcast-actions">
+                            ${podcast.audio_url ? `<a href="${podcast.audio_url}" download class="action-btn">下载</a>` : ''}
+                            <button class="action-btn" onclick="sharePodcast('${podcast.id || ''}', '${safeTitle}')">分享</button>
+                        </div>
                     </div>
                 </div>
             `;
             
-            return card;
+            return item;
         }
 
         // 渲染空状态
@@ -335,9 +343,9 @@
                         </svg>
                         制作我的播客
                     </button>
-                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 8px; font-size: 0.9rem; color: #666;">
-                        <h4 style="margin: 0 0 0.5rem 0; color: #333;">💡 如何制作播客？</h4>
-                        <p style="margin: 0;">1. 点击上方按钮，输入你想分享的书籍<br>
+                    <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.1); border-radius: 12px; font-size: 16px; color: rgba(255,255,255,0.9); backdrop-filter: blur(10px);">
+                        <h4 style="margin: 0 0 1rem 0; color: white; font-size: 18px;">💡 如何制作播客？</h4>
+                        <p style="margin: 0; line-height: 1.6;">1. 点击上方按钮，输入你想分享的书籍<br>
                         2. 通过5个深度问题分享你的读后感<br>
                         3. AI会自动生成专属的播客内容</p>
                     </div>
@@ -407,7 +415,29 @@
 
         // 页面加载时获取播客数据
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM 加载完成');
             loadPodcasts();
+            
+            // 添加事件监听器作为备用
+            const backLink = document.querySelector('.back-link');
+            const createBtn = document.getElementById('toggleBtn');
+            
+            if (backLink) {
+                console.log('添加返回按钮事件监听器');
+                backLink.addEventListener('click', function(e) {
+                    console.log('返回按钮被点击 (事件监听器)');
+                    // 让默认的 href 行为生效
+                });
+            }
+            
+            if (createBtn) {
+                console.log('添加制作播客按钮事件监听器');
+                createBtn.addEventListener('click', function(e) {
+                    console.log('制作播客按钮被点击 (事件监听器)');
+                    e.preventDefault();
+                    checkAuthAndToggleInput();
+                });
+            }
             
             // 添加回车键支持
             document.getElementById('bookTitle').addEventListener('keypress', function(e) {

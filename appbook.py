@@ -2658,7 +2658,7 @@ async def enhanced_llm_event_stream(
         result = {
             "status": "complete",
             "session_id": session_id,
-            "html_url": f"/outputs/{session_id}/presentation.html",
+            "html_url": f"outputs/{session_id}/presentation.html",
             "methodology": methodology,
             "voice_style": voice_style,
             "video_style": video_style
@@ -2949,7 +2949,7 @@ async def get_generated_content(session_id: str):
         "session_id": session_id,
         "output_path": output_dir,
         "files": files,
-        "html_url": f"/outputs/{session_id}/presentation.html"
+        "html_url": f"outputs/{session_id}/presentation.html"
     }
 
 @app.get("/outputs/{session_id}/{filename}")
@@ -3022,7 +3022,7 @@ async def regenerate_ppt(session_id: str):
     return {
         "message": "PPT重新生成完成",
         "session_id": session_id,
-        "html_url": f"/outputs/{session_id}/presentation.html",
+        "html_url": f"outputs/{session_id}/presentation.html",
         "regenerated_at": datetime.now(shanghai_tz).isoformat()
     }
 
@@ -3176,8 +3176,8 @@ async def get_generated_ppts(
                             "session_id": session_dir.name,
                             "title": title,
                             "created_time": created_time,
-                            "html_url": f"/outputs/{session_dir.name}/presentation.html",
-                            "preview_url": f"/ppt-preview/{session_dir.name}",
+                            "html_url": f"outputs/{session_dir.name}/presentation.html",
+                            "preview_url": f"ppt-preview/{session_dir.name}",
                             "cover_url": cover_url,
                             "category_id": ppt_category_id,
                             "category_name": category_name,
@@ -3553,7 +3553,7 @@ async def export_video(request: VideoExportRequest):
             # 返回缓存的视频
             return {
                 "success": True,
-                "video_url": f"/outputs/{request.session_id}/{latest_video.name}",
+                "video_url": f"outputs/{request.session_id}/{latest_video.name}",
                 "filename": latest_video.name,
                 "file_size": f"{file_size:.1f} MB",
                 "duration": f"{duration:.1f}",
@@ -3664,7 +3664,7 @@ def generate_video_background(html_file_path, audio_prefix, output_dir, task_key
             video_tasks[task_key] = {
                 'status': 'completed',
                 'progress': 100,
-                'video_url': f"/outputs/{result.parent.name}/{result.name}",
+                'video_url': f"outputs/{result.parent.name}/{result.name}",
                 'filename': result.name,
                 'file_size': f"{file_size:.1f} MB",
                 'duration': f"{duration:.1f}",
@@ -4622,7 +4622,7 @@ async def get_book_info(title: str, author: str = None):
                     "created_at": created_at,
                     "cover_url": cover_url,
                     "ppt_exists": ppt_exists,
-                    "ppt_url": f"/outputs/{session_id}/presentation.html" if ppt_exists else None,
+                    "ppt_url": f"outputs/{session_id}/presentation.html" if ppt_exists else None,
                     "interview_count": 1,  # 至少有一次访问记录
                     "podcast_count": 0,
                     "source": "library"
@@ -4663,7 +4663,7 @@ async def get_book_info(title: str, author: str = None):
                                         "created_at": datetime.now(shanghai_tz).isoformat(),
                                         "cover_url": None,
                                         "ppt_exists": True,
-                                        "ppt_url": f"/outputs/{session_id}/presentation.html",
+                                        "ppt_url": f"outputs/{session_id}/presentation.html",
                                         "interview_count": 1,
                                         "podcast_count": 0,
                                         "source": "filesystem"
@@ -4857,7 +4857,7 @@ async def get_latest_books():
                             "title": title,
                             "author": author,
                             "created_time": created_time,
-                            "html_url": f"/outputs/{session_dir.name}/presentation.html",
+                            "html_url": f"outputs/{session_dir.name}/presentation.html",
                             "cover_url": cover_url,
                             "category_name": category_name,
                             "category_color": category_color,
