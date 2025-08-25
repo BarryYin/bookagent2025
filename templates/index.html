@@ -480,11 +480,11 @@
                                             </svg>
                                             播放
                                         </button>
-                                        <button class="share-btn" onclick="sharePodcast('${podcast.session_id}', '${podcast.book_title}')">
+                                        <button class="download-btn" onclick="downloadPodcast('${podcast.session_id || podcast.id}', '${podcast.audio_url || podcast.audio_file_path || ''}', '${podcast.book_title}')">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-                                                <polyline points="16,6 12,2 8,6"/>
-                                                <line x1="12" y1="2" x2="12" y2="15"/>
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                <polyline points="7,10 12,15 17,10"/>
+                                                <line x1="12" y1="15" x2="12" y2="3"/>
                                             </svg>
                                         </button>
                                     </div>
@@ -710,6 +710,36 @@
             if (playerContainer) {
                 playerContainer.style.display = 'none';
             }
+        }
+        
+        // 下载播客
+        function downloadPodcast(sessionId, audioPath, bookTitle) {
+            let downloadUrl;
+            if (audioPath && audioPath.trim() !== '') {
+                if (audioPath.startsWith('http')) {
+                    downloadUrl = audioPath;
+                } else if (audioPath.startsWith('/Users/') || audioPath.includes('podcast_audio/')) {
+                    const fileName = audioPath.split('/').pop();
+                    downloadUrl = `/podcast_audio/${fileName}`;
+                } else if (audioPath.startsWith('/')) {
+                    downloadUrl = audioPath;
+                } else {
+                    downloadUrl = `/podcast_audio/${audioPath}`;
+                }
+            } else {
+                downloadUrl = `/podcast_audio/${sessionId}_full_podcast.mp3`;
+            }
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `${bookTitle || '播客'}.mp3`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('下载播客:', downloadUrl);
         }
         
         // 分享播客
