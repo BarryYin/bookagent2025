@@ -880,11 +880,11 @@
                         
                         <div class="book-actions" style="padding: 0.8rem; border-top: 1px solid #ddd; background: white;">
                             <div style="display: flex; gap: 0.6rem; margin-bottom: 0.8rem;">
-                                <button onclick="viewInLibrary()" 
+                                <button onclick="searchInLibrary()" 
                                         style="flex: 1; padding: 0.6rem; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
                                         onmouseover="this.style.background='#218838'"
                                         onmouseout="this.style.background='#28a745'">
-                                    📚 在图书馆查看
+                                    🔍 在图书馆搜索
                                 </button>
                                 <button onclick="findSimilarBooks()" 
                                         style="flex: 1; padding: 0.6rem; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
@@ -930,8 +930,8 @@
                         </div>
                         
                         <div style="display: flex; gap: 0.5rem;">
-                            <button onclick="browseLibrary()" style="flex: 1; padding: 0.75rem; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">
-                                浏览图书馆
+                            <button onclick="searchInLibrary()" style="flex: 1; padding: 0.75rem; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">
+                                🔍 在图书馆搜索
                             </button>
                             <button onclick="startInterview()" style="flex: 1; padding: 0.75rem; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">
                                 开始访谈
@@ -1722,9 +1722,14 @@
             console.error('❌ PPT加载失败');
         }
         
-        // 在图书馆查看
-        function viewInLibrary() {
-            window.open('/library', '_blank');
+        // 在图书馆搜索书籍
+        function searchInLibrary() {
+            if (bookTitle && bookTitle.trim() !== '') {
+                const searchQuery = encodeURIComponent(bookTitle.trim());
+                window.open(`/library?search=${searchQuery}`, '_blank');
+            } else {
+                window.open('/library', '_blank');
+            }
         }
         
         // 查找相似书籍

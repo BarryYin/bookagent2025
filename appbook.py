@@ -4649,34 +4649,109 @@ async def get_book_info(title: str, author: str = None):
                                 with open(data_path, 'r', encoding='utf-8') as f:
                                     data = json.load(f)
                                 book_data = data.get('book_data', {})
-                                raw = book_data.get('raw_content', '')
-                                m = re.search(r'"book_info"\s*:\s*\{[^}]*?"title"\s*:\s*"([^"]+)"', raw, re.DOTALL)
-                                found_title = m.group(1) if m else None
+                                
+                                # 提取书名和作者
+                                found_title = None
+                                found_author = "未知作者"
+                                
+                                # 从book_data中提取信息
+                                if isinstance(book_data, dict):
+                                    if 'title' in book_data:
+                                        found_title = book_data['title']
+                                    elif 'book_title' in book_data:
+                                        found_title = book_data['book_title']
+                                    
+                                    if 'author' in book_data:
+                                        found_author = book_data['author']
+                                    
+                                    # 如果没有直接字段，尝试从raw_content解析
+                                    if not found_title and 'raw_content' in book_data:
+                                        raw = str(book_data['raw_content'])
+                                        # 尝试多种模式匹配书名
+                                        patterns = [
+                                            r'"(?:book_title|title)"\s*:\s*"([^"]+)"',
+                                            r'《([^》]+)》',
+                                            r'书名[：:]\s*([^\n\-]+)'
+                                        ]
+                                        for pattern in patterns:
+                                            m = re.search(pattern, raw)
+                                            if m:
+                                                found_title = m.group(1).strip()
+                                                break
+                                        
+                                        # 尝试匹配作者
+                                        author_match = re.search(r'"author"\s*:\s*"([^"]+)"', raw)
+                                        if author_match:
+                                            found_author = author_match.group(1).strip()
+                                
+                                # 如果还没找到书名，使用topic
+                                if not found_title:
+                                    topic = data.get('topic', '')
+                                    if topic:
+                                        # 从topic中提取书名
+                                        topic_match = re.search(r'《([^》]+)》', topic)
+                                        if topic_match:
+                                            found_title = topic_match.group(1)
+                                        else:
+                                            found_title = topic[:50] if len(topic) > 50 else topic
+                                
+                                # 检查是否匹配
                                 if found_title and (_clean(found_title).find(target) != -1 or target.find(_clean(found_title)) != -1):
                                     # 找到匹配的PPT
                                     return {
                                         "id": session_id,
-                                        "title": found_title or title,
-                                        "author": author or "未知作者",
-                                        "category": "未分类",
-                                        "description": f"关于《{found_title or title}》的深度解读",
+                                        "title": found_title,
+                                        "author": found_author,
+                                        "category": book_data.get('category_name', '文学类'),
+                                        "description": f"关于《{found_title}》的深度解读",
                                         "created_at": datetime.now(shanghai_tz).isoformat(),
-                                        "cover_url": None,
+                                        "cover_url": book_data.get('cover_url'),
                                         "ppt_exists": True,
                                         "ppt_url": f"outputs/{session_id}/presentation.html",
                                         "interview_count": 1,
                                         "podcast_count": 0,
                                         "source": "filesystem"
                                     }
-                            except Exception:
+                            except Exception as e:
+                                print(f"解析文件系统数据失败: {e}")
                                 continue
-                except Exception:
+                except Exception as e:
+                    print(f"文件系统搜索失败: {e}")
                     pass
 
                 # 文件系统也未找到，返回默认信息
+                # 如果没有传入author参数或author为空，尝试从知名书籍中推断
+                if (not author or author.strip() == '') and title:
+                    # 常见书籍作者映射
+                    book_author_mapping = {
+                        "乌合之众": "古斯塔夫·勒庞",
+                        "百年孤独": "加西亚·马尔克斯",
+                        "非暴力沟通": "马歇尔·卢森堡",
+                        "动物农场": "乔治·奥威尔",
+                        "三体": "刘慈欣",
+                        "红楼梦": "曹雪芹",
+                        "西游记": "吴承恩",
+                        "水浒传": "施耐幵",
+                        "三国演义": "罗贯中",
+                        "一九八四": "乔治·奥威尔",
+                        "小王子": "安东尼·德·圣-埃克苏佩里",
+                        "大卫·科波菲尔": "查尔斯·狄更斯"
+                    }
+                    
+                    # 精确匹配和模糊匹配
+                    title_clean = title.strip()
+                    for book_name, book_author in book_author_mapping.items():
+                        if book_name == title_clean or book_name in title_clean or title_clean in book_name:
+                            author = book_author
+                            print(f"ℹ️ 书籍作者映射: 《{title_clean}》 -> {book_author}")
+                            break
+                
+                final_author = author or "未知作者"
+                print(f"📚 最终返回信息: 《{title}》 by {final_author}")
+                
                 return {
                     "title": title,
-                    "author": author or "未知作者",
+                    "author": final_author,
                     "category": "文学作品",
                     "description": f"关于《{title}》的深度访谈",
                     "created_at": datetime.now(shanghai_tz).isoformat(),

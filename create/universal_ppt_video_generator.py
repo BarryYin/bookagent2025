@@ -159,49 +159,81 @@ class UniversalPPTVideoGenerator:
                 # 创建临时HTML文件，自动显示指定的幻灯片，并优化为视频导出
                 temp_html_content = f"""
                 <style>
-                /* 隐藏导航栏和控制元素 */
+                /* 完全隐藏所有非PPT内容 */
                 .nav-sidebar,
                 .navigation,
                 .speech-indicator,
                 .subtitle-container,
                 .subtitle-controls,
                 .theme-selector,
-                .slide-counter {{ display: none !important; }}
+                .slide-counter,
+                .control-panel,
+                .header,
+                .footer,
+                .sidebar {{ display: none !important; visibility: hidden !important; }}
                 
-                /* 重新布局 - 让主内容区占满全屏 */
-                .presentation-container {{
-                    display: block !important;
+                /* 重置所有容器样式，确保PPT内容占满全屏 */
+                * {{
+                    box-sizing: border-box !important;
+                }}
+                
+                html, body {{
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 100vw !important;
                     height: 100vh !important;
                     background: white !important;
+                    overflow: hidden !important;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                }}
+                
+                .presentation-container {{
+                    display: block !important;
+                    width: 100vw !important;
+                    height: 100vh !important;
+                    background: white !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    position: relative !important;
                 }}
                 
                 .main-content {{
-                    width: 100% !important;
+                    width: 100vw !important;
                     height: 100vh !important;
                     margin: 0 !important;
                     padding: 0 !important;
                     background: white !important;
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
                 }}
                 
                 .slide-container {{
-                    width: 100% !important;
+                    width: 100vw !important;
                     height: 100vh !important;
                     background: white !important;
                     display: flex !important;
                     align-items: center !important;
                     justify-content: center !important;
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
                 }}
                 
                 .slide {{
-                    width: 100% !important;
-                    height: 100% !important;
+                    width: 90vw !important;
+                    height: 90vh !important;
+                    max-width: 1200px !important;
                     background: white !important;
-                    padding: 2rem !important;
+                    padding: 3rem !important;
                     box-sizing: border-box !important;
                     display: flex !important;
                     flex-direction: column !important;
                     justify-content: center !important;
                     align-items: center !important;
+                    text-align: center !important;
+                    border-radius: 0 !important;
+                    box-shadow: none !important;
                 }}
                 
                 .slide.active {{
@@ -212,24 +244,53 @@ class UniversalPPTVideoGenerator:
                     display: none !important;
                 }}
                 
-                /* 确保整体背景是白色 */
-                html, body {{
-                    background: white !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    overflow: hidden !important;
-                    height: 100vh !important;
-                }}
-                
-                /* 文字样式优化 */
-                .slide h1, .slide h2, .slide h3 {{
+                /* 优化文字样式，确保清晰可读 */
+                .slide h1 {{
                     color: #1D1D1F !important;
+                    font-size: 3.5rem !important;
+                    font-weight: 700 !important;
+                    margin: 0 0 2rem 0 !important;
+                    line-height: 1.2 !important;
                     text-shadow: none !important;
                 }}
                 
-                .slide p, .slide div {{
-                    color: #333 !important;
+                .slide h2 {{
+                    color: #1D1D1F !important;
+                    font-size: 2.5rem !important;
+                    font-weight: 600 !important;
+                    margin: 0 0 1.5rem 0 !important;
+                    line-height: 1.3 !important;
                     text-shadow: none !important;
+                }}
+                
+                .slide h3 {{
+                    color: #1D1D1F !important;
+                    font-size: 2rem !important;
+                    font-weight: 500 !important;
+                    margin: 0 0 1rem 0 !important;
+                    line-height: 1.4 !important;
+                    text-shadow: none !important;
+                }}
+                
+                .slide p, .slide div, .slide li {{
+                    color: #333 !important;
+                    font-size: 1.5rem !important;
+                    line-height: 1.6 !important;
+                    margin: 0.5rem 0 !important;
+                    text-shadow: none !important;
+                }}
+                
+                .slide ul, .slide ol {{
+                    text-align: left !important;
+                    max-width: 800px !important;
+                    margin: 1rem auto !important;
+                }}
+                
+                /* 确保图片和其他元素也适配 */
+                .slide img {{
+                    max-width: 100% !important;
+                    height: auto !important;
+                    margin: 1rem 0 !important;
                 }}
                 </style>
                 <script>
@@ -238,17 +299,33 @@ class UniversalPPTVideoGenerator:
                 window.alert = function() {{}};
                 
                 setTimeout(function() {{
-                    // 隐藏导航栏
-                    const sidebar = document.querySelector('.nav-sidebar');
-                    if (sidebar) sidebar.style.display = 'none';
+                    // 强制隐藏所有可能的导航元素
+                    const elementsToHide = [
+                        '.nav-sidebar', '.navigation', '.speech-indicator',
+                        '.subtitle-container', '.subtitle-controls', '.theme-selector',
+                        '.slide-counter', '.control-panel', '.header', '.footer', '.sidebar'
+                    ];
+                    
+                    elementsToHide.forEach(selector => {{
+                        const elements = document.querySelectorAll(selector);
+                        elements.forEach(el => {{
+                            el.style.display = 'none';
+                            el.style.visibility = 'hidden';
+                            el.style.opacity = '0';
+                        }});
+                    }});
                     
                     // 调整主内容区域
                     const mainContent = document.querySelector('.main-content');
                     if (mainContent) {{
-                        mainContent.style.width = '100%';
+                        mainContent.style.width = '100vw';
+                        mainContent.style.height = '100vh';
                         mainContent.style.marginLeft = '0';
+                        mainContent.style.marginTop = '0';
+                        mainContent.style.padding = '0';
                     }}
                     
+                    // 显示指定的幻灯片
                     if (typeof showSlide === 'function') {{
                         showSlide({slide_index});
                         console.log('显示第{slide_index + 1}页幻灯片');
@@ -267,7 +344,10 @@ class UniversalPPTVideoGenerator:
                             }});
                         }}
                     }}
-                }}, 3000);
+                    
+                    // 确保页面完全加载后再截图
+                    console.log('PPT页面准备完成，可以截图');
+                }}, 5000);  // 增加等待时间确保样式完全应用
                 </script>
                 """
                 
@@ -285,7 +365,7 @@ class UniversalPPTVideoGenerator:
                 
                 temp_url = f"file://{temp_html_path.absolute()}"
                 
-                # Chrome headless命令 - 增加分辨率和等待时间
+                # Chrome headless命令 - 优化截图参数，确保只截取内容区域
                 cmd = [
                     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
                     "--headless",
@@ -293,10 +373,15 @@ class UniversalPPTVideoGenerator:
                     "--disable-dev-shm-usage",
                     "--no-sandbox",
                     "--hide-scrollbars",
-                    "--window-size=1920,1080",
-                    "--force-device-scale-factor=2",
+                    "--disable-extensions",
+                    "--disable-plugins",
+                    "--disable-background-networking",
+                    "--window-size=1920,1080",  # 16:9 标准分辨率
+                    "--force-device-scale-factor=1",  # 使用1倍缩放确保清晰度
                     "--screenshot=" + str(output_path),
-                    "--virtual-time-budget=15000",  # 增加到15秒
+                    "--virtual-time-budget=20000",  # 增加到20秒确保完全加载
+                    "--run-all-compositor-stages-before-draw",  # 确保渲染完成
+                    "--disable-background-timer-throttling",  # 禁用后台限制
                     temp_url
                 ]
                 
@@ -308,7 +393,7 @@ class UniversalPPTVideoGenerator:
                 )
                 
                 # 等待截图完成
-                process.wait(timeout=30)  # 增加超时时间到30秒
+                process.wait(timeout=45)  # 增加超时时间到45秒确保完全渲染
                 
                 # 检查截图是否成功
                 if output_path.exists() and output_path.stat().st_size > 1000:

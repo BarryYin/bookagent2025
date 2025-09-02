@@ -1,209 +1,242 @@
-# Fogsight (雾象) [**English**](./readme_en.md) | [**中文**](./readme.md)
+# Bookagent - AI 书籍介绍系统
 
+一个基于 AI 的智能书籍介绍和演示生成系统，能够自动生成精美的书籍介绍 PPT、播客和互动访谈。
 
-<p align="center">
-  <img src="https://github.com/hamutama/caimaopics/raw/main/fogsight/logos/fogsight_logo_white_bg.png"
-       alt="Fogsight Logo"
-       width="300">
-</p>
+## 🌟 主要功能
 
-**雾象是一款由大型语言模型（LLM）驱动的动画引擎 agent 。用户输入抽象概念或词语，雾象会将其转化为高水平的生动动画。**
+### 📚 智能书籍分析
+- **多方法论支持**：董宇辉式文学解读、罗振宇式效率提升等不同风格
+- **自动分类**：智能识别书籍类型（文学类、效率提升类、虚构类等）
+- **封面搜索**：自动搜索并下载书籍封面图片
 
-将雾象部署在本地后，您只需输入词语，点击生成，便可得到动画。
+### 🎨 PPT 演示生成
+- **4步骤流程**：书籍数据提取 → PPT结构设计 → 解说词生成 → HTML输出
+- **多种视觉风格**：经典商务、现代演示、故事叙述等
+- **交互式播放**：支持自动播放、手动导航、语音解说
 
+### 🎙️ 语音和播客
+- **语音合成**：为每页PPT生成专业解说音频
+- **播客生成**：基于访谈内容生成完整播客节目
+- **多语音风格**：专业风格、亲切风格等
 
-<p align="center">
-  <img src="https://github.com/hamutama/caimaopics/raw/main/fogsight/1.png"
-       alt="UI 截图"
-       width="550">
-</p>
+### 🎬 视频导出
+- **自动录制**：将PPT演示录制为MP4视频
+- **音画同步**：解说词与画面完美同步
+- **后台处理**：异步生成，不影响其他功能使用
 
-我们设计了易用的语言用户界面（Language User Interface），用户也可以**进一步轻松编辑或改进生成动画，做到言出法随**。
+### 💬 智能访谈
+- **双AI协作**：访谈官和总结官协同工作
+- **深度对话**：基于书籍内容进行个性化访谈
+- **读后感生成**：自动整理访谈内容为播客
 
-雾象，意为 **“在模糊智能中的具象”**。*雾象是 WaytoAGI 开源计划项目成员。 WaytoAGI， 让更多人因 AI 而强大*
+### 👤 用户系统
+- **个人书架**：保存和管理生成的PPT作品
+- **阅读画像**：分析用户阅读偏好和习惯
+- **智能推荐**：基于用户历史推荐相关书籍
 
-
-## 动画示例
-
-以下为 Fogsight AI 生成的动画示例，点击以跳转并查看
-
-
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://www.bilibili.com/video/BV1PXgKzBEyN">
-        <img src="https://github.com/hamutama/caimaopics/raw/main/fogsight/thumbnails/entropy_increase_thumbnail.png" width="350"><br>
-        <strong>The Law of Increasing Entropy (Physics)</strong><br>
-        <strong>熵增定律 (物理学)</strong><br>
-        <em>输入: 熵增定律</em>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://www.bilibili.com/video/BV1yXgKzqE42">
-        <img src="https://github.com/hamutama/caimaopics/raw/main/fogsight/thumbnails/euler_formula_thumbnail.png" width="350"><br>
-        <strong>Euler's Polyhedron Formula (Mathematics)</strong><br>
-        <strong>欧拉多面体定理 (数学)</strong><br>
-        <em>输入: 欧拉定理</em>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <a href="https://www.bilibili.com/video/BV1sQgKzMEox">
-        <img src="https://github.com/hamutama/caimaopics/raw/main/fogsight/thumbnails/bubble_sort_thumbnail.png" width="350"><br>
-        <strong>Bubble Sort (Computer Science)</strong><br>
-        <strong>冒泡排序 (计算机科学)</strong><br>
-        <em>输入: 冒泡排序</em>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://www.bilibili.com/video/BV1yQgKzMEo6">
-        <img src="https://github.com/hamutama/caimaopics/raw/main/fogsight/thumbnails/affordance_thumbnail.png" width="350"><br>
-        <strong>Affordance (Design)</strong><br>
-        <strong>可供性 (设计学)</strong><br>
-        <em>输入: affordance in design</em>
-      </a>
-    </td>
-  </tr>
-</table>
-
-## 核心功能
-
-* **概念即影像**: 输入一个主题，Fogsight 将为您生成一部叙事完整的高水平动画，包含双语旁白与电影级的视觉质感。  
-* **智能编排**: Fogsight 的核心是其强大的LLM驱动的编排能力。从旁白、视觉元素到动态效果，AI 将自动完成整个创作流程，一气呵成。  
-* **语言用户界面 (LUI)**: 通过与 AI 的多轮对话，您可以对动画进行精准调优和迭代，直至达到您心中最理想的艺术效果。  
-
-## 快速上手
+## 🚀 快速开始
 
 ### 环境要求
+- Python 3.8+
+- Node.js (可选，用于前端开发)
 
-* Python 3.9+  
-* 一个现代网络浏览器 (如 Chrome, Firefox, Edge)  
-* 大语言模型的 API 密钥。我们推荐您使用 Google Gemini 2.5。  
+### 安装步骤
 
-### 安装与运行
+1. 正确的文件路径
 
-1. **克隆代码仓库:**
-   ```bash
-   git clone https://github.com/fogsightai/fogsight.git
-   cd fogsight
-   ```
+2. **安装依赖**
+```bash
+pip install -r requirements.txt
+```
 
-2. **安装依赖:**
+3. **配置 API 密钥**
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+创建 `credentials.json` 文件：
+```json
+{
+    "API_KEY": "your-api-key-here",
+    "BASE_URL": "https://api-inference.modelscope.cn/v1/"
+}
+```
 
-3. **配置API密钥:**
+支持的 API 提供商：
+- **ModelScope**：使用 ModelScope Token
+- **OpenAI**：使用 OpenAI API Key
+- **OpenRouter**：使用 OpenRouter API Key
 
-   ```bash
-   cp demo-credentials.json credentials.json
-   # 复制 demo-credentials.json 文件并重命名为 credentials.json
-   # 编辑 credentials.json 文件，填入您的 API_KEY 和 BASE_URL。
-   # **请注意**，我们使用的是与 OpenAI 兼容的 SDK，但您仍应使用Gemini 2.5 pro
-   ```
+4. **创建必要目录**
+```bash
+mkdir -p outputs covers static templates ppt_audio podcast_audio
+```
 
-4. **一键启动:**
+5. **启动应用**
+```bash
+python appbook.py
+```
 
-   ```bash
-   python start_fogsight.py
-   # 运行 start_fogsight.py 脚本
-   # 它将自动启动后端服务并在浏览器中自动打开 http://127.0.0.1:8000
-   ```
+应用将在 `http://localhost:8001` 启动
 
-5. **开始创作！**
-   在页面中输入一个主题（例如"冒泡排序"），然后等待结果生成。
+## 📖 使用指南
 
-### Docker 方式运行
+### 基础使用
 
-如果您更喜欢使用 Docker，可以按照以下步骤：
+1. **访问主页**：打开浏览器访问 `http://localhost:8001`
 
-1. **确保 Docker 已安装:**
-   请确保您的系统已安装 Docker 和 docker-compose。
+2. **生成书籍介绍**：
+   - 输入书名和作者
+   - 选择介绍方法论（董宇辉式、罗振宇式等）
+   - 选择语音和视频风格
+   - 点击生成，等待AI处理
 
-2. **克隆代码仓库:**
-   ```bash
-   git clone https://github.com/fogsightai/fogsight.git
-   cd fogsight
-   ```
+3. **查看结果**：
+   - 在线预览生成的PPT演示
+   - 下载HTML文件离线使用
+   - 导出为MP4视频文件
 
-3. **配置API密钥:**
-   ```bash
-   cp demo-credentials.json credentials.json
-   # 编辑 credentials.json 文件，填入您的 API_KEY、BASE_URL 和 MODEL
-   
-   # 使用 OpenRouter 的配置示例：
-   # {
-   #   "API_KEY": "sk-or-v1-您的OpenRouter密钥",
-   #   "BASE_URL": "https://openrouter.ai/api/v1",
-   #   "MODEL": "anthropic/claude-sonnet-4"
-   # }
-   
-   # 使用 Gemini 的配置示例：
-   # {
-   #   "API_KEY": "您的Gemini密钥",
-   #   "BASE_URL": "",
-   #   "MODEL": "gemini-2.5-pro"
-   # }
-   ```
+### 高级功能
 
-4. **使用 Docker Compose 启动:**
-   ```bash
-   # 使用默认端口 8000
-   docker-compose up -d
-   
-   # 或者指定自定义端口（例如 3000）
-   HOST_PORT=3000 docker-compose up -d
-   ```
-   
-   如果 Docker 镜像无法拉取，可以尝试使用代理，或者使用镜像的国内源。
+#### 个人书架
+- 注册/登录账户
+- 访问 `/bookshelf` 查看个人作品
+- 管理和分类已生成的PPT
 
-5. **访问应用:**
-   打开浏览器访问 `http://localhost:8000`（或您指定的端口）
+#### 智能推荐
+- 访问 `/recommendations` 获取个性化推荐
+- 基于阅读历史和偏好推荐新书籍
 
-6. **停止服务:**
-   ```bash
-   docker-compose down
-   ```
+#### 读后感访谈
+- 访问 `/interview` 开始智能访谈
+- 与AI进行深度对话
+- 生成个人播客节目
 
-## OpenRouter 支持
+## 🛠️ 技术架构
 
-Fogsight 完全支持 OpenRouter，但是我们只推荐您使用Google Gemini 2.5 pro模型。
+### 后端技术栈
+- **FastAPI**：高性能 Web 框架
+- **SQLite**：轻量级数据库
+- **OpenAI/Qwen**：大语言模型
+- **Jinja2**：模板引擎
 
-## 联系我们/加入群聊
+### 前端技术栈
+- **HTML5/CSS3/JavaScript**：现代Web技术
+- **响应式设计**：支持多设备访问
+- **Server-Sent Events**：实时流式更新
 
-请访问[此链接](https://fogsightai.feishu.cn/wiki/WvODwyUr1iSAe0kEyKfcpqvynGc?from=from_copylink)联系我们或加入交流群。
+### AI 模型
+- **Qwen-Coder-480B**：主要推理模型
+- **多方法论引擎**：不同风格的内容生成
+- **双AI协作系统**：访谈和总结分工
 
-## Contributors
+## 📁 项目结构
 
-### 高校
+```
+fogsight/
+├── appbook.py              # 主应用文件
+├── models.py               # 数据模型
+├── processors.py           # 处理器模块
+├── requirements.txt        # Python依赖
+├── credentials.json        # API配置
+├── templates/              # HTML模板
+│   ├── index.html         # 主页
+│   ├── library.html       # 图书馆
+│   ├── bookshelf.html     # 个人书架
+│   └── interview.html     # 访谈页面
+├── static/                 # 静态资源
+│   ├── style.css          # 样式文件
+│   └── script.js          # 脚本文件
+├── outputs/                # 生成的PPT文件
+├── covers/                 # 书籍封面图片
+├── ppt_audio/             # PPT语音文件
+├── podcast_audio/         # 播客音频文件
+└── create/                # 创建工具
+    ├── methodology_config.py
+    └── ppt_voice_generator.py
+```
 
-* [@taited](https://taited.github.io/) - 香港中文大学（深圳） 博士生
-* [@yjydya](https://github.com/ydyjya) - 南洋理工大学 博士生
+## 🔧 配置选项
 
-### WaytoAGI 社区
+### 方法论配置
+- `dongyu_literature`：董宇辉式文学作品解读
+- `dongyu_autobiography`：董宇辉式自传体解读
+- `luozhenyu_efficiency`：罗振宇式效率提升解读
 
-* [@richkatchen 陈财猫](https://okjk.co/enodyA) - WaytoAGI 社区成员
-* [@kk](https://okjk.co/zC8myE) - WaytoAGI 社区成员
+### 语音风格
+- `professional_style`：专业播音风格
+- `friendly_style`：亲切对话风格
+- `storytelling_style`：故事叙述风格
 
-### Index Future Lab
+### 视频风格
+- `classic_ppt`：经典商务PPT
+- `modern_presentation`：现代演示风格
+- `storytelling`：故事化展示
 
-* [何淋 (@Lin he)](https://github.com/zerohe2001)
+## 🚀 部署指南
 
-### AI 探索家
+### 本地开发
+```bash
+python appbook.py
+```
 
-* [黄小刀 (@Xiaodao Huang)](https://okjk.co/CkFav6)
+### 生产部署
+```bash
+# 使用 Gunicorn
+pip install gunicorn
+gunicorn appbook:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8001
 
-### 独立开发者与 AI 艺术家
+# 使用 Docker
+docker build -t fogsight .
+docker run -p 8001:8001 fogsight
+```
 
-* [@shuyan-5200](https://github.com/shuyan-5200)
-* [王如玥 (@Ruyue Wang)](https://github.com/Moonywang)
-* [@Jack-the-Builder](https://github.com/Jack-the-Builder)
-* [@xiayurain95](https://github.com/xiayurain95)
-* [@Lixin Cai 蔡李鑫](https://github.com/Lixin-Cai)
+### Nginx 配置
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+    
+    location /static/ {
+        alias /path/to/fogsight/static/;
+    }
+}
+```
 
-## 开源许可
+## 🤝 贡献指南
 
-本项目基于 MIT 许可证开源。
-不过，如果您愿意在引用本项目时加上我们的署名与指向本项目的链接，我们会非常感谢 😊。
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+## 📝 更新日志
+
+### v1.0.0 (2024-01-01)
+- 🎉 初始版本发布
+- ✨ 支持多方法论书籍介绍生成
+- 🎨 精美的PPT演示界面
+- 🎙️ 语音合成和播客功能
+- 👤 用户系统和个人书架
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+## 🙏 致谢
+
+- OpenAI 提供的强大语言模型
+- ModelScope 提供的模型推理服务
+- FastAPI 团队提供的优秀框架
+- 所有贡献者和用户的支持
+
+## 📞 联系我们
+
+
+---
+
+**Bookagent** - 让每本书都有自己的故事 📚✨
