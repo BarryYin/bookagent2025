@@ -45,7 +45,7 @@ BASE_URL = credentials.get("BASE_URL", "")
 
 # 配置Qwen模型客户端
 QWEN_BASE_URL = "https://api-inference.modelscope.cn/v1/"
-QWEN_API_KEY = "ms-9ff035d4-50cb-4adf-afe0-89788293e19e"  # ModelScope Token
+QWEN_API_KEY = "ms-42df8480-de94-4ab3-bdf2-fdd449e1f7a9"  # ModelScope Token
 QWEN_MODEL = "Qwen/Qwen3-Coder-480B-A35B-Instruct"
 
 if API_KEY.startswith("sk-"):
@@ -167,6 +167,44 @@ except ImportError as e:
         """备用下载函数"""
         return False
 
+async def download_image_safe(url: str, save_path: str) -> bool:
+    """
+    安全的图片下载函数，包含更好的错误处理
+    """
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+            }
+            
+            response = await client.get(url, headers=headers, follow_redirects=True)
+            
+            if response.status_code == 200:
+                # 确保目录存在
+                import os
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                
+                # 保存图片
+                with open(save_path, 'wb') as f:
+                    f.write(response.content)
+                
+                # 验证文件大小
+                if os.path.getsize(save_path) > 1024:  # 至少1KB
+                    return True
+                else:
+                    print(f"⚠️ 下载的文件太小，可能不是有效图片")
+                    os.remove(save_path)
+                    return False
+            else:
+                print(f"❌ 下载失败，状态码: {response.status_code}")
+                return False
+                
+    except Exception as e:
+        print(f"❌ 下载图片时出错: {e}")
+        return False
+
 # 导入分类管理器
 try:
     from book_category_manager import add_book_to_category, get_all_books_with_categories, get_books_by_category_id, get_categories_summary
@@ -211,46 +249,93 @@ except ImportError as e:
 async def search_book_cover(book_title: str, author: str = None, download: bool = True) -> str:
     """
     搜索书籍封面图片
-    使用test_cover.py中的函数，优先使用豆瓣图书API，然后使用Google Books API作为备选
+    使用多种方法搜索，包括豆瓣、Google Books等
     如果download=True，会下载图片到本地covers目录
     """
     try:
-        # 使用test_cover.py中的函数
-        cover_url = await test_cover_search_book_cover(book_title, author)
+        print(f"📸 正在搜索书籍封面: {book_title} by {author}")
         
-        # 如果返回的是本地文件路径，直接返回
-        if cover_url.startswith("covers/"):
-            return cover_url
+        # 首先尝试使用新的封面搜索器
+        try:
+            from cover_search import book_cover_searcher
+            result = await book_cover_searcher.search_cover(book_title, author)
+            
+            if result and not result.get("is_default", False):
+                cover_url = result.get("cover_url")
+                source = result.get("source", "Unknown")
+                print(f"✅ 找到封面 ({source}): {cover_url[:100]}...")
+                
+                # 如果需要下载且是HTTP URL
+                if download and cover_url.startswith("http"):
+                    import os
+                    os.makedirs("covers", exist_ok=True)
+                    
+                    # 生成文件名
+                    safe_title = "".join(c for c in book_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                    safe_author = "".join(c for c in (author or "") if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                    filename = f"{safe_title}_{safe_author}.jpg" if safe_author else f"{safe_title}.jpg"
+                    filename = filename.replace(" ", "_")
+                    
+                    save_path = os.path.join("covers", filename)
+                    
+                    # 下载图片
+                    print(f"📥 正在下载封面: {filename}")
+                    success = await download_image_safe(cover_url, save_path)
+                    
+                    if success:
+                        print(f"✅ 封面下载成功: {save_path}")
+                        return save_path
+                    else:
+                        print(f"❌ 封面下载失败，使用原始URL")
+                        return cover_url
+                else:
+                    return cover_url
+        except ImportError:
+            print("⚠️ 新封面搜索器不可用，使用备用方法")
         
-        # 如果找到了真实URL且需要下载
-        if download and cover_url.startswith("http"):
-            # 创建covers目录
-            import os
-            os.makedirs("covers", exist_ok=True)
+        # 备用方法：使用test_cover.py中的函数
+        try:
+            cover_url = await test_cover_search_book_cover(book_title, author)
             
-            # 生成文件名
-            safe_title = "".join(c for c in book_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-            safe_author = "".join(c for c in (author or "") if c.isalnum() or c in (' ', '-', '_')).rstrip()
-            filename = f"{safe_title}_{safe_author}.jpg" if safe_author else f"{safe_title}.jpg"
-            filename = filename.replace(" ", "_")
-            
-            save_path = os.path.join("covers", filename)
-            
-            # 下载图片
-            print(f"📥 正在下载封面: {filename}")
-            success = await download_image(cover_url, save_path)
-            
-            if success:
-                print(f"✅ 封面下载成功: {save_path}")
-                return save_path
-            else:
-                print(f"❌ 封面下载失败，使用原始URL")
+            # 如果返回的是本地文件路径，直接返回
+            if cover_url.startswith("covers/"):
                 return cover_url
+            
+            # 如果找到了真实URL且需要下载
+            if download and cover_url.startswith("http"):
+                # 创建covers目录
+                import os
+                os.makedirs("covers", exist_ok=True)
+                
+                # 生成文件名
+                safe_title = "".join(c for c in book_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                safe_author = "".join(c for c in (author or "") if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                filename = f"{safe_title}_{safe_author}.jpg" if safe_author else f"{safe_title}.jpg"
+                filename = filename.replace(" ", "_")
+                
+                save_path = os.path.join("covers", filename)
+                
+                # 下载图片
+                print(f"📥 正在下载封面: {filename}")
+                success = await download_image_safe(cover_url, save_path)
+                
+                if success:
+                    print(f"✅ 封面下载成功: {save_path}")
+                    return save_path
+                else:
+                    print(f"❌ 封面下载失败，使用原始URL")
+                    return cover_url
+            
+            return cover_url
+        except Exception as e:
+            print(f"⚠️ test_cover搜索失败: {e}")
         
-        return cover_url
+        # 如果所有方法都失败，返回默认封面
+        print("🔄 所有搜索方法都失败，使用默认封面")
+        return get_default_book_cover(book_title)
         
     except Exception as e:
-        print(f"搜索书籍封面失败: {e}")
+        print(f"❌ 搜索书籍封面失败: {e}")
         return get_default_book_cover(book_title)
 
 def get_default_book_cover(book_title: str) -> str:

@@ -31,16 +31,22 @@ class UniversalPPTVideoGenerator:
         self.html_file = html_file
         self.audio_prefix = audio_prefix
         self.audio_dir = Path("./ppt_audio")
-        self.output_dir = Path("./videos")
+        
+        # 如果HTML文件在outputs目录下，将视频也保存到同一目录
+        html_path = Path(html_file)
+        if "outputs" in html_path.parts:
+            self.output_dir = html_path.parent
+        else:
+            self.output_dir = Path("./videos")
+            
         self.temp_dir = Path("./temp_ppt_assets")
         self.slides_data = []
         
         # 从HTML文件名推断输出文件名前缀
-        html_path = Path(html_file)
         self.output_prefix = html_path.stem.replace("PPT演示", "PPT").replace("presentation", "PPT")
         
         # 创建目录
-        self.output_dir.mkdir(exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(exist_ok=True)
         
         print(f"🎯 目标文件: {self.html_file}")
@@ -140,8 +146,11 @@ class UniversalPPTVideoGenerator:
             
             screenshot_path = self.temp_dir / f"slide_{i+1:03d}.png"
             
-            # 创建临时HTML文件，自动显示指定的幻灯片
-            success = self.take_chrome_screenshot(html_path, i, screenshot_path)
+            # 尝试精确截图，如果失败则使用备用方法
+            success = self.take_precise_screenshot(html_path, i, screenshot_path)
+            if not success:
+                print(f"   ⚠️  精确截图失败，使用备用方法...")
+                success = self.take_chrome_screenshot(html_path, i, screenshot_path)
             
             if success:
                 self.slides_data[i]['screenshot'] = screenshot_path
@@ -170,7 +179,13 @@ class UniversalPPTVideoGenerator:
                 .control-panel,
                 .header,
                 .footer,
-                .sidebar {{ display: none !important; visibility: hidden !important; }}
+                .sidebar,
+                .narration-display,
+                .nav-right,
+                .nav-arrow,
+                #playPauseButton,
+                #exportVideoButton,
+                #currentNarration {{ display: none !important; visibility: hidden !important; }}
                 
                 /* 重置所有容器样式，确保PPT内容占满全屏 */
                 * {{
@@ -345,7 +360,21 @@ class UniversalPPTVideoGenerator:
                         }}
                     }}
                     
-                    // 确保页面完全加载后再截图
+                    // 获取PPT内容区域的精确位置和尺寸
+                    const activeSlide = document.querySelector('.slide.active');
+                    if (activeSlide) {{
+                        const rect = activeSlide.getBoundingClientRect();
+                        console.log('PPT内容区域:', {{
+                            x: rect.x,
+                            y: rect.y,
+                            width: rect.width,
+                            height: rect.height
+                        }});
+                        
+                        // 将位置信息存储到全局变量供截图使用
+                        window.pptBounds = rect;
+                    }}
+                    
                     console.log('PPT页面准备完成，可以截图');
                 }}, 5000);  // 增加等待时间确保样式完全应用
                 </script>
@@ -365,7 +394,7 @@ class UniversalPPTVideoGenerator:
                 
                 temp_url = f"file://{temp_html_path.absolute()}"
                 
-                # Chrome headless命令 - 优化截图参数，确保只截取内容区域
+                # Chrome headless命令 - 确保清晰截图
                 cmd = [
                     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
                     "--headless",
@@ -375,13 +404,10 @@ class UniversalPPTVideoGenerator:
                     "--hide-scrollbars",
                     "--disable-extensions",
                     "--disable-plugins",
-                    "--disable-background-networking",
-                    "--window-size=1920,1080",  # 16:9 标准分辨率
-                    "--force-device-scale-factor=1",  # 使用1倍缩放确保清晰度
+                    "--window-size=1920,1080",
+                    "--force-device-scale-factor=1",
                     "--screenshot=" + str(output_path),
-                    "--virtual-time-budget=20000",  # 增加到20秒确保完全加载
-                    "--run-all-compositor-stages-before-draw",  # 确保渲染完成
-                    "--disable-background-timer-throttling",  # 禁用后台限制
+                    "--virtual-time-budget=15000",
                     temp_url
                 ]
                 
@@ -419,6 +445,87 @@ class UniversalPPTVideoGenerator:
         
         return False
 
+    def take_precise_screenshot(self, html_path, slide_index, output_path):
+        """使用简化截图，保持PPT原有样式"""
+        try:
+            # 创建临时HTML文件
+            temp_html_content = f"""
+            <style>
+            /* 隐藏导航和按钮 */
+            .nav-sidebar,
+            .navigation,
+            .speech-indicator,
+            .subtitle-container,
+            .subtitle-controls,
+            .theme-selector,
+            .slide-counter,
+            .narration-display,
+            .nav-right,
+            .nav-arrow,
+            #playPauseButton,
+            #exportVideoButton,
+            #currentNarration {{ display: none !important; }}
+            
+            /* 调整主内容区域 */
+            .main-content {{
+                margin-left: 0 !important;
+                width: 100% !important;
+            }}
+            </style>
+            <script>
+            setTimeout(function() {{
+                // 显示指定幻灯片
+                if (typeof showSlide === 'function') {{
+                    showSlide({slide_index});
+                }} else {{
+                    const slides = document.querySelectorAll('.slide');
+                    slides.forEach((s, idx) => {{
+                        s.style.display = idx === {slide_index} ? 'block' : 'none';
+                        if (idx === {slide_index}) s.classList.add('active');
+                    }});
+                }}
+            }}, 3000);
+            </script>
+            """
+            
+            # 读取原HTML文件并添加脚本
+            with open(html_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            
+            modified_html = html_content.replace('</body>', temp_html_content + '</body>')
+            
+            # 创建临时文件
+            temp_html_path = self.temp_dir / f"temp_slide_{slide_index}.html"
+            with open(temp_html_path, 'w', encoding='utf-8') as f:
+                f.write(modified_html)
+            
+            temp_url = f"file://{temp_html_path.absolute()}"
+            
+            # 使用标准窗口尺寸，确保清晰截图
+            cmd = [
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                "--headless",
+                "--disable-gpu",
+                "--no-sandbox",
+                "--hide-scrollbars",
+                "--window-size=1920,1080",
+                "--screenshot=" + str(output_path),
+                "--virtual-time-budget=10000",
+                temp_url
+            ]
+            
+            process = subprocess.run(cmd, capture_output=True, timeout=30)
+            
+            # 清理临时文件
+            if temp_html_path.exists():
+                temp_html_path.unlink()
+            
+            return process.returncode == 0 and output_path.exists()
+            
+        except Exception as e:
+            print(f"   ⚠️  精确截图失败: {e}")
+            return False
+
     def create_slide_video(self, slide_data):
         """创建单页视频（带字幕）"""
         print(f"🎬 生成视频: 第{slide_data['index']+1}页")
@@ -450,14 +557,8 @@ class UniversalPPTVideoGenerator:
         raw_text = raw_text.replace('\n', ' ').replace('\r', ' ').strip()
         subtitle_text = raw_text[:100] if len(raw_text) > 100 else raw_text
 
-        # 写入临时字幕文本文件，避免 ffmpeg drawtext 转义问题
-        subtitle_txt_path = self.temp_dir / f"subtitle_{slide_data['index']:03d}.txt"
-        try:
-            with open(subtitle_txt_path, 'w', encoding='utf-8') as tf:
-                tf.write(subtitle_text)
-        except Exception as e:
-            print(f"   ⚠️ 写入字幕文本失败，将直接内联文本: {e}")
-            subtitle_txt_path = None
+        # 不使用文件，直接在FFmpeg命令中处理中文字幕
+        subtitle_txt_path = None
 
         # 自动选择字幕颜色（默认白字+黑描边），需要 PIL 可用
         font_color = 'white'
@@ -482,22 +583,14 @@ class UniversalPPTVideoGenerator:
         except Exception as e:
             print(f"   ⚠️ 自动选择字幕颜色失败，使用默认白字: {e}")
 
-        # 构造 drawtext 过滤器（无底色框，保留描边与阴影，提高可读性）
-        text_source = (
-            f"textfile='{subtitle_txt_path}'" if subtitle_txt_path else f"text='{subtitle_text}'"
-        )
-        drawtext = (
-            f"drawtext={text_source}:fontfile=/System/Library/Fonts/PingFang.ttc:"
-            f"fontsize=36:fontcolor={font_color}:x=(w-text_w)/2:y=h-th-80:"
-            f"borderw=2:bordercolor={border_color}:shadowcolor=black@0.5:shadowx=2:shadowy=2"
-        )
-
+        # 禁用字幕，优化视频画质
         cmd = [
             "ffmpeg", "-y",
             "-loop", "1", "-i", str(slide_data['screenshot']),
             "-i", str(audio_path),
-            "-vf", drawtext,
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-crf", "18",  # 高质量编码
+            "-preset", "slow",  # 更好的压缩质量
             "-c:a", "aac", "-b:a", "128k",
             "-shortest",
             str(video_path)
@@ -536,6 +629,8 @@ class UniversalPPTVideoGenerator:
             "-loop", "1", "-i", str(slide_data['screenshot']),
             "-i", str(audio_path),
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-crf", "18",  # 高质量编码
+            "-preset", "slow",  # 更好的压缩质量
             "-c:a", "aac", "-b:a", "128k",
             "-shortest",
             str(video_path)

@@ -7,7 +7,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url='https://api-inference.modelscope.cn/v1/',  # 去掉末尾斜杠，便于路径拼接
-    api_key='ms-9ff035d4-50cb-4adf-afe0-89788293e19e', # ModelScope Token
+    api_key='ms-42df8480-de94-4ab3-bdf2-fdd449e1f7a9', # ModelScope Token
 )
 
 response = client.chat.completions.create(

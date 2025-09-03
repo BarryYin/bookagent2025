@@ -220,38 +220,81 @@ class BookCoverSearcher:
                 query += f" {author}"
             
             async with httpx.AsyncClient() as client:
-                # 注意：这个API可能不稳定
-                url = "https://api.douban.com/v2/book/search"
-                params = {
-                    "q": query,
-                    "count": 5
-                }
+                # 尝试多个豆瓣API接口
+                api_urls = [
+                    "https://book.douban.com/j/subject_suggest",
+                    "https://api.douban.com/v2/book/search"
+                ]
                 
-                response = await client.get(url, params=params, timeout=self.timeout)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    books = data.get("books", [])
-                    
-                    if books:
-                        # 选择第一个匹配的结果
-                        book = books[0]
-                        cover_url = book.get("image")
+                for api_url in api_urls:
+                    try:
+                        if "subject_suggest" in api_url:
+                            params = {"q": query}
+                        else:
+                            params = {"q": query, "count": 5}
                         
-                        if cover_url and cover_url != "https://img1.doubanio.com/f/shire/e1454c9d8b9fce83e2a40b883d3fbf36c8e7e2b9/pics/book-default-lpic.gif":
-                            return {
-                                "cover_url": cover_url,
-                                "source": "Douban",
-                                "is_default": False,
-                                "metadata": {
-                                    "title": book.get("title"),
-                                    "authors": [author.get("name") for author in book.get("author", [])],
-                                    "publisher": book.get("publisher"),
-                                    "published_date": book.get("pubdate"),
-                                    "rating": book.get("rating", {}).get("average"),
-                                    "tags": [tag.get("name") for tag in book.get("tags", [])]
-                                }
-                            }
+                        headers = {
+                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                            'Accept': 'application/json, text/plain, */*',
+                            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                            'Referer': 'https://book.douban.com/'
+                        }
+                        
+                        response = await client.get(api_url, params=params, headers=headers, timeout=self.timeout)
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            
+                            if "subject_suggest" in api_url:
+                                # 处理 subject_suggest 接口的响应
+                                books = data if isinstance(data, list) else []
+                                if books:
+                                    book = books[0]  # 取第一个结果
+                                    cover_url = book.get("pic")
+                                    if cover_url and cover_url != "https://img1.doubanio.com/f/shire/e1454c9d8b9fce83e2a40b883d3fbf36c8e7e2b9/pics/book-default-lpic.gif":
+                                        return {
+                                            "cover_url": cover_url,
+                                            "source": "Douban (suggest)",
+                                            "is_default": False,
+                                            "metadata": {
+                                                "title": book.get("title"),
+                                                "author": book.get("author_name"),
+                                                "douban_id": book.get("id")
+                                            }
+                                        }
+                            else:
+                                # 处理 v2/book/search 接口的响应
+                                books = data.get("books", [])
+                                if books:
+                                    book = books[0]
+                                    cover_url = book.get("image")
+                                    if cover_url and cover_url != "https://img1.doubanio.com/f/shire/e1454c9d8b9fce83e2a40b883d3fbf36c8e7e2b9/pics/book-default-lpic.gif":
+                                        return {
+                                            "cover_url": cover_url,
+                                            "source": "Douban (API)",
+                                            "is_default": False,
+                                            "metadata": {
+                                                "title": book.get("title"),
+                                                "authors": [author.get("name") for author in book.get("author", [])],
+                                                "publisher": book.get("publisher"),
+                                                "published_date": book.get("pubdate"),
+                                                "rating": book.get("rating", {}).get("average"),
+                                                "tags": [tag.get("name") for tag in book.get("tags", [])]
+                                            }
+                                        }
+                        elif response.status_code == 418:
+                            logger.warning(f"豆瓣API返回418 (反爬虫机制): {api_url}")
+                            continue
+                        else:
+                            logger.warning(f"豆瓣API请求失败 {response.status_code}: {api_url}")
+                            continue
+                            
+                    except Exception as e:
+                        logger.warning(f"豆瓣API接口 {api_url} 失败: {e}")
+                        continue
+                
+                return None
+                
         except Exception as e:
             logger.error(f"豆瓣API搜索失败: {e}")
             return None
