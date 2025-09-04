@@ -146,26 +146,36 @@ class VideoExportRequest(BaseModel):
     audio_prefix: str
 
 # -----------------------------------------------------------------------
-# 1.5. 书籍封面搜索功能 - 导入test_cover.py的函数
+# 1.5. 书籍封面搜索功能 - 使用修复后的cover_search.py
 # -----------------------------------------------------------------------
 
-# 导入test_cover.py中的封面搜索函数
+# 导入修复后的cover_search.py中的封面搜索函数
 try:
-    from test_cover import search_book_cover as test_cover_search_book_cover
-    from test_cover import search_douban_books, search_google_books, get_search_variations
-    from test_cover import normalize_text, calculate_similarity, is_better_match
-    from test_cover import download_image
-    print("✅ 成功导入test_cover.py中的封面搜索和下载函数")
+    from cover_search import search_book_cover as cover_search_book_cover
+    print("✅ 成功导入cover_search.py中的封面搜索函数")
+    COVER_SEARCH_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️ 导入test_cover.py失败: {e}")
-    # 如果导入失败，使用简化的备用函数
-    async def test_cover_search_book_cover(book_title: str, author: str = None) -> str:
-        """备用封面搜索函数"""
-        return get_default_book_cover(book_title)
+    print(f"⚠️ 导入cover_search.py失败: {e}")
+    COVER_SEARCH_AVAILABLE = False
     
-    async def download_image(url: str, save_path: str) -> bool:
-        """备用下载函数"""
-        return False
+    # 如果导入失败，使用简化的备用函数
+    async def cover_search_book_cover(book_title: str, author: str = None) -> dict:
+        """备用封面搜索函数"""
+        return {
+            "cover_url": get_default_book_cover(book_title),
+            "source": "Generated Default",
+            "is_default": True,
+            "metadata": {"title": book_title, "author": author}
+        }
+
+# 为了向后兼容，保留旧的函数名
+async def test_cover_search_book_cover(book_title: str, author: str = None) -> str:
+    """向后兼容的封面搜索函数"""
+    if COVER_SEARCH_AVAILABLE:
+        result = await cover_search_book_cover(book_title, author)
+        return result.get("cover_url", get_default_book_cover(book_title))
+    else:
+        return get_default_book_cover(book_title)
 
 async def download_image_safe(url: str, save_path: str) -> bool:
     """
@@ -257,41 +267,43 @@ async def search_book_cover(book_title: str, author: str = None, download: bool 
         
         # 首先尝试使用新的封面搜索器
         try:
-            from cover_search import book_cover_searcher
-            result = await book_cover_searcher.search_cover(book_title, author)
-            
-            if result and not result.get("is_default", False):
-                cover_url = result.get("cover_url")
-                source = result.get("source", "Unknown")
-                print(f"✅ 找到封面 ({source}): {cover_url[:100]}...")
+            if COVER_SEARCH_AVAILABLE:
+                result = await cover_search_book_cover(book_title, author)
                 
-                # 如果需要下载且是HTTP URL
-                if download and cover_url.startswith("http"):
-                    import os
-                    os.makedirs("covers", exist_ok=True)
+                if result and not result.get("is_default", False):
+                    cover_url = result.get("cover_url")
+                    source = result.get("source", "Unknown")
+                    print(f"✅ 找到封面 ({source}): {cover_url[:100]}...")
                     
-                    # 生成文件名
-                    safe_title = "".join(c for c in book_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-                    safe_author = "".join(c for c in (author or "") if c.isalnum() or c in (' ', '-', '_')).rstrip()
-                    filename = f"{safe_title}_{safe_author}.jpg" if safe_author else f"{safe_title}.jpg"
-                    filename = filename.replace(" ", "_")
-                    
-                    save_path = os.path.join("covers", filename)
-                    
-                    # 下载图片
-                    print(f"📥 正在下载封面: {filename}")
-                    success = await download_image_safe(cover_url, save_path)
-                    
-                    if success:
-                        print(f"✅ 封面下载成功: {save_path}")
-                        return save_path
+                    # 如果需要下载且是HTTP URL
+                    if download and cover_url.startswith("http"):
+                        import os
+                        os.makedirs("covers", exist_ok=True)
+                        
+                        # 生成文件名
+                        safe_title = "".join(c for c in book_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                        safe_author = "".join(c for c in (author or "") if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                        filename = f"{safe_title}_{safe_author}.jpg" if safe_author else f"{safe_title}.jpg"
+                        filename = filename.replace(" ", "_")
+                        
+                        save_path = os.path.join("covers", filename)
+                        
+                        # 下载图片
+                        print(f"📥 正在下载封面: {filename}")
+                        success = await download_image_safe(cover_url, save_path)
+                        
+                        if success:
+                            print(f"✅ 封面下载成功: {save_path}")
+                            return save_path
+                        else:
+                            print(f"❌ 封面下载失败，使用原始URL")
+                            return cover_url
                     else:
-                        print(f"❌ 封面下载失败，使用原始URL")
                         return cover_url
-                else:
-                    return cover_url
-        except ImportError:
-            print("⚠️ 新封面搜索器不可用，使用备用方法")
+            else:
+                print("⚠️ 新封面搜索器不可用")
+        except Exception as e:
+            print(f"⚠️ 新封面搜索器失败: {e}")
         
         # 备用方法：使用test_cover.py中的函数
         try:

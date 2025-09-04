@@ -33,12 +33,14 @@ class BookCoverSearcher:
         """
         logger.info(f"开始搜索书籍封面: {title} by {author}")
         
-        # 按优先级尝试不同的搜索方法，优先使用豆瓣网页抓取
+        # 按优先级尝试不同的搜索方法，现在优先使用稳定的API
         search_methods = [
-            self._search_douban_scrape,
-            self._search_google_books,
-            self._search_open_library,
-            self._search_douban_books, # 旧的API方法作为最后备用
+            self._search_google_books,     # 最稳定的API
+            self._search_open_library,     # 开放图书馆
+            self._search_isbn_db,          # ISBN数据库
+            self._search_goodreads_like,   # 类似Goodreads的服务
+            self._search_douban_scrape,    # 豆瓣作为备用（可能被限制）
+            self._search_douban_books,     # 豆瓣API作为最后备用
         ]
         
         for method in search_methods:
@@ -152,63 +154,136 @@ class BookCoverSearcher:
         return None
     
     async def _search_google_books(self, title: str, author: str = None, isbn: str = None) -> Optional[Dict[str, Any]]:
-        """使用Google Books API搜索"""
+        """使用Google Books API搜索（改进版）"""
         try:
-            query = title
-            if author:
-                query += f" {author}"
-            if isbn:
-                query = f"isbn:{isbn}"
-            
             async with httpx.AsyncClient() as client:
-                url = "https://www.googleapis.com/books/v1/volumes"
-                params = {
-                    "q": query,
-                    "maxResults": 5,
-                    "printType": "books",
-                    "langRestrict": "zh"  # 优先中文
-                }
+                # 构建更精确的查询
+                if isbn:
+                    query = f"isbn:{isbn}"
+                else:
+                    # 使用不同的查询策略提高匹配准确度
+                    queries = []
+                    if author:
+                        queries.extend([
+                            f'intitle:"{title}" inauthor:"{author}"',  # 精确匹配
+                            f"{title} {author}",                       # 普通搜索
+                            f'"{title}" {author}'                      # 标题精确匹配
+                        ])
+                    else:
+                        queries.extend([
+                            f'intitle:"{title}"',                      # 精确标题
+                            title                                      # 普通搜索
+                        ])
                 
-                response = await client.get(url, params=params, timeout=self.timeout)
-                
-                if response.status_code == 200:
-                    data = response.json()
+                    # 尝试每个查询直到找到结果
+                    for query in queries:
+                        params = {
+                            "q": query,
+                            "maxResults": 10,  # 增加结果数量以提高匹配机会
+                            "printType": "books",
+                            "langRestrict": "zh"  # 优先中文
+                        }
+                        
+                        response = await client.get(
+                            "https://www.googleapis.com/books/v1/volumes", 
+                            params=params, 
+                            timeout=self.timeout
+                        )
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            
+                            if data.get("totalItems", 0) > 0:
+                                # 寻找最匹配的书籍
+                                best_match = self._find_best_google_match(data["items"], title, author)
+                                if best_match:
+                                    volume_info = best_match.get("volumeInfo", {})
+                                    image_links = volume_info.get("imageLinks", {})
+                                    
+                                    # 优先使用高质量图片
+                                    cover_url = (
+                                        image_links.get("extraLarge") or
+                                        image_links.get("large") or
+                                        image_links.get("medium") or
+                                        image_links.get("small") or
+                                        image_links.get("thumbnail")
+                                    )
+                                    
+                                    if cover_url:
+                                        # 确保使用HTTPS并提高图片质量
+                                        cover_url = cover_url.replace("http://", "https://")
+                                        # 尝试获取更高质量的图片
+                                        cover_url = cover_url.replace("&zoom=1", "&zoom=1").replace("thumbnail", "large")
+                                        
+                                        return {
+                                            "cover_url": cover_url,
+                                            "source": "Google Books",
+                                            "is_default": False,
+                                            "metadata": {
+                                                "title": volume_info.get("title"),
+                                                "authors": volume_info.get("authors", []),
+                                                "publisher": volume_info.get("publisher"),
+                                                "published_date": volume_info.get("publishedDate"),
+                                                "page_count": volume_info.get("pageCount"),
+                                                "categories": volume_info.get("categories", []),
+                                                "query_used": query
+                                            }
+                                        }
+                        
+                        # 如果这个查询没有结果，尝试下一个
+                        await asyncio.sleep(0.1)  # 小延迟避免请求过快
                     
-                    if data.get("totalItems", 0) > 0:
-                        # 寻找最匹配的书籍
-                        best_match = self._find_best_match(data["items"], title, author)
-                        if best_match:
-                            volume_info = best_match.get("volumeInfo", {})
-                            image_links = volume_info.get("imageLinks", {})
-                            
-                            # 优先使用高质量图片
-                            cover_url = (
-                                image_links.get("extraLarge") or
-                                image_links.get("large") or
-                                image_links.get("medium") or
-                                image_links.get("small") or
-                                image_links.get("thumbnail")
-                            )
-                            
-                            if cover_url:
-                                # 确保使用HTTPS
-                                cover_url = cover_url.replace("http://", "https://")
-                                return {
-                                    "cover_url": cover_url,
-                                    "source": "Google Books",
-                                    "is_default": False,
-                                    "metadata": {
-                                        "title": volume_info.get("title"),
-                                        "authors": volume_info.get("authors", []),
-                                        "publisher": volume_info.get("publisher"),
-                                        "published_date": volume_info.get("publishedDate"),
-                                        "page_count": volume_info.get("pageCount"),
-                                        "categories": volume_info.get("categories", [])
-                                    }
-                                }
         except Exception as e:
             logger.error(f"Google Books API搜索失败: {e}")
             return None
+    
+    def _find_best_google_match(self, books: list, target_title: str, target_author: str = None) -> Optional[dict]:
+        """在Google Books搜索结果中找到最佳匹配（改进版）"""
+        best_match = None
+        best_score = 0
+        
+        for book in books:
+            volume_info = book.get("volumeInfo", {})
+            title = volume_info.get("title", "").lower()
+            authors = [author.lower() for author in volume_info.get("authors", [])]
+            
+            # 计算匹配分数
+            score = 0
+            target_title_lower = target_title.lower()
+            
+            # 标题匹配 (更严格的匹配)
+            if target_title_lower == title:
+                score += 10  # 完全匹配
+            elif target_title_lower in title or title in target_title_lower:
+                score += 5   # 部分匹配
+            elif any(word in title for word in target_title_lower.split()):
+                score += 2   # 词汇匹配
+            
+            # 作者匹配
+            if target_author:
+                target_author_lower = target_author.lower()
+                for author in authors:
+                    if target_author_lower == author:
+                        score += 8  # 作者完全匹配
+                    elif target_author_lower in author or author in target_author_lower:
+                        score += 4  # 作者部分匹配
+            
+            # 检查是否有封面图片
+            if volume_info.get("imageLinks"):
+                score += 1
+            
+            # 优先选择有更多信息的书籍
+            if volume_info.get("publisher"):
+                score += 0.5
+            if volume_info.get("publishedDate"):
+                score += 0.5
+            
+            if score > best_score:
+                best_score = score
+                best_match = book
+        
+        # 只返回分数足够高的匹配
+        return best_match if best_score >= 3 else None
     
     async def _search_douban_books(self, title: str, author: str = None, isbn: str = None) -> Optional[Dict[str, Any]]:
         """使用豆瓣API搜索（注意：豆瓣API可能有限制）"""
@@ -362,6 +437,80 @@ class BookCoverSearcher:
                             }
         except Exception as e:
             logger.error(f"Open Library API搜索失败: {e}")
+            return None
+    
+    async def _search_isbn_db(self, title: str, author: str = None, isbn: str = None) -> Optional[Dict[str, Any]]:
+        """使用ISBN数据库搜索封面"""
+        try:
+            if not isbn:
+                # 如果没有ISBN，跳过此方法
+                return None
+                
+            # 使用Open Library的ISBN封面服务
+            cover_url = f"https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg"
+            
+            # 验证封面是否存在
+            async with httpx.AsyncClient() as client:
+                response = await client.head(cover_url, timeout=self.timeout)
+                if response.status_code == 200:
+                    return {
+                        "cover_url": cover_url,
+                        "source": "ISBN Database",
+                        "is_default": False,
+                        "metadata": {
+                            "isbn": isbn,
+                            "title": title,
+                            "author": author
+                        }
+                    }
+        except Exception as e:
+            logger.error(f"ISBN数据库搜索失败: {e}")
+            return None
+    
+    async def _search_goodreads_like(self, title: str, author: str = None, isbn: str = None) -> Optional[Dict[str, Any]]:
+        """搜索类似Goodreads的图书数据库"""
+        try:
+            # 使用Bookcover API (免费的图书封面服务)
+            async with httpx.AsyncClient() as client:
+                # 构建搜索查询
+                search_query = title
+                if author:
+                    search_query = f"{title} {author}"
+                
+                # 尝试多个免费的图书API
+                apis = [
+                    {
+                        "url": "https://www.bookcover.longitood.com/bookcover",
+                        "params": {"book_title": title, "author_name": author or ""}
+                    },
+                    {
+                        "url": "https://bookcover.longitood.com/bookcover",
+                        "params": {"book_title": search_query}
+                    }
+                ]
+                
+                for api in apis:
+                    try:
+                        response = await client.get(api["url"], params=api["params"], timeout=self.timeout)
+                        if response.status_code == 200:
+                            data = response.json()
+                            if data and data.get("url"):
+                                return {
+                                    "cover_url": data["url"],
+                                    "source": "Book Cover API",
+                                    "is_default": False,
+                                    "metadata": {
+                                        "title": title,
+                                        "author": author,
+                                        "api_source": api["url"]
+                                    }
+                                }
+                    except Exception as e:
+                        logger.debug(f"Book Cover API {api['url']} 失败: {e}")
+                        continue
+                        
+        except Exception as e:
+            logger.error(f"Goodreads-like API搜索失败: {e}")
             return None
     
     def _find_best_match(self, books: list, target_title: str, target_author: str = None) -> Optional[dict]:
