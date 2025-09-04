@@ -2705,12 +2705,12 @@ async def enhanced_llm_event_stream(
             if voice_style and voice_style != "no_voice":
                 yield f"data: {json.dumps({'log': '  ├─ 正在生成语音文件...'}, ensure_ascii=False)}\n\n"
                 
-                # 导入语音生成器
+                # 导入可靠的语音生成器
                 sys.path.append(str(Path(__file__).parent / "create"))
-                from ppt_voice_generator import PPTVoiceGenerator
+                from reliable_voice_generator import ReliableVoiceGenerator
                 
-                # 初始化语音生成器
-                voice_generator = PPTVoiceGenerator(
+                # 初始化可靠的语音生成器
+                voice_generator = ReliableVoiceGenerator(
                     html_file=str(html_file),
                     audio_prefix=f"{session_id}_slide"
                 )

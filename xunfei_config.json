@@ -1,0 +1,20 @@
+{
+  "xunfei": {
+    "app_id": "你的APP_ID",
+    "api_key": "你的API_KEY",
+    "api_secret": "你的API_SECRET",
+    "voice": "x4_xiaoguo",
+    "note": "请替换为你的真实讯飞API密钥"
+  },
+  "备选方案": {
+    "fish_audio": {
+      "api_key": "Fish Audio API密钥",
+      "reference_id": "音色参考ID"
+    },
+    "system_voice": {
+      "enabled": true,
+      "voice": "Tingting",
+      "note": "macOS系统语音，无需API密钥"
+    }
+  }
+}

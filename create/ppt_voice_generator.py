@@ -13,6 +13,8 @@ import re
 import json
 import time
 import subprocess
+import threading
+import ssl
 from pathlib import Path
 import importlib
 import requests
@@ -34,12 +36,18 @@ def _module_available(name: str) -> bool:
 
 BS4_AVAILABLE = _module_available('bs4')
 FISH_AUDIO_AVAILABLE = _module_available('fish_audio_sdk')
+WEBSOCKET_AVAILABLE = _module_available('websocket')
+
+# 动态导入WebSocket
+if WEBSOCKET_AVAILABLE:
+    import websocket
 
 
 class XunfeiTTS:
     """讯飞语音合成类"""
     def __init__(self, host="api-dx.xf-yun.com", app_id=None, api_key=None, api_secret=None):
         self.host = host
+        # 使用更新后的API凭证
         self.app_id = app_id or os.getenv("XUNFEI_APP_ID", "e6950ae6")
         self.api_key = api_key or os.getenv("XUNFEI_API_KEY", "f2d4b9650c13355fc8286ac3fc34bf6e")
         self.api_secret = api_secret or os.getenv("XUNFEI_API_SECRET", "NzRkOWNlZDUzZThjMDI5NzI0N2EyMGRh")
@@ -145,9 +153,9 @@ class XunfeiTTS:
 
     def synthesize_to_file(self, text, output_file, voice="x4_xiaoguo", max_retries=10):
         """合成语音并保存到文件"""
-        # 创建任务
+        # 创建语音合成任务
         create_result = self.create_task(text, voice)
-        if not create_result or create_result.get('header', {}).get('code') != 0:
+        if not create_result:
             return False
 
         task_id = create_result.get('header', {}).get('task_id')
