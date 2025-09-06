@@ -34,6 +34,15 @@ try:
 except ImportError:
     print("Warning: 方法论配置模块导入失败，将使用默认配置")
 
+# 导入样式辅助函数
+try:
+    from style_helpers import generate_narration_data, generate_modern_tech_slides_html, generate_elegant_art_slides_html
+    from style_templates import generate_modern_tech_template
+    from elegant_template import generate_elegant_art_template
+    from standard_template import generate_standard_html_template
+except ImportError:
+    print("Warning: 样式辅助函数导入失败，将使用默认实现")
+
 # -----------------------------------------------------------------------
 # 0. 配置
 # -----------------------------------------------------------------------
@@ -876,7 +885,7 @@ PPT画面结构：
             print(f"Step3 未知错误，使用备用数据: {e}")
             return get_fallback_narrations_data(book_title)
 
-async def step4_generate_html(slides: list, narrations: list, book_data: dict, methodology: str = "dongyu_literature", enable_voice: bool = False, book_title: str = None) -> str:
+async def step4_generate_html(slides: list, narrations: list, book_data: dict, methodology: str = "dongyu_literature", enable_voice: bool = False, book_title: str = None, video_style: str = "standard") -> str:
     """
     第4步：将画面和解说词转换为HTML格式（支持语音和方法论风格）
     """
@@ -886,7 +895,8 @@ async def step4_generate_html(slides: list, narrations: list, book_data: dict, m
     print(f"DEBUG: slides类型: {type(slides)}, 长度: {len(slides) if isinstance(slides, list) else 'N/A'}")
     print(f"DEBUG: narrations类型: {type(narrations)}, 长度: {len(narrations) if isinstance(narrations, list) else 'N/A'}")
     print(f"DEBUG: 传递的book_title: {book_title}")
-    result = generate_reliable_ppt_html_internal(slides, narrations, book_data, book_title)
+    print(f"DEBUG: 视频风格: {video_style}")
+    result = generate_reliable_ppt_html_internal(slides, narrations, book_data, book_title, video_style)
     print(f"DEBUG: 生成的HTML长度: {len(result)}, 包含data-speech: {'data-speech' in result}")
     return result
 
@@ -994,7 +1004,7 @@ async def llm_event_stream(
         yield f"data: {json.dumps({'log': '  ├─ 使用可靠的内置模板'}, ensure_ascii=False)}\n\n"
         yield f"data: {json.dumps({'log': '  ├─ 集成交互功能和导航'}, ensure_ascii=False)}\n\n"
         
-        html_content = await step4_generate_html(slides, narrations, book_data)
+        html_content = await step4_generate_html(slides, narrations, book_data, video_style="standard")
         
         # 清理HTML内容
         html_content = clean_html_content(html_content)
@@ -1343,12 +1353,21 @@ def clean_html_content(html_content: str) -> str:
     
     return html_content
 
-def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_title=None):
-    """生成优化的毛玻璃风格PPT HTML"""
+def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_title=None, video_style="classic_ppt"):
+    """生成支持多种风格的PPT HTML"""
     
     print(f"DEBUG: generate_reliable_ppt_html_internal 开始执行")
     print(f"DEBUG: slides: {type(slides)}, narrations: {type(narrations)}")
     print(f"DEBUG: 传入的book_title参数: {book_title}")
+    print(f"DEBUG: 视频风格: {video_style}")
+    
+    # 根据视频风格选择不同的模板
+    if video_style == "modern_tech" or video_style == "modern_presentation":
+        return generate_modern_tech_style_html(slides, narrations, book_data, book_title)
+    elif video_style == "elegant_art" or video_style == "storytelling":
+        return generate_elegant_art_style_html(slides, narrations, book_data, book_title)
+    else:  # 默认使用标准风格 (standard, classic_ppt, 等)
+        return generate_standard_style_html(slides, narrations, book_data, book_title)
     
     # 解析book_data
     parsed_book_data = parse_ai_response(book_data)
@@ -1432,7 +1451,7 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
             "timings": timings
         })
     
-    # 生成幻灯片HTML
+    # 根据视频风格生成不同的幻灯片HTML
     slides_html = ""
     for i, slide in enumerate(processed_slides):
         active_class = "active" if i == 0 else ""
@@ -1442,30 +1461,68 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
         narration_text = str(narration_text).replace('"', '&quot;').replace('\n', ' ').replace('\r', '')
         
         if i == 0:
-            # 书籍标题页 - 专门展示书名
-            slides_html += f'''
-                <div class="slide {active_class}" data-speech="{narration_text}">
-                    <div style="text-align: center; padding: 2rem;">
-                        <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem; color: #1D1D1F;">{final_book_title}</h1>
-                        <div style="width: 80px; height: 3px; background: linear-gradient(to right, #667eea, #764ba2); margin: 2rem auto; border-radius: 2px;"></div>
-                        <p style="font-size: 1.2rem; color: #666; font-style: italic;">欢迎来到本书的精彩解读</p>
-                    </div>
-                </div>'''
+            # 书籍标题页 - 根据风格调整
+            if video_style == "storytelling":
+                slides_html += f'''
+                    <div class="slide {active_class}" data-speech="{narration_text}">
+                        <div style="text-align: center; padding: 3rem; background: linear-gradient(135deg, rgba(255,193,7,0.1), rgba(255,152,0,0.1)); border-radius: 20px;">
+                            <h1 style="font-size: 3.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #D84315; text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">{final_book_title}</h1>
+                            <div style="width: 120px; height: 4px; background: linear-gradient(to right, #FF9800, #FF5722); margin: 2rem auto; border-radius: 10px;"></div>
+                            <p style="font-size: 1.4rem; color: #8D6E63; font-style: italic; font-family: serif;">📖 温暖的阅读时光</p>
+                        </div>
+                    </div>'''
+            elif video_style == "modern_presentation":
+                slides_html += f'''
+                    <div class="slide {active_class}" data-speech="{narration_text}">
+                        <div style="text-align: center; padding: 3rem; position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: conic-gradient(from 0deg, #2196F3, #FF9800, #4CAF50, #2196F3); opacity: 0.1; animation: rotate 20s linear infinite;"></div>
+                            <h1 style="font-size: 4rem; font-weight: 900; margin-bottom: 1rem; color: #1565C0; position: relative; z-index: 2;">{final_book_title}</h1>
+                            <div style="width: 100px; height: 6px; background: linear-gradient(45deg, #2196F3, #FF9800); margin: 2rem auto; border-radius: 3px; position: relative; z-index: 2;"></div>
+                            <p style="font-size: 1.3rem; color: #424242; font-weight: 500; position: relative; z-index: 2;">🚀 现代化知识分享</p>
+                        </div>
+                    </div>'''
+            else:  # classic_ppt
+                slides_html += f'''
+                    <div class="slide {active_class}" data-speech="{narration_text}">
+                        <div style="text-align: center; padding: 2rem; border: 2px solid #1565C0; border-radius: 10px; background: linear-gradient(135deg, rgba(21,101,192,0.05), rgba(255,255,255,0.95));">
+                            <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem; color: #1565C0;">{final_book_title}</h1>
+                            <div style="width: 80px; height: 3px; background: #1565C0; margin: 2rem auto;"></div>
+                            <p style="font-size: 1.2rem; color: #37474F; font-weight: 500;">📚 专业书籍解读</p>
+                        </div>
+                    </div>'''
         else:
-            # 内容页
+            # 内容页 - 根据风格调整
             content = slide.get('content', '')
             # 处理content可能是列表的情况
             if isinstance(content, list):
-                content_html = '<ul>'
+                content_html = '<ul style="list-style: none; padding: 0;">'
                 for item in content:
-                    content_html += f'<li>{str(item)}</li>'
+                    if video_style == "storytelling":
+                        content_html += f'<li style="margin: 1rem 0; padding: 0.8rem; background: rgba(255,193,7,0.1); border-left: 4px solid #FF9800; border-radius: 8px;">📌 {str(item)}</li>'
+                    elif video_style == "modern_presentation":
+                        content_html += f'<li style="margin: 1rem 0; padding: 1rem; background: linear-gradient(135deg, rgba(33,150,243,0.1), rgba(255,152,0,0.1)); border-radius: 12px; border: 1px solid rgba(33,150,243,0.2);">▶ {str(item)}</li>'
+                    else:  # classic_ppt
+                        content_html += f'<li style="margin: 0.8rem 0; padding: 0.6rem; border-bottom: 1px solid #E0E0E0;">• {str(item)}</li>'
                 content_html += '</ul>'
             else:
-                content_html = f'<p>{str(content).replace(chr(10), "<br>")}</p>'
+                if video_style == "storytelling":
+                    content_html = f'<p style="line-height: 1.8; font-size: 1.1rem; color: #5D4037; background: rgba(255,193,7,0.05); padding: 1.5rem; border-radius: 15px; border-left: 5px solid #FF9800;">{str(content).replace(chr(10), "<br>")}</p>'
+                elif video_style == "modern_presentation":
+                    content_html = f'<p style="line-height: 1.7; font-size: 1.1rem; color: #263238; background: linear-gradient(135deg, rgba(33,150,243,0.05), rgba(255,255,255,0.95)); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">{str(content).replace(chr(10), "<br>")}</p>'
+                else:  # classic_ppt
+                    content_html = f'<p style="line-height: 1.6; font-size: 1rem; color: #424242; padding: 1rem; border: 1px solid #E0E0E0; border-radius: 8px; background: #FAFAFA;">{str(content).replace(chr(10), "<br>")}</p>'
+                
+            # 标题样式也根据风格调整
+            if video_style == "storytelling":
+                title_style = "font-size: 2.2rem; margin-bottom: 1.5rem; color: #D84315; border-bottom: 3px solid #FF9800; padding-bottom: 0.5rem; font-family: serif;"
+            elif video_style == "modern_presentation":
+                title_style = "font-size: 2.5rem; margin-bottom: 1.5rem; color: #1565C0; background: linear-gradient(45deg, #2196F3, #FF9800); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900;"
+            else:  # classic_ppt
+                title_style = "font-size: 2rem; margin-bottom: 1.2rem; color: #1565C0; border-bottom: 2px solid #1565C0; padding-bottom: 0.5rem; font-weight: 600;"
                 
             slides_html += f'''
                 <div class="slide {active_class}" data-speech="{narration_text}">
-                    <h2>{slide.get('title', f'第{i+1}页')}</h2>
+                    <h2 style="{title_style}">{slide.get('title', f'第{i+1}页')}</h2>
                     {content_html}
                 </div>'''
     
@@ -1480,6 +1537,15 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
         narration_data_js += f'            "timings": {data["timings"]}\n'
         narration_data_js += "        }"
     narration_data_js += "\n    ]"
+    
+    # 根据视频风格生成不同的背景样式
+    def get_background_style(style):
+        if style == "storytelling":
+            return "background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 25%, #FFCC80 50%, #FFB74D 75%, #FF9800 100%);"
+        elif style == "modern_presentation":
+            return "background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 25%, #90CAF9 50%, #64B5F6 75%, #2196F3 100%);"
+        else:  # classic_ppt
+            return "background: linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 25%, #BDBDBD 50%, #9E9E9E 75%, #757575 100%);"
     
     html_template = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -2270,6 +2336,188 @@ def generate_reliable_ppt_html_internal(slides, narrations, book_data, book_titl
     
     return html_template
 
+def generate_standard_style_html(slides, narrations, book_data, book_title=None):
+    """生成标准风格的HTML（使用原有的完整模板）"""
+    # 使用原有的完整模板生成逻辑
+    return generate_reliable_ppt_html_internal_original(slides, narrations, book_data, book_title, "standard")
+
+def generate_reliable_ppt_html_internal_original(slides, narrations, book_data, book_title=None, video_style="standard"):
+    """原有的完整模板生成函数"""
+    # 解析book_data
+    parsed_book_data = parse_ai_response(book_data)
+    
+    # 优先使用传入的book_title参数
+    if book_title:
+        final_book_title = book_title
+    else:
+        final_book_title = extract_book_title(parsed_book_data)
+    
+    # 如果还是"未知书籍"，尝试从 book_data 的其他字段获取
+    if final_book_title == "未知书籍" and isinstance(book_data, dict):
+        if 'title' in book_data:
+            final_book_title = book_data['title']
+        elif 'book_title' in book_data:
+            final_book_title = book_data['book_title']
+    
+    # 解析slides数据
+    parsed_slides = parse_ai_response(slides)
+    processed_slides = process_slides_data(parsed_slides, final_book_title)
+    
+    # 解析narrations数据
+    parsed_narrations = parse_ai_response(narrations)
+    processed_narrations = process_narrations_data(parsed_narrations, final_book_title)
+    
+    # 确保 slides 和 narrations 数量匹配
+    while len(processed_narrations) < len(processed_slides):
+        processed_narrations.append(f'这是第{len(processed_narrations)+1}页的解说内容')
+    
+    # 生成解说词数据
+    narration_data = generate_narration_data(processed_narrations)
+    
+    # 生成slides HTML
+    slides_html = ""
+    for i, slide in enumerate(processed_slides):
+        active_class = "active" if i == 0 else ""
+        narration_text = processed_narrations[i] if i < len(processed_narrations) else ""
+        narration_text = str(narration_text).replace('"', '&quot;').replace('\n', ' ').replace('\r', '')
+        
+        if i == 0:
+            slides_html += f'''
+                <div class="slide {active_class}" data-speech="{narration_text}">
+                    <div style="text-align: center; padding: 2rem;">
+                        <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem; color: #1D1D1F;">{final_book_title}</h1>
+                        <div style="width: 80px; height: 3px; background: linear-gradient(to right, #667eea, #764ba2); margin: 2rem auto; border-radius: 2px;"></div>
+                        <p style="font-size: 1.2rem; color: #666; font-style: italic;">欢迎来到本书的精彩解读</p>
+                    </div>
+                </div>'''
+        else:
+            content = slide.get('content', '')
+            if isinstance(content, list):
+                content_html = '<ul style="list-style: none; padding: 0;">'
+                for item in content:
+                    content_html += f'<li style="margin: 0.8rem 0; padding: 0.6rem; border-bottom: 1px solid #E0E0E0;">• {str(item)}</li>'
+                content_html += '</ul>'
+            else:
+                content_html = f'<p style="line-height: 1.6; font-size: 1rem; color: #424242; padding: 1rem; border: 1px solid #E0E0E0; border-radius: 8px; background: #FAFAFA;">{str(content).replace(chr(10), "<br>")}</p>'
+                
+            slides_html += f'''
+                <div class="slide {active_class}" data-speech="{narration_text}">
+                    <h2 style="font-size: 2rem; margin-bottom: 1.2rem; color: #1565C0; border-bottom: 2px solid #1565C0; padding-bottom: 0.5rem; font-weight: 600;">{slide.get('title', f'第{i+1}页')}</h2>
+                    {content_html}
+                </div>'''
+    
+    # 生成解说词 JavaScript 数据
+    narration_data_js = json.dumps(narration_data, ensure_ascii=False, indent=8)
+    
+    # 返回完整的HTML模板
+    return generate_standard_html_template(final_book_title, slides_html, narration_data_js, len(processed_slides))
+
+def generate_modern_tech_style_html(slides, narrations, book_data, book_title=None):
+    """生成现代科技风格的HTML"""
+    # 解析数据
+    parsed_book_data = parse_ai_response(book_data)
+    final_book_title = book_title or extract_book_title(parsed_book_data) or "未知书籍"
+    
+    # 处理slides和narrations
+    parsed_slides = parse_ai_response(slides)
+    processed_slides = process_slides_data(parsed_slides, final_book_title)
+    
+    parsed_narrations = parse_ai_response(narrations)
+    processed_narrations = process_narrations_data(parsed_narrations, final_book_title)
+    
+    # 确保数量匹配
+    while len(processed_narrations) < len(processed_slides):
+        processed_narrations.append(f'这是第{len(processed_narrations)+1}页的解说内容')
+    
+    # 生成解说词数据
+    narration_data = generate_narration_data(processed_narrations)
+    
+    # 生成slides HTML
+    slides_html = generate_modern_tech_slides_html(processed_slides, processed_narrations, final_book_title)
+    
+    # 生成解说词 JavaScript数据
+    narration_data_js = json.dumps(narration_data, ensure_ascii=False, indent=8)
+    
+    return generate_modern_tech_template(final_book_title, slides_html, narration_data_js, len(processed_slides))
+
+def generate_elegant_art_style_html(slides, narrations, book_data, book_title=None):
+    """生成优雅艺术风格的HTML"""
+    # 解析数据
+    parsed_book_data = parse_ai_response(book_data)
+    final_book_title = book_title or extract_book_title(parsed_book_data) or "未知书籍"
+    
+    # 处理slides和narrations
+    parsed_slides = parse_ai_response(slides)
+    processed_slides = process_slides_data(parsed_slides, final_book_title)
+    
+    parsed_narrations = parse_ai_response(narrations)
+    processed_narrations = process_narrations_data(parsed_narrations, final_book_title)
+    
+    # 确保数量匹配
+    while len(processed_narrations) < len(processed_slides):
+        processed_narrations.append(f'这是第{len(processed_narrations)+1}页的解说内容')
+    
+    # 生成解说词数据
+    narration_data = generate_narration_data(processed_narrations)
+    
+    # 生成slides HTML
+    slides_html = generate_elegant_art_slides_html(processed_slides, processed_narrations, final_book_title)
+    
+    # 生成解说词 JavaScript数据
+    narration_data_js = json.dumps(narration_data, ensure_ascii=False, indent=8)
+    
+    return generate_elegant_art_template(final_book_title, slides_html, narration_data_js, len(processed_slides))
+
+def generate_fallback_html(slides, narrations, book_data, book_title=None):
+    """生成备用HTML（当模板文件不存在时）"""
+    final_book_title = book_title or extract_book_title(book_data) or "未知书籍"
+    
+    return f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{final_book_title} - Bookagent 智能演示</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }}
+        h1 {{
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }}
+        .slide {{
+            margin-bottom: 30px;
+            padding: 20px;
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{final_book_title}</h1>
+        <div class="slide">
+            <h2>欢迎来到《{final_book_title}》的介绍</h2>
+            <p>这是一个简化版本的演示。</p>
+        </div>
+    </div>
+</body>
+</html>'''
+
 def parse_ai_response(data):
     """解析AI返回的数据，处理raw_content格式"""
     if isinstance(data, dict) and 'raw_content' in data:
@@ -2673,7 +2921,8 @@ async def enhanced_llm_event_stream(
         }
         
         try:
-            html_content = await step4_generate_html(slides_data, narrations_data, book_data, methodology=methodology, enable_voice=True, book_title=book_title)
+            html_content = await step4_generate_html(slides_data, narrations_data, book_data, methodology=methodology, enable_voice=True, book_title=book_title, video_style=video_style)
+            print(f"DEBUG: step4_generate_html 完成，video_style={video_style}")
         except Exception as e:
             # 记录详细错误信息以便调试
             import traceback

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小王子 - 故事叙述风格</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 25%, #FFCC80 50%, #FFB74D 75%, #FF9800 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .presentation-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .nav-sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .nav-button {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .slide-counter {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: auto;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slide-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .slide {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 100%;
+            height: 100%;
+            display: none;
+            position: relative;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .nav-right {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-arrow {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 20px;
+            margin: 0 auto;
+        }
+
+        .narration-display {
+            background: rgba(0, 0, 0, 0.8);
+            color: #FFD700;
+            padding: 25px 40px;
+            text-align: center;
+            font-size: 18px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="nav-sidebar">
+            <div class="logo-title">故事演示</div>
+            <button class="nav-button">📖 Storytelling</button>
+            <div class="slide-counter">
+                <div>第 <span id="current-slide">1</span> 页 / <span id="total-slides">5</span> 页</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="slide-container">
+                
+                <div class="slide active" data-speech="欢迎大家，今天我们来分享《小王子》这部经典作品">
+                    <div style="display: flex; height: 100%; align-items: center;">
+                        <div style="flex: 1; padding: 2rem;">
+                            <div style="background: linear-gradient(45deg, #8B4513, #D2691E); padding: 3rem; border-radius: 50px; text-align: center; box-shadow: 0 20px 40px rgba(139,69,19,0.3); position: relative; overflow: hidden;">
+                                <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; animation: float 6s ease-in-out infinite;"></div>
+                                <h1 style="font-size: 3rem; color: #FFF8DC; margin-bottom: 1rem; font-family: 'Georgia', serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">小王子</h1>
+                                <div style="width: 60px; height: 4px; background: #FFD700; margin: 1.5rem auto; border-radius: 2px;"></div>
+                                <p style="font-size: 1.2rem; color: #FFF8DC; font-style: italic;">📚 一段温暖的阅读旅程</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide" data-speech="让我们先了解一下这位传奇作家的人生经历">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; height: 100%; padding: 2rem;">
+                        <div style="background: linear-gradient(45deg, #8B4513, #D2691E); border-radius: 20px; padding: 2rem; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                            <h2 style="color: #FFF8DC; font-size: 2rem; margin-bottom: 1rem; font-family: Georgia, serif;">作者介绍</h2>
+                            <div style="width: 50px; height: 3px; background: #FFD700; margin: 0 auto;"></div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div style="background: linear-gradient(135deg, #FFF8DC, #F5DEB3); padding: 2rem; border-radius: 20px; border: 2px solid #D2691E;">
+                                <p style="color: #8B4513; font-size: 1.2rem; line-height: 1.8; font-family: Georgia, serif;">安东尼·德·圣-埃克苏佩里，法国作家和飞行员</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide" data-speech="这本书探讨了许多深刻的人生主题">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; height: 100%; padding: 2rem;">
+                        <div style="background: linear-gradient(45deg, #8B4513, #D2691E); border-radius: 20px; padding: 2rem; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                            <h2 style="color: #FFF8DC; font-size: 2rem; margin-bottom: 1rem; font-family: Georgia, serif;">核心主题</h2>
+                            <div style="width: 50px; height: 3px; background: #FFD700; margin: 0 auto;"></div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div style="background: linear-gradient(135deg, #FFF8DC, #F5DEB3); padding: 2rem; border-radius: 20px; border: 2px solid #D2691E;">
+                                <p style="color: #8B4513; font-size: 1.2rem; line-height: 1.8; font-family: Georgia, serif;">友谊、爱情、责任与成长的永恒话题</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide" data-speech="让我们看看这本书给我们的人生启示">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; height: 100%; padding: 2rem;">
+                        <div style="background: linear-gradient(45deg, #8B4513, #D2691E); border-radius: 20px; padding: 2rem; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                            <h2 style="color: #FFF8DC; font-size: 2rem; margin-bottom: 1rem; font-family: Georgia, serif;">人生启示</h2>
+                            <div style="width: 50px; height: 3px; background: #FFD700; margin: 0 auto;"></div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div style="background: linear-gradient(135deg, #FFF8DC, #F5DEB3); padding: 2rem; border-radius: 20px; border: 2px solid #D2691E;">
+                                <p style="color: #8B4513; font-size: 1.2rem; line-height: 1.8; font-family: Georgia, serif;">用心去看，才能看清本质</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide" data-speech="感谢大家的聆听，希望小王子的故事能温暖您的心">
+                    <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <h1 style="font-size: 3rem; color: #8B4513; margin-bottom: 2rem; font-family: Georgia, serif;">谢谢聆听</h1>
+                            <div style="width: 100px; height: 4px; background: #FFD700; margin: 0 auto 2rem; border-radius: 2px;"></div>
+                            <p style="font-size: 1.3rem; color: #D2691E; font-style: italic;">🌟 愿我们都保持一颗纯真的心</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="narration-display">
+                <span id="narration-text">欢迎大家，今天我们来分享《小王子》这部经典作品</span>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <div class="nav-arrow" onclick="previousSlide()">‹</div>
+            <div class="nav-arrow" onclick="nextSlide()">›</div>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(index) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[index].classList.add('active');
+            
+            document.getElementById('current-slide').textContent = index + 1;
+            
+            const narrationText = slides[index].getAttribute('data-speech');
+            document.getElementById('narration-text').textContent = narrationText;
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            showSlide(currentSlide);
+        }
+
+        function previousSlide() {
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            showSlide(currentSlide);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+
+        let autoPlay = false;
+        let autoPlayInterval;
+
+        function toggleAutoPlay() {
+            if (autoPlay) {
+                clearInterval(autoPlayInterval);
+                autoPlay = false;
+            } else {
+                autoPlayInterval = setInterval(nextSlide, 5000);
+                autoPlay = true;
+            }
+        }
+
+        document.querySelector('.nav-button').addEventListener('click', toggleAutoPlay);
+    </script>
+</body>
+</html>

@@ -645,20 +645,20 @@
 
         // 视频风格数据
         const videoStyles = {
-            "classic_ppt": {
-                "name": "经典PPT风格",
-                "description": "简洁大方，适合商务和教育场景",
+            "standard": {
+                "name": "标准风格",
+                "description": "经典商务风格，专业简洁，适合各类书籍",
                 "icon": "📊"
             },
-            "modern_presentation": {
-                "name": "现代演示风格",
-                "description": "时尚动感，视觉冲击力强",
-                "icon": "✨"
+            "modern_tech": {
+                "name": "现代科技风格",
+                "description": "深蓝科技感，适合技术和商业类书籍",
+                "icon": "💻"
             },
-            "storytelling": {
-                "name": "故事叙述风格",
-                "description": "温馨感人，适合情感类内容",
-                "icon": "📖"
+            "elegant_art": {
+                "name": "优雅艺术风格",
+                "description": "金色典雅，适合文学和艺术类书籍",
+                "icon": "🎭"
             }
         };
 
@@ -954,7 +954,7 @@
                 user_intent: bookInfo.user_intent,
                 methodology: selectedMethodology || 'dongyu_literature',
                 voice_style: selectedVoiceStyle || 'professional_style',
-                video_style: selectedVideoStyle || 'classic_ppt',
+                video_style: selectedVideoStyle || 'standard',
                 agent_type: 'exploration'
             };
             

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小王子 - 新布局演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 25%, #90CAF9 50%, #64B5F6 75%, #2196F3 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .presentation-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .nav-sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .nav-button {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .slide-counter {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: auto;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slide-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .slide {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 100%;
+            height: 100%;
+            display: none;
+            position: relative;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .nav-right {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-arrow {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 20px;
+            margin: 0 auto;
+        }
+
+        .narration-display {
+            background: rgba(0, 0, 0, 0.8);
+            color: #FFD700;
+            padding: 25px 40px;
+            text-align: center;
+            font-size: 18px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="nav-sidebar">
+            <div class="logo-title">新布局演示</div>
+            <button class="nav-button">🎨 modern_presentation</button>
+            <div class="slide-counter">
+                <div>第 1 页 / 5 页</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="slide-container">
+                
+                    <div class="slide active" data-speech="欢迎大家，今天我们来分享《小王子》这部经典作品">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; height: 100%; gap: 2rem; padding: 2rem;">
+                            <div style="display: flex; flex-direction: column; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 3rem; position: relative; overflow: hidden;">
+                                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><defs><pattern id=\"grid\" width=\"10\" height=\"10\" patternUnits=\"userSpaceOnUse\"><path d=\"M 10 0 L 0 0 0 10\" fill=\"none\" stroke=\"%23ffffff\" stroke-width=\"0.5\" opacity=\"0.1\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23grid)\"/></svg>'); opacity: 0.3;"></div>
+                                <h1 style="font-size: 3.5rem; color: white; margin-bottom: 1rem; font-weight: 900; position: relative; z-index: 2; text-transform: uppercase; letter-spacing: 2px;">小王子</h1>
+                                <div style="width: 100px; height: 6px; background: linear-gradient(90deg, #FF6B6B, #4ECDC4); margin-bottom: 1rem; position: relative; z-index: 2;"></div>
+                                <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; position: relative; z-index: 2;">🚀 NEXT-GEN KNOWLEDGE</p>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 20px; border: 2px solid rgba(255,255,255,0.1);">
+                                <div style="text-align: center; padding: 2rem;">
+                                    <div style="width: 120px; height: 120px; background: linear-gradient(45deg, #FF6B6B, #4ECDC4); border-radius: 50%; margin: 0 auto 2rem; display: flex; align-items: center; justify-content: center; font-size: 3rem; animation: pulse 2s infinite;">📚</div>
+                                    <p style="color: white; font-size: 1.2rem; opacity: 0.8;">Interactive Reading Experience</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slide " data-speech="让我们先了解一下这位传奇作家的人生经历">
+                        <div style="padding: 2rem; height: 100%;">
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <h2 style="font-size: 2.5rem; background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">作者介绍</h2>
+                                <div style="width: 100px; height: 4px; background: linear-gradient(90deg, #667eea, #764ba2); margin: 0 auto; border-radius: 2px;"></div>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; min-height: 60%;">
+                                <div style="background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1)); padding: 2rem; border-radius: 20px; border: 1px solid rgba(102,126,234,0.2); backdrop-filter: blur(10px);"><p style="color: #2c3e50; font-size: 1.2rem; line-height: 1.7; margin: 0;">安东尼·德·圣-埃克苏佩里，法国作家和飞行员</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slide " data-speech="这本书探讨了许多深刻的人生主题">
+                        <div style="padding: 2rem; height: 100%;">
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <h2 style="font-size: 2.5rem; background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">核心主题</h2>
+                                <div style="width: 100px; height: 4px; background: linear-gradient(90deg, #667eea, #764ba2); margin: 0 auto; border-radius: 2px;"></div>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; min-height: 60%;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;"><div style="background: linear-gradient(135deg, #FF6B6B, #FF6B6Bdd); padding: 1.5rem; border-radius: 15px; color: white; text-align: center; transform: translateY(0); transition: transform 0.3s ease; box-shadow: 0 8px 16px rgba(0,0,0,0.1);" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)';"><div style="font-size: 2rem; margin-bottom: 1rem;">🚀</div><p style="margin: 0; font-weight: 500; font-size: 1rem;">成长与纯真</p></div><div style="background: linear-gradient(135deg, #4ECDC4, #4ECDC4dd); padding: 1.5rem; border-radius: 15px; color: white; text-align: center; transform: translateY(0); transition: transform 0.3s ease; box-shadow: 0 8px 16px rgba(0,0,0,0.1);" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)';"><div style="font-size: 2rem; margin-bottom: 1rem;">💡</div><p style="margin: 0; font-weight: 500; font-size: 1rem;">友谊与爱情</p></div><div style="background: linear-gradient(135deg, #45B7D1, #45B7D1dd); padding: 1.5rem; border-radius: 15px; color: white; text-align: center; transform: translateY(0); transition: transform 0.3s ease; box-shadow: 0 8px 16px rgba(0,0,0,0.1);" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)';"><div style="font-size: 2rem; margin-bottom: 1rem;">⚡</div><p style="margin: 0; font-weight: 500; font-size: 1rem;">责任与担当</p></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slide " data-speech="书中有许多令人难忘的经典语句">
+                        <div style="padding: 2rem; height: 100%;">
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <h2 style="font-size: 2.5rem; background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">经典语录</h2>
+                                <div style="width: 100px; height: 4px; background: linear-gradient(90deg, #667eea, #764ba2); margin: 0 auto; border-radius: 2px;"></div>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; min-height: 60%;">
+                                <div style="background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1)); padding: 2rem; border-radius: 20px; border: 1px solid rgba(102,126,234,0.2); backdrop-filter: blur(10px);"><p style="color: #2c3e50; font-size: 1.2rem; line-height: 1.7; margin: 0;">真正重要的东西，用眼睛是看不见的</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slide " data-speech="最后让我们思考这本书对现代人的启发意义">
+                        <div style="padding: 2rem; height: 100%;">
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <h2 style="font-size: 2.5rem; background: linear-gradient(45deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">现实意义</h2>
+                                <div style="width: 100px; height: 4px; background: linear-gradient(90deg, #667eea, #764ba2); margin: 0 auto; border-radius: 2px;"></div>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; min-height: 60%;">
+                                <div style="background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1)); padding: 2rem; border-radius: 20px; border: 1px solid rgba(102,126,234,0.2); backdrop-filter: blur(10px);"><p style="color: #2c3e50; font-size: 1.2rem; line-height: 1.7; margin: 0;">在成人世界中保持童心的重要性</p></div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+            <div class="narration-display">
+                <div>新的modern_presentation布局风格演示</div>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <button class="nav-arrow" onclick="prevSlide()">❮</button>
+            <button class="nav-arrow" onclick="nextSlide()">❯</button>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        let totalSlides = 5;
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        }
+
+        function showSlide(slideIndex) {
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => slide.classList.remove('active'));
+            if (slides[slideIndex]) {
+                slides[slideIndex].classList.add('active');
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (event.key === 'ArrowRight') {
+                nextSlide();
+            }
+        });
+    </script>
+</body>
+</html>
