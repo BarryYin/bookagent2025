@@ -34,6 +34,10 @@
     width: 100%;
     height: 200px;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
 }
 
 .library-card-preview.clickable-preview {
@@ -48,7 +52,9 @@
 .book-cover-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
+    background: #f8f9fa;
 }
 
 .gradient-cover {
@@ -314,6 +320,7 @@
     </main>
 
     <!-- 不加载全局script.js，避免函数冲突 -->
+    <script src="/static/image-adapter.js?v={{ time }}"></script>
     <script src="/static/fix_ppt_gallery.js?v={{ time }}"></script>
     <script>
         // 全局变量
@@ -437,6 +444,7 @@
                 previewContent = `
                     <div class="library-card-preview book-cover-preview clickable-preview" onclick="window.open('${ppt.html_url}', '_blank')" title="点击查看PPT介绍">
                         <img src="${ppt.cover_url}" alt="${escapeHtml(ppt.title)}" class="book-cover-image" 
+                             onload="adaptLibraryCardCover(this)"
                              onerror="this.parentElement.innerHTML='<div class=\\'fallback-cover\\'><div class=\\'fallback-icon\\'>📚</div><div class=\\'fallback-title\\'>${escapeHtml(ppt.title)}</div></div>'">
                     </div>
                 `;
@@ -880,6 +888,8 @@
                 updateAllBookshelfButtons();
             }, 1000);
         });
+        
+        // 图片适配功能已由 image-adapter.js 提供
     </script>
     <script>
 var _hmt = _hmt || [];

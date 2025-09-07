@@ -399,6 +399,7 @@
     </div>
 
     <script src="/static/script.js?v={{ time }}"></script>
+    <script src="/static/image-adapter.js?v={{ time }}"></script>
     <script src="/static/fix_ppt_gallery.js?v={{ time }}"></script>
     <script src="/static/recommendation_agent.js?v={{ time }}"></script>
 
@@ -529,7 +530,7 @@
                     const booksHTML = data.books.map(book => {
                         const createdDate = new Date(book.created_time).toLocaleDateString('zh-CN');
                         const coverImage = book.cover_url && !book.cover_url.startsWith('gradient:') 
-                            ? `<img src="${book.cover_url}" alt="${book.title}" class="book-cover-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
+                            ? `<img src="${book.cover_url}" alt="${book.title}" class="book-cover-image" onload="adaptBookCoverSize(this)" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` 
                             : '';
                         
                         return `
@@ -763,6 +764,8 @@
             }
         }
 
+        // 书籍封面适配功能已由 image-adapter.js 提供
+        
         // 页面加载时加载内容
         document.addEventListener('DOMContentLoaded', function() {
             // 延迟加载，确保DOM完全加载

@@ -18,7 +18,7 @@ headers = {
 data = {
     "flow_id": "7362488342038495234",
     "uid": "123",
-    "parameters": {"AGENT_USER_INPUT": "能帮我推荐几本，最近热销的中文文学类好书吗"},
+    "parameters": {"AGENT_USER_INPUT": "我们正在讨论一本书《尘埃落地》，读者银佳，认为这本书对他的启发很大，对于西藏的那段历史有了更深刻的了解"},
     "ext": {"bot_id": "adjfidjf", "caller": "workflow"},
     "stream": False,
 }

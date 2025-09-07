@@ -1285,14 +1285,19 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
 /* 图书馆页面的书籍封面样式 */
 .library-card-preview.book-cover-preview {
     padding: 0;
-    background: none;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .library-card-preview .book-cover-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
     border-radius: 8px 8px 0 0;
+    background: #f8f9fa;
 }
 
 .library-card-preview .fallback-cover {
@@ -2823,12 +2828,20 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
     overflow: hidden;
     position: relative;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    transition: height 0.3s ease;
 }
 
 .book-cover-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
+    background: #f8f9fa;
+    transition: object-fit 0.3s ease;
 }
 
 .book-cover-fallback {
@@ -2926,6 +2939,36 @@ body { margin: 0; font-family: var(--font-sans); background-color: var(--bg-colo
 .view-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 图片自适应样式 */
+.adaptive-image-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    transition: height 0.3s ease;
+    overflow: hidden;
+}
+
+.adaptive-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    transition: object-fit 0.3s ease;
+}
+
+.adaptive-image.landscape {
+    object-fit: contain;
+}
+
+.adaptive-image.portrait {
+    object-fit: contain;
+}
+
+.adaptive-image.square {
+    object-fit: cover;
 }
 
 /* 响应式设计 */
