@@ -3899,7 +3899,7 @@ async def export_video(request: VideoExportRequest):
             # 返回缓存的视频
             return {
                 "success": True,
-                "video_url": f"outputs/{request.session_id}/{latest_video.name}",
+                "video_url": f"/outputs/{request.session_id}/{latest_video.name}",
                 "filename": latest_video.name,
                 "file_size": f"{file_size:.1f} MB",
                 "duration": f"{duration:.1f}",
@@ -4010,7 +4010,7 @@ def generate_video_background(html_file_path, audio_prefix, output_dir, task_key
             video_tasks[task_key] = {
                 'status': 'completed',
                 'progress': 100,
-                'video_url': f"outputs/{result.parent.name}/{result.name}",
+                'video_url': f"/outputs/{result.parent.name}/{result.name}",
                 'filename': result.name,
                 'file_size': f"{file_size:.1f} MB",
                 'duration': f"{duration:.1f}",

@@ -762,7 +762,9 @@
 
         function showVideoDownload(data) {
             const downloadLink = document.createElement('a');
-            downloadLink.href = data.video_url;
+            // 确保视频URL以/开头，避免相对路径问题
+            const videoUrl = data.video_url.startsWith('/') ? data.video_url : '/' + data.video_url;
+            downloadLink.href = videoUrl;
             downloadLink.download = data.filename;
             downloadLink.click();
             
