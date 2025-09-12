@@ -936,15 +936,25 @@ async def step2_create_ppt_slides(book_data: dict, methodology: str = "dongyu_li
             return [{"raw_content": result}]
             
     except Exception as e:
-        # API配额用完或其他错误时，返回默认数据
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
-            book_title = extract_book_title(book_data) if book_data else "未知书籍"
-            print(f"Step2 API调用失败，使用备用数据: {e}")
-            return get_fallback_slides_data(book_title)
+        # 详细记录错误信息
+        error_str = str(e)
+        print(f"Step2 API调用出错，错误类型: {type(e).__name__}")
+        print(f"错误详情: {error_str}")
+        
+        # 根据错误类型提供不同的处理
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            print("检测到API配额限制，使用备用数据")
+        elif "ConnectError" in error_str or "SSL" in error_str or "EOF" in error_str:
+            print("检测到网络连接问题，使用备用数据")
+        elif "timeout" in error_str.lower():
+            print("检测到请求超时，使用备用数据")
         else:
-            book_title = extract_book_title(book_data) if book_data else "未知书籍"
-            print(f"Step2 未知错误，使用备用数据: {e}")
-            return get_fallback_slides_data(book_title)
+            print(f"未知错误类型，使用备用数据: {error_str}")
+        
+        book_title = extract_book_title(book_data) if book_data else "未知书籍"
+        fallback_data = get_fallback_slides_data(book_title)
+        print(f"Step2 返回备用数据，包含 {len(fallback_data)} 个幻灯片")
+        return fallback_data
 
 async def step3_create_narration(slides: list, book_data: dict, methodology: str = "dongyu_literature") -> list:
     """
@@ -1148,15 +1158,25 @@ PPT画面结构：
             return [{"raw_content": result}]
             
     except Exception as e:
-        # API配额用完或其他错误时，返回默认数据
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "ConnectError" in str(e) or "SSL" in str(e) or "EOF" in str(e):
-            book_title = extract_book_title(book_data) if book_data else "未知书籍"
-            print(f"Step3 API调用失败，使用备用数据: {e}")
-            return get_fallback_narrations_data(book_title)
+        # 详细记录错误信息
+        error_str = str(e)
+        print(f"Step3 API调用出错，错误类型: {type(e).__name__}")
+        print(f"错误详情: {error_str}")
+        
+        # 根据错误类型提供不同的处理
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            print("检测到API配额限制，使用备用数据")
+        elif "ConnectError" in error_str or "SSL" in error_str or "EOF" in error_str:
+            print("检测到网络连接问题，使用备用数据")
+        elif "timeout" in error_str.lower():
+            print("检测到请求超时，使用备用数据")
         else:
-            book_title = extract_book_title(book_data) if book_data else "未知书籍"
-            print(f"Step3 未知错误，使用备用数据: {e}")
-            return get_fallback_narrations_data(book_title)
+            print(f"未知错误类型，使用备用数据: {error_str}")
+        
+        book_title = extract_book_title(book_data) if book_data else "未知书籍"
+        fallback_data = get_fallback_narrations_data(book_title)
+        print(f"Step3 返回备用数据，包含 {len(fallback_data)} 个解说词")
+        return fallback_data
 
 async def step4_generate_html(slides: list, narrations: list, book_data: dict, methodology: str = "dongyu_literature", enable_voice: bool = False, book_title: str = None, video_style: str = "standard") -> str:
     """
