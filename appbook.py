@@ -52,20 +52,27 @@ credentials = json.load(open("credentials.json"))
 API_KEY = credentials["API_KEY"]
 BASE_URL = credentials.get("BASE_URL", "")
 
-# 配置Qwen模型客户端
-QWEN_BASE_URL = "https://api-inference.modelscope.cn/v1/"
-QWEN_API_KEY = "ms-42df8480-de94-4ab3-bdf2-fdd449e1f7a9"  # ModelScope Token
-QWEN_MODEL = "Qwen/Qwen3-Coder-480B-A35B-Instruct"
+# 配置百度ERNIE模型客户端
+BAIDU_BASE_URL = "https://qianfan.baidubce.com/v2"
+BAIDU_API_KEY = "bce-v3/ALTAK-IlAGWrpPIFAMJ3g8kbD4I/f17c0a909b891c89b0dce53d913448d86a87bad9"
+BAIDU_MODEL = "ernie-4.5-turbo-32k"
+
+# 定义模型使用标识
+USE_GEMINI = False
+USE_QWEN = False
+USE_BAIDU = False
 
 if API_KEY.startswith("sk-"):
     client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
     USE_GEMINI = False
     USE_QWEN = False
+    USE_BAIDU = False
 else:
-    # 使用Qwen模型
-    client = AsyncOpenAI(api_key=QWEN_API_KEY, base_url=QWEN_BASE_URL)
+    # 使用百度ERNIE模型
+    client = AsyncOpenAI(api_key=BAIDU_API_KEY, base_url=BAIDU_BASE_URL)
     USE_GEMINI = False
-    USE_QWEN = True
+    USE_QWEN = False
+    USE_BAIDU = True
 
 if API_KEY.startswith("sk-REPLACE_ME"):
     raise RuntimeError("请在环境变量里配置 API_KEY")
@@ -191,7 +198,7 @@ async def download_image_safe(url: str, save_path: str) -> bool:
     安全的图片下载函数，包含更好的错误处理
     """
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
@@ -449,7 +456,14 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
 """
 
     try:
-        if USE_QWEN:
+        if USE_BAIDU:
+            response = await client.chat.completions.create(
+                model=BAIDU_MODEL,
+                messages=[{"role": "user", "content": system_prompt}],
+                temperature=0.7
+            )
+            result = response.choices[0].message.content
+        elif USE_QWEN:
             response = await client.chat.completions.create(
                 model=QWEN_MODEL,
                 messages=[{"role": "user", "content": system_prompt}],
@@ -465,9 +479,26 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
             result = response.choices[0].message.content
 
         try:
+            # 尝试直接解析JSON
             book_data = json.loads(result)
         except:
-            book_data = {"raw_content": result}
+            # 如果直接解析失败，尝试从markdown代码块中提取JSON
+            try:
+                import re
+                json_match = re.search(r'```json\s*\n(.*?)\n```', result, re.DOTALL)
+                if json_match:
+                    book_data = json.loads(json_match.group(1))
+                else:
+                    # 尝试其他形式的代码块
+                    json_match = re.search(r'```\s*\n(.*?)\n```', result, re.DOTALL)
+                    if json_match:
+                        book_data = json.loads(json_match.group(1))
+                    else:
+                        # 如果都无法解析，返回原始内容
+                        book_data = {"raw_content": result}
+            except:
+                # 所有解析方式都失败
+                book_data = {"raw_content": result}
         
         # 简单的LLM分类
         try:
@@ -477,7 +508,14 @@ async def step1_extract_book_data(topic: str, methodology: str = "dongyu_literat
 
 只输出分类名称，不要其他内容。"""
             
-            if USE_QWEN:
+            if USE_BAIDU:
+                category_response = await client.chat.completions.create(
+                    model=BAIDU_MODEL,
+                    messages=[{"role": "user", "content": category_prompt}],
+                    temperature=0.3
+                )
+                category = category_response.choices[0].message.content.strip()
+            elif USE_QWEN:
                 category_response = await client.chat.completions.create(
                     model=QWEN_MODEL,
                     messages=[{"role": "user", "content": category_prompt}],
@@ -915,7 +953,14 @@ async def step2_create_ppt_slides(book_data: dict, methodology: str = "dongyu_li
 """
 
     try:
-        if USE_QWEN:
+        if USE_BAIDU:
+            response = await client.chat.completions.create(
+                model=BAIDU_MODEL,
+                messages=[{"role": "user", "content": system_prompt}],
+                temperature=0.8
+            )
+            result = response.choices[0].message.content
+        elif USE_QWEN:
             response = await client.chat.completions.create(
                 model=QWEN_MODEL,
                 messages=[{"role": "user", "content": system_prompt}],
@@ -931,9 +976,26 @@ async def step2_create_ppt_slides(book_data: dict, methodology: str = "dongyu_li
             result = response.choices[0].message.content
 
         try:
+            # 尝试直接解析JSON
             return json.loads(result)
         except:
-            return [{"raw_content": result}]
+            # 如果直接解析失败，尝试从markdown代码块中提取JSON
+            try:
+                import re
+                json_match = re.search(r'```json\s*\n(.*?)\n```', result, re.DOTALL)
+                if json_match:
+                    return json.loads(json_match.group(1))
+                else:
+                    # 尝试其他形式的代码块
+                    json_match = re.search(r'```\s*\n(.*?)\n```', result, re.DOTALL)
+                    if json_match:
+                        return json.loads(json_match.group(1))
+                    else:
+                        # 如果都无法解析，返回原始内容
+                        return [{"raw_content": result}]
+            except:
+                # 所有解析方式都失败
+                return [{"raw_content": result}]
             
     except Exception as e:
         # 详细记录错误信息
@@ -1137,7 +1199,14 @@ PPT画面结构：
 """
 
     try:
-        if USE_QWEN:
+        if USE_BAIDU:
+            response = await client.chat.completions.create(
+                model=BAIDU_MODEL,
+                messages=[{"role": "user", "content": system_prompt}],
+                temperature=0.8
+            )
+            result = response.choices[0].message.content
+        elif USE_QWEN:
             response = await client.chat.completions.create(
                 model=QWEN_MODEL,
                 messages=[{"role": "user", "content": system_prompt}],
@@ -1153,9 +1222,26 @@ PPT画面结构：
             result = response.choices[0].message.content
 
         try:
+            # 尝试直接解析JSON
             return json.loads(result)
         except:
-            return [{"raw_content": result}]
+            # 如果直接解析失败，尝试从markdown代码块中提取JSON
+            try:
+                import re
+                json_match = re.search(r'```json\s*\n(.*?)\n```', result, re.DOTALL)
+                if json_match:
+                    return json.loads(json_match.group(1))
+                else:
+                    # 尝试其他形式的代码块
+                    json_match = re.search(r'```\s*\n(.*?)\n```', result, re.DOTALL)
+                    if json_match:
+                        return json.loads(json_match.group(1))
+                    else:
+                        # 如果都无法解析，返回原始内容
+                        return [{"raw_content": result}]
+            except:
+                # 所有解析方式都失败
+                return [{"raw_content": result}]
             
     except Exception as e:
         # 详细记录错误信息
@@ -1196,7 +1282,7 @@ async def step4_generate_html(slides: list, narrations: list, book_data: dict, m
 async def llm_event_stream(
     topic: str,
     history: Optional[List[dict]] = None,
-    model: str = QWEN_MODEL,
+    model: str = BAIDU_MODEL,
     user_id: Optional[int] = None,
 ) -> AsyncGenerator[str, None]:
     """
@@ -3081,7 +3167,7 @@ def get_fallback_narrations_data(book_title: str) -> list:
 async def enhanced_llm_event_stream(
     topic: str,
     history: Optional[List[dict]] = None,
-    model: str = QWEN_MODEL,
+    model: str = BAIDU_MODEL,
     user_id: Optional[int] = None,
     methodology: str = "dongyu_literature",
     voice_style: str = "professional_style",
@@ -4643,10 +4729,10 @@ async def recommendation_chat_stream(request: RecommendationChatRequest, user: U
     # 添加用户最新消息
     messages.append({"role": "user", "content": request.message})
 
-    # 3. 调用Qwen模型并流式返回
+    # 3. 调用百度ERNIE模型并流式返回
     try:
         response_stream = await client.chat.completions.create(
-            model=QWEN_MODEL,
+            model=BAIDU_MODEL,
             messages=messages,
             stream=True,
             temperature=0.7,

@@ -239,6 +239,16 @@ class VideoConfig:
                     "animation": "zoom",
                     "duration_per_slide": 12
                 }
+            },
+            "side_nav_panel": {
+                "name": "专业导航面板",
+                "description": "带侧边导航控制面板，适合专业演示场景",
+                "icon": "🎛️",
+                "settings": {
+                    "theme": "professional",
+                    "animation": "slide",
+                    "duration_per_slide": 10
+                }
             }
         }
 
