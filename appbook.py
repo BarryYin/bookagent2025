@@ -148,6 +148,10 @@ class EnhancedGenerateRequest(BaseModel):
     video_style: Optional[str] = "classic_ppt"
     agent_type: str = "exploration"
 
+class BookCoverUploadRequest(BaseModel):
+    """书籍封面上传请求模型"""
+    image_data: str  # base64编码的图片数据
+
 class InterviewRequest(BaseModel):
     """读后感访谈请求模型"""
     message: str
@@ -237,6 +241,14 @@ try:
     print("✅ 成功导入分类管理器")
 except ImportError as e:
     print(f"⚠️ 导入分类管理器失败: {e}")
+
+# 导入OCR识别模块
+try:
+    from book_cover_ocr import get_ocr_instance
+    print("✅ 成功导入OCR识别模块")
+except ImportError as e:
+    print(f"⚠️ 导入OCR识别模块失败: {e}")
+    get_ocr_instance = None
     # 备用函数
     def add_book_to_category(title: str, author: str, category_info: dict, ppt_path: str):
         pass
@@ -5547,6 +5559,54 @@ async def get_latest_podcasts():
     except Exception as e:
         print(f"API错误: {e}")
         return {"success": False, "error": str(e), "podcasts": []}
+
+@app.post("/api/recognize-book-cover")
+async def recognize_book_cover(request: Request):
+    """识别书籍封面，提取书名和作者信息"""
+    try:
+        # 检查OCR模块是否可用
+        if get_ocr_instance is None:
+            raise HTTPException(status_code=500, detail="OCR识别功能不可用")
+        
+        # 获取上传的图片数据
+        from fastapi import UploadFile, File
+        form = await request.form()
+        image_file = form.get("image")
+        
+        if not image_file:
+            raise HTTPException(status_code=400, detail="未提供图片文件")
+        
+        # 读取图片数据
+        image_data = await image_file.read()
+        
+        # 调用OCR识别
+        ocr = get_ocr_instance()
+        result = await ocr.recognize_from_image(image_data)
+        
+        if result.get("success"):
+            return {
+                "success": True,
+                "title": result.get("title"),
+                "author": result.get("author"),
+                "all_text": result.get("all_text", []),
+                "message": "识别成功"
+            }
+        else:
+            return {
+                "success": False,
+                "error": result.get("error", "识别失败"),
+                "message": "请手动输入书名和作者"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"识别书籍封面失败: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "请手动输入书名和作者"
+        }
 
 @app.get("/api/latest-books")
 async def get_latest_books():

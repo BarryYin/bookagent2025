@@ -447,6 +447,31 @@
                 <div class="wizard-step active" data-step="1">
                     <h2 style="margin-bottom: 1.5rem; color: #2c3e50;">📚 输入书籍基本信息</h2>
                     <form class="book-info-form" id="bookInfoForm">
+                        <!-- 扫描封面功能 -->
+                        <div class="form-group" style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border: 2px dashed #dee2e6;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                                <span style="font-size: 1.5rem;">📸</span>
+                                <span>扫描书籍封面（可选）</span>
+                            </label>
+                            <p style="color: #6c757d; font-size: 0.9rem; margin-bottom: 1rem;">上传书籍封面图片，我们将自动识别书名和作者信息</p>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <input type="file" id="coverImage" accept="image/*" style="display: none;" onchange="handleCoverUpload(event)">
+                                <button type="button" onclick="document.getElementById('coverImage').click()" class="btn btn-outline" style="flex: 1;">
+                                    📤 选择封面图片
+                                </button>
+                                <button type="button" id="scanBtn" onclick="scanCover()" class="btn btn-primary" style="flex: 1; display: none;">
+                                    🔍 开始识别
+                                </button>
+                            </div>
+                            <div id="coverPreview" style="margin-top: 1rem; display: none;">
+                                <img id="previewImg" style="max-width: 200px; max-height: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            </div>
+                            <div id="scanResult" style="margin-top: 1rem; display: none; padding: 1rem; background: white; border-radius: 8px;">
+                                <p style="color: #28a745; font-weight: 600; margin-bottom: 0.5rem;">✅ 识别成功！</p>
+                                <p style="color: #495057; font-size: 0.9rem; margin: 0;">已自动填充书名和作者信息</p>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label for="bookTitle">书籍名称 *</label>
                             <input type="text" id="bookTitle" required placeholder="例如：百年孤独">
@@ -1030,6 +1055,109 @@
                 loadDraft();
             }
         }, 1000);
+
+        // 处理封面上传
+        let selectedCoverFile = null;
+        
+        function handleCoverUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 检查文件类型
+            if (!file.type.startsWith('image/')) {
+                alert('请上传图片文件');
+                return;
+            }
+            
+            // 检查文件大小（限制为5MB）
+            if (file.size > 5 * 1024 * 1024) {
+                alert('图片大小不能超过5MB');
+                return;
+            }
+            
+            selectedCoverFile = file;
+            
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('coverPreview');
+                const previewImg = document.getElementById('previewImg');
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+                
+                // 显示识别按钮
+                document.getElementById('scanBtn').style.display = 'block';
+                
+                // 隐藏之前的识别结果
+                document.getElementById('scanResult').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 扫描封面
+        async function scanCover() {
+            if (!selectedCoverFile) {
+                alert('请先选择一张封面图片');
+                return;
+            }
+            
+            const scanBtn = document.getElementById('scanBtn');
+            const originalText = scanBtn.innerHTML;
+            scanBtn.innerHTML = '🔄 识别中...';
+            scanBtn.disabled = true;
+            
+            try {
+                // 创建 FormData
+                const formData = new FormData();
+                formData.append('image', selectedCoverFile);
+                
+                // 调用OCR API
+                const response = await fetch('/api/recognize-book-cover', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('识别请求失败');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.title) {
+                    // 识别成功，填充表单
+                    document.getElementById('bookTitle').value = result.title;
+                    if (result.author) {
+                        document.getElementById('bookAuthor').value = result.author;
+                    }
+                    
+                    // 显示成功提示
+                    const scanResult = document.getElementById('scanResult');
+                    scanResult.style.display = 'block';
+                    scanResult.innerHTML = `
+                        <p style="color: #28a745; font-weight: 600; margin-bottom: 0.5rem;">✅ 识别成功！</p>
+                        <p style="color: #495057; font-size: 0.9rem; margin: 0.5rem 0;">
+                            <strong>书名：</strong>${result.title}<br>
+                            ${result.author ? `<strong>作者：</strong>${result.author}` : ''}
+                        </p>
+                        <p style="color: #6c757d; font-size: 0.85rem; margin-top: 0.5rem;">如果信息不准确，请手动修改</p>
+                    `;
+                } else {
+                    // 识别失败
+                    const scanResult = document.getElementById('scanResult');
+                    scanResult.style.display = 'block';
+                    scanResult.innerHTML = `
+                        <p style="color: #dc3545; font-weight: 600; margin-bottom: 0.5rem;">⚠️ 识别失败</p>
+                        <p style="color: #495057; font-size: 0.9rem; margin: 0;">请手动输入书名和作者信息</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('识别失败:', error);
+                alert('识别失败，请手动输入书名和作者信息');
+            } finally {
+                scanBtn.innerHTML = originalText;
+                scanBtn.disabled = false;
+            }
+        }
 
         // 使用增强API生成
         async function generateWithEnhancedAPI(requestData) {
