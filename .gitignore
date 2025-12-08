@@ -61,6 +61,12 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+# Database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
 # Flask stuff:
 instance/
 .webassets-cache
@@ -214,6 +220,34 @@ __MACOSX/
 **/.DS_Store
 **/Thumbs.db
 **/ehthumbs.db
-credentials.json
 
- *.mp3
+# 敏感配置文件
+credentials.json
+.env
+.env.local
+.env.*.local
+xunfei_config.json
+
+# Media files
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+*.wav
+*.aac
+*.ogg
+*.m4a
+*.webm
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.svg
+*.ico
+*.webp
+*.tiff
+*.tif

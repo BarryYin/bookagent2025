@@ -10,3 +10,5 @@ PyJWT
 python-multipart
 aiohttp
 aiofiles
+python-dotenv
+httpx
