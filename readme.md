@@ -207,7 +207,7 @@ POST /api/library/search            # 搜索书籍
 import requests
 
 # 生成PPT
-response = requests.post('http://localhost:8000/api/book/generate', 
+response = requests.post('http://localhost:8000/api/book/generate',
     json={
         "book_title": "人类简史",
         "methodology": "dongyu_literature",
